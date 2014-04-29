@@ -1,0 +1,27 @@
+builddir = build
+cc = gcc
+ar = ar
+cflags = -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -I.
+
+rule cc
+    command = $cc -MMD -MT $out -MF $out.d $cflags -c $in -o $out
+    # command = $cc -MMD -MF $out.d $cflags -c $in -o $out
+    depfile = $out.d
+
+rule ar
+    command = rm -f $out && $ar crs $out $in
+
+rule link
+    command = $cc $in -o $out -lrt
+
+
+# unittest library
+
+build $builddir/unittest/unittest-main.o: cc unittest/unittest-main.c
+build $builddir/unittest/unittest.o:      cc unittest/unittest.c
+build $builddir/unittest/unittest.a:      ar $builddir/unittest/unittest-main.o $builddir/unittest/unittest.o
+
+# unittest test
+build $builddir/unittest/unittest-test.o: cc unittest/unittest-test.c
+build $builddir/unittest/unittest-test:   link $builddir/unittest/unittest-test.o $builddir/unittest/unittest.a
+
