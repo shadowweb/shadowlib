@@ -68,7 +68,7 @@ static uint64_t getCurrentTime()
   return now64;
 }
 
-void printfColor(const char *color, char *fmt, ...)
+static void printfColor(const char *color, char *fmt, ...)
 {
   printf("%s", ((colorOutputGlobal)? color : ""));
   va_list argp;
@@ -79,46 +79,16 @@ void printfColor(const char *color, char *fmt, ...)
   printf("%s", ((colorOutputGlobal)? SW_COLOR_ANSI_NORMAL : ""));
 }
 
-/*
-static void swTestSuiteAction(const char *suiteName, const char *actionName, void (*action)(void *), void *suiteData)
+void swTestLogLine(char *fmt, ...)
 {
-  printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s\n", actionName, suiteName);
-  uint64_t actionRuntime = getCurrentTime();
-  action(suiteData);
-    actionRuntime = getCurrentTime() - actionRuntime;
-  printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s "SW_TIME_FORMAT"\n",
-    actionName, suiteName, SW_TIME_FORMAT_PRINT(actionRuntime));
-  return;
-}
+  printf("%s", ((colorOutputGlobal)? SW_COLOR_ANSI_BMAGENTA : ""));
+  va_list argp;
+  va_start(argp, fmt);
+  vprintf(fmt, argp);
+  va_end(argp);
 
-static void swTestAction(const char *suiteName, const char *testName, const char *actionName, void (*action)(void *, void *), void *suiteData, void *testData)
-{
-  printfColor (SW_COLOR_ANSI_GREEN, "%s Test %s.%s\n", actionName, suiteName, testName);
-  uint64_t actionRuntime = getCurrentTime();
-  action(suiteData, testData);
-    actionRuntime = getCurrentTime() - actionRuntime;
-  printfColor (SW_COLOR_ANSI_GREEN, "%s Test %s.%s "SW_TIME_FORMAT"\n",
-    actionName, suiteName, testName, SW_TIME_FORMAT_PRINT(actionRuntime));
-  return;
+  printf("%s", ((colorOutputGlobal)? SW_COLOR_ANSI_NORMAL : ""));
 }
-
-static bool swTestRunExecute(const char *suiteName, const char *testName, swTestRunFunc runFunc, void *suiteData, void *testData)
-{
-  bool ret = false;
-  printfColor (SW_COLOR_ANSI_GREEN, "\t[ RUN      ] Test %s.%s\n", suiteName, testName);
-  uint64_t testRuntime = getCurrentTime();
-  ret = runFunc(suiteData, testData);
-  testRuntime = getCurrentTime() - testRuntime;
-  ret = ret && (failedAssertsGlobal == 0);
-  if (ret)
-    printfColor (SW_COLOR_ANSI_GREEN, "\t[       OK ] Test %s.%s "SW_TIME_FORMAT"\n",
-                 suiteName, testName, SW_TIME_FORMAT_PRINT(testRuntime));
-  else
-    printfColor (SW_COLOR_ANSI_RED, "\t[   FAILED ] Test %s.%s "SW_TIME_FORMAT"\n",
-                 suiteName, testName, SW_TIME_FORMAT_PRINT(testRuntime));
-  return ret;
-}
-*/
 
 static void swTestSuiteAction(swTestSuite *suite, const char *actionName, void (*action)(swTestSuite *))
 {

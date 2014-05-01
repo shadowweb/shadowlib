@@ -100,13 +100,13 @@ swTestSuiteStructDeclare(Unittest, NULL, NULL, swTestRun,
 
 swTestDeclare(Test1, NULL, NULL, swTestRun)
 {
-  printf ("'%s': is running\n", __func__);
+  swTestLog ("Test is running");
   return true;
 }
 
 void swNoSetupTestTeardown(swTestSuite *suite)
 {
-  printf ("'%s': is running\n", __func__);
+  swTestLog ("Test teardown is running\n", __func__);
 }
 
 swTestSuiteStructDeclare(NoSetup, NULL, swNoSetupTestTeardown, swTestRun, &Test1);
@@ -136,14 +136,14 @@ void swMemtestTeardown(swTestSuite *suite, swTest *test)
 swTestDeclare(MemTest1, swMemtestSetup, swMemtestTeardown, swTestRun)
 {
   struct swMemtestData *data = swTestDataGet(test);
-  printf("'%s': data = %p, buffer = %p\n", __func__, data, data->buffer);
+  swTestLog("'%s': data = %p, buffer = %p\n", __func__, data, data->buffer);
   return true;
 }
 
 swTestDeclare(MemTest2, swMemtestSetup, swMemtestTeardown, swTestRun)
 {
   struct swMemtestData *data = swTestDataGet(test);
-  printf("'%s': data = %p, buffer = %p\n", __func__, data, data->buffer);
+  swTestLog("'%s': data = %p, buffer = %p\n", __func__, data, data->buffer);
   ASSERT_FAIL();
   return true;
 }
@@ -156,72 +156,3 @@ swTestDeclare(MemTest3, swMemtestSetup, swMemtestTeardown, swTestSkip)
 
 swTestSuiteStructDeclare(MemTest, NULL, NULL, swTestRun, &MemTest1, &MemTest2, &MemTest3);
 
-/*
-swTestSuiteDataDeclare(testSuiteBla)
-{
-  int a;
-};
-swTestSuiteSetupDeclare(testSuiteBla)
-{
-  suiteData->a = 1;
-  return;
-}
-swTestSuiteTeardownDeclare(testSuiteBla)
-{
-  suiteData->a = 0;
-  return;
-}
-
-swTestDataDeclare(testNameBla)
-{
-  int a;
-};
-
-swTestSetupDeclare(testSuiteBla, testNameBla)
-{
-  suiteData->a++;
-  testData->a = 1;
-  return;
-}
-
-swTestTeardownDeclare(testSuiteBla, testNameBla)
-{
-  suiteData->a--;
-  testData->a = 0;
-  return;
-}
-
-swTestRunDeclare(testSuiteBla, testNameBla)
-{
-  return true;
-}
-
-swTestStructDeclare(testNameBla, swTestRun);
-
-swTestDataDeclare(testNameBla1)
-{
-  int a;
-};
-
-swTestSetupDeclare(testSuiteBla, testNameBla1)
-{
-  testData->a = 1;
-  return;
-}
-
-swTestTeardownDeclare(testSuiteBla, testNameBla1)
-{
-  testData->a = 0;
-  return;
-}
-
-swTestRunDeclare(testSuiteBla, testNameBla1)
-{
-  ASSERT_FAIL();
-  return true;
-}
-
-swTestStructDeclare(testNameBla1, swTestRun);
-
-swTestSuiteStructDeclare(testSuiteBla, swTestRun, &testNameBla, &testNameBla1);
-*/
