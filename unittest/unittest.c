@@ -79,6 +79,7 @@ void printfColor(const char *color, char *fmt, ...)
   printf("%s", ((colorOutputGlobal)? SW_COLOR_ANSI_NORMAL : ""));
 }
 
+/*
 static void swTestSuiteAction(const char *suiteName, const char *actionName, void (*action)(void *), void *suiteData)
 {
   printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s\n", actionName, suiteName);
@@ -115,6 +116,46 @@ static bool swTestRunExecute(const char *suiteName, const char *testName, swTest
   else
     printfColor (SW_COLOR_ANSI_RED, "\t[   FAILED ] Test %s.%s "SW_TIME_FORMAT"\n",
                  suiteName, testName, SW_TIME_FORMAT_PRINT(testRuntime));
+  return ret;
+}
+*/
+
+static void swTestSuiteAction(swTestSuite *suite, const char *actionName, void (*action)(swTestSuite *))
+{
+  printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s\n", actionName, suite->suiteName);
+  uint64_t actionRuntime = getCurrentTime();
+  action(suite);
+    actionRuntime = getCurrentTime() - actionRuntime;
+  printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s "SW_TIME_FORMAT"\n",
+    actionName, suite->suiteName, SW_TIME_FORMAT_PRINT(actionRuntime));
+  return;
+}
+
+static void swTestAction(swTestSuite *suite, swTest *test, const char *actionName, void (*action)(swTestSuite *, swTest *))
+{
+  printfColor (SW_COLOR_ANSI_GREEN, "%s Test %s.%s\n", actionName, suite->suiteName, test->testName);
+  uint64_t actionRuntime = getCurrentTime();
+  action(suite, test);
+    actionRuntime = getCurrentTime() - actionRuntime;
+  printfColor (SW_COLOR_ANSI_GREEN, "%s Test %s.%s "SW_TIME_FORMAT"\n",
+    actionName, suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(actionRuntime));
+  return;
+}
+
+static bool swTestRunExecute(swTestSuite *suite, swTest *test)
+{
+  bool ret = false;
+  printfColor (SW_COLOR_ANSI_GREEN, "\t[ RUN      ] Test %s.%s\n", suite->suiteName, test->testName);
+  uint64_t testRuntime = getCurrentTime();
+  ret = test->runFunc(suite, test);
+  testRuntime = getCurrentTime() - testRuntime;
+  ret = ret && (failedAssertsGlobal == 0);
+  if (ret)
+    printfColor (SW_COLOR_ANSI_GREEN, "\t[       OK ] Test %s.%s "SW_TIME_FORMAT"\n",
+                 suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(testRuntime));
+  else
+    printfColor (SW_COLOR_ANSI_RED, "\t[   FAILED ] Test %s.%s "SW_TIME_FORMAT"\n",
+                 suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(testRuntime));
   return ret;
 }
 
@@ -189,7 +230,8 @@ int swTestMain(int argc, char *argv[])
         printfColor(SW_COLOR_ANSI_BLUE, "[ START    ] Suite: '%s'\n", suite->suiteName);
         uint64_t suiteRuntime = getCurrentTime();
         if (suite->setupFunc)
-          swTestSuiteAction(suite->suiteName, "[ SETUP    ]", suite->setupFunc, suite->data);
+          // swTestSuiteAction(suite->suiteName, "[ SETUP    ]", suite->setupFunc, suite->data);
+          swTestSuiteAction(suite, "[ SETUP    ]", suite->setupFunc);
 
         for (uint32_t i = 0; suite->tests[i] != NULL; i++)
         {
@@ -198,14 +240,17 @@ int swTestMain(int argc, char *argv[])
           {
             printfColor(SW_COLOR_ANSI_BLUE, "\t[ START    ] Test: '%s'\n", test->testName);
             if (test->setupFunc)
-              swTestAction(suite->suiteName, test->testName, "\t[ SETUP    ]", test->setupFunc, suite->data, test->data);
-            bool result = swTestRunExecute(suite->suiteName, test->testName, test->runFunc, suite->data, test->data);
+              swTestAction(suite, test, "\t[ SETUP    ]", test->setupFunc);
+              // swTestAction(suite->suiteName, test->testName, "\t[ SETUP    ]", test->setupFunc, suite->data, test->data);
+            // bool result = swTestRunExecute(suite->suiteName, test->testName, test->runFunc, suite->data, test->data);
+            bool result = swTestRunExecute(suite, test);
             numOK += result;
             numFail += !result;
             numFailedAsserts += failedAssertsGlobal;
             failedAssertsGlobal = 0;
             if (test->teardownFunc)
-              swTestAction(suite->suiteName, test->testName, "\t[ TEARDOWN ]", test->teardownFunc, suite->data, test->data);
+              // swTestAction(suite->suiteName, test->testName, "\t[ TEARDOWN ]", test->teardownFunc, suite->data, test->data);
+              swTestAction(suite, test, "\t[ TEARDOWN ]", test->teardownFunc);
             printfColor(SW_COLOR_ANSI_BLUE, "\t[ END      ] Test: '%s'\n", test->testName);
           }
           else
@@ -216,7 +261,8 @@ int swTestMain(int argc, char *argv[])
           }
         }
         if (suite->teardownFunc)
-          swTestSuiteAction(suite->suiteName, "[ TEARDOWN ]", suite->teardownFunc, suite->data);
+          // swTestSuiteAction(suite->suiteName, "[ TEARDOWN ]", suite->teardownFunc, suite->data);
+          swTestSuiteAction(suite, "[ TEARDOWN ]", suite->teardownFunc);
         suiteRuntime = getCurrentTime() - suiteRuntime;
         printfColor(SW_COLOR_ANSI_BLUE, "[ END      ] Suite: '%s'\n", suite->suiteName);
       }
@@ -248,7 +294,7 @@ void assert_str(const char *exp, const char *value, const char *conditionExp, co
 
   if ((exp != value) && (!exp || !value || (strcmp(exp, value) != 0)))
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s != %s ('%s' != '%s')\n", conditionExp, conditionValue, exp, value);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s != %s ('%s' != '%s')\n", caller, line, conditionExp, conditionValue, exp, value);
     failedAssertsGlobal++;
   }
 }
@@ -260,14 +306,14 @@ void assert_data(const unsigned char *exp, size_t expSize,
 {
   if (expSize != valueSize)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s != %s (size %zu != %zu)\n", conditionExp, conditionValue, expSize, valueSize);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s != %s (size %zu != %zu)\n", caller, line, conditionExp, conditionValue, expSize, valueSize);
     failedAssertsGlobal++;
   }
   else
   {
     if ((exp != value) && (memcmp(exp, value, expSize) != 0))
     {
-      printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s != %s\n", conditionExp, conditionValue);
+      printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s != %s\n", caller, line, conditionExp, conditionValue);
       failedAssertsGlobal++;
     }
   }
@@ -278,7 +324,7 @@ void assert_equal(long exp, long value, const char *conditionExp, const char *co
 {
   if (exp != value)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s != %s (%ld != %ld)\n", conditionExp, conditionValue, exp, value);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s != %s (%ld != %ld)\n", caller, line, conditionExp, conditionValue, exp, value);
     failedAssertsGlobal++;
   }
 }
@@ -287,7 +333,7 @@ void assert_not_equal(long exp, long value, const char *conditionExp, const char
 {
   if (exp != value)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s == %s (%ld == %ld)\n", conditionExp, conditionValue, exp, value);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s == %s (%ld == %ld)\n", caller, line, conditionExp, conditionValue, exp, value);
     failedAssertsGlobal++;
   }
 }
@@ -296,7 +342,7 @@ void assert_null(void *value, const char *condition, const char* caller, int lin
 {
   if (value != NULL)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s == %p\n", caller, line, condition, value);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s == %p\n", caller, line, condition, value);
     failedAssertsGlobal++;
   }
 }
@@ -305,7 +351,7 @@ void assert_not_null(void *value, const char *condition, const char* caller, int
 {
   if (value == NULL)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s == NULL\n", caller, line, condition);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s == NULL\n", caller, line, condition);
     failedAssertsGlobal++;
   }
 }
@@ -314,7 +360,7 @@ void assert_true(bool value, const char *condition, const char* caller, int line
 {
   if (!value)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s == false\n", caller, line, condition);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s == false\n", caller, line, condition);
     failedAssertsGlobal++;
   }
 }
@@ -323,13 +369,13 @@ void assert_false(bool value, const char *condition, const char* caller, int lin
 {
   if (value)
   {
-    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', %s == true\n", caller, line, condition);
+    printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s == true\n", caller, line, condition);
     failedAssertsGlobal++;
   }
 }
 
 void assert_fail(const char* caller, int line)
 {
-  printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ]: Called from '%s:%d', failed\n", caller, line);
+  printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', failed\n", caller, line);
   failedAssertsGlobal++;
 }

@@ -1,6 +1,8 @@
 #include "unittest.h"
 
-// TODO: setup ninja, file rename, unittest library, git
+// TODO: start on hash_map and hash_set
+
+int swTestMain(int argc, char *argv[]);
 
 int main (int argc, char *argv[])
 {

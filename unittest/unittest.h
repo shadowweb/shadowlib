@@ -7,11 +7,19 @@
 
 #define SW_TEST_MAGIC (0xdeadbeef)
 
-typedef void (*swTestSetupFunc)(void *, void *);
-typedef void (*swTestTeardownFunc)(void *, void *);
-typedef bool (*swTestRunFunc)(void *, void *);
+typedef struct swTest swTest;
+typedef struct swTestSuite swTestSuite;
 
-typedef struct swTest
+typedef void (*swTestSetupFunc)(swTestSuite *suite, swTest *test);
+typedef void (*swTestTeardownFunc)(swTestSuite *suite, swTest *test);
+typedef bool (*swTestRunFunc)(swTestSuite *suite, swTest *test);
+
+
+// typedef void (*swTestSetupFunc)(void *, void *);
+// typedef void (*swTestTeardownFunc)(void *, void *);
+// typedef bool (*swTestRunFunc)(void *, void *);
+
+struct swTest
 {
     const char *testName;
     swTestSetupFunc setupFunc;
@@ -20,12 +28,26 @@ typedef struct swTest
     void *data;
 
     unsigned skip : 1;
-} swTest;
+};
 
-typedef void (*swTestSuiteSetupFunc)(void *);
-typedef void (*swTestSuiteTeardownFunc)(void *);
+static inline void swTestDataSet(swTest *test, void *data)
+{
+  if(test)
+    test->data = data;
+}
 
-typedef struct swTestSuite
+static inline void *swTestDataGet(swTest *test)
+{
+  return (test)? test->data : NULL;
+}
+
+typedef void (*swTestSuiteSetupFunc)(swTestSuite *suite);
+typedef void (*swTestSuiteTeardownFunc)(swTestSuite *suite);
+
+// typedef void (*swTestSuiteSetupFunc)(void *);
+// typedef void (*swTestSuiteTeardownFunc)(void *);
+
+struct swTestSuite
 {
     const char *suiteName;
     swTestSuiteSetupFunc setupFunc;
@@ -37,11 +59,23 @@ typedef struct swTestSuite
     unsigned skip : 1;
     uint64_t unused1;
     uint64_t unused2;
-} swTestSuite;
+};
 
-#define swTestSkip  skip
+static inline void swTestSuiteDataSet(swTestSuite *suite, void *data)
+{
+  if(suite)
+    suite->data = data;
+}
+
+static inline void *swTestSuteDataGet(swTestSuite *suite)
+{
+  return (suite)? suite->data : NULL;
+}
+
+#define swTestSkip  true
 #define swTestRun   false
 
+/*
 #define swTestSuiteDataDeclare(suiteName) \
     typedef struct suiteName##Data suiteName##Data; \
     struct suiteName##Data
@@ -64,7 +98,20 @@ typedef struct swTestSuite
       .magic = SW_TEST_MAGIC, \
       .skip = (s) \
     }
+*/
+#define swTestSuiteStructDeclare(suiteNameIn, setup, teardown, s, ...) \
+    static swTestSuite suiteNameIn __attribute__ ((unused, section(".unittest"))) = \
+    { \
+      .suiteName = #suiteNameIn, \
+      .setupFunc = (swTestSuiteSetupFunc) setup, \
+      .teardownFunc = (swTestSuiteTeardownFunc) teardown, \
+      .data = NULL, \
+      .tests = (swTest *[]){ __VA_ARGS__, NULL}, \
+      .magic = SW_TEST_MAGIC, \
+      .skip = (s) \
+    }
 
+/*
 #define swTestDataDeclare(testName) \
     typedef struct testName##Data testName##Data; \
     struct testName##Data
@@ -89,8 +136,23 @@ typedef struct swTestSuite
       .data = &testNameIn##DataStorage, \
       .skip = (s) \
     }
+*/
 
-int swTestMain(int argc, char *argv[]);
+#define swTestDeclare(testNameIn, setup, teardown, s) \
+    bool testNameIn##Run(struct swTestSuite *suite, struct swTest *test); \
+    swTest testNameIn = \
+    { \
+      .testName = #testNameIn, \
+      .setupFunc = (swTestSetupFunc) setup, \
+      .teardownFunc = (swTestTeardownFunc) teardown, \
+      .runFunc = (swTestRunFunc) testNameIn##Run, \
+      .data = NULL, \
+      .skip = (s) \
+    }; \
+    bool testNameIn##Run(struct swTestSuite *suite, struct swTest *test)
+
+
+// int swTestMain(int argc, char *argv[]);
 
 void assert_str(const char *exp, const char *value, const char *conditionExp, const char *conditionValue, const char* caller, int line);
 #define ASSERT_STR(e, v)        assert_str(e, v, #e, #v, __FILE__, __LINE__)
