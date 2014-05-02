@@ -2,8 +2,6 @@
 
 #include "unittest.h"
 
-// _Bool TestAssertStrRun(struct swTestSuite *suite, struct swTest *test);
-
 swTestDeclare(TestAssertStr, NULL, NULL, swTestRun)
 {
   ASSERT_STR("foo", "foo");
@@ -57,7 +55,6 @@ swTestDeclare(TestAssertFail, NULL, NULL, swTestRun)
   return true;
 }
 
-/* Test that NULL-strings won't result in segv */
 swTestDeclare(TestNullNull, NULL, NULL, swTestRun)
 {
   ASSERT_STR(NULL, NULL);

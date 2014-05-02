@@ -16,7 +16,6 @@ rule link
 
 
 # unittest library
-
 build $builddir/unittest/unittest-main.o: cc unittest/unittest-main.c
 build $builddir/unittest/unittest.o:      cc unittest/unittest.c
 build $builddir/unittest/unittest.a:      ar $builddir/unittest/unittest-main.o $builddir/unittest/unittest.o
@@ -24,4 +23,8 @@ build $builddir/unittest/unittest.a:      ar $builddir/unittest/unittest-main.o 
 # unittest test
 build $builddir/unittest/unittest-test.o: cc unittest/unittest-test.c
 build $builddir/unittest/unittest-test:   link $builddir/unittest/unittest-test.o $builddir/unittest/unittest.a
+
+# core library
+build $builddir/core/memory.o:            cc core/memory.c
+build $builddir/core/core.a:              ar $builddir/core/memory.o
 

@@ -1,5 +1,5 @@
-#ifndef SW_UNITTEST_TEST_H
-#define SW_UNITTEST_TEST_H
+#ifndef SW_UNITTEST_UNITTEST_H
+#define SW_UNITTEST_UNITTEST_H
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -127,4 +127,4 @@ void assert_false(bool value, const char *condition, const char* caller, int lin
 void assert_fail(const char* caller, int line);
 #define ASSERT_FAIL()           assert_fail(__FILE__, __LINE__)
 
-#endif
+#endif // SW_UNITTEST_UNITTEST_H
