@@ -28,3 +28,10 @@ build $builddir/unittest/unittest-test:   link $builddir/unittest/unittest-test.
 build $builddir/core/memory.o:            cc core/memory.c
 build $builddir/core/core.a:              ar $builddir/core/memory.o
 
+# collections library
+build $builddir/collections/hash-common.o:          cc collections/hash-common.c
+build $builddir/collections/hash-functions.o:       cc collections/hash-functions.c
+build $builddir/collections/hash-set-linear.o:      cc collections/hash-set-linear.c
+build $builddir/collections/murmur-hash3.o:         cc collections/murmur-hash3.c
+build $builddir/collections/collections.a:          ar $builddir/collections/hash-common.o $builddir/collections/hash-functions.o $builddir/collections/hash-set-linear.o $builddir/collections/murmur-hash3.o
+
