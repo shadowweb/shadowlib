@@ -96,35 +96,34 @@ static inline void *swTestSuteDataGet(swTestSuite *suite)
 void swTestLogLine(char *fmt, ...);
 #define swTestLog(fmt, ...) swTestLogLine("'%s():%d': " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
-void assert_str(const char *exp, const char *value, const char *conditionExp, const char *conditionValue, const char* caller, int line);
+void assert_str(const char *exp, const char *value, const char *conditionExp, const char *conditionValue, const char *caller, int line);
 #define ASSERT_STR(e, v)        assert_str(e, v, #e, #v, __FILE__, __LINE__)
 
-void assert_data(const unsigned char *exp, size_t expSize,
-                 const unsigned char *value, size_t valueSize,
+void assert_data(const char *exp, size_t expSize,
+                 const char *value, size_t valueSize,
                  const char *conditionExp, const char *conditionValue,
-                 const char* caller, int line);
-#define ASSERT_DATA(e, es, v, vs) \
-                                assert_data(e, es, v, vs, #e, #v,__FILE__, __LINE__)
+                 const char *caller, int line);
+#define ASSERT_DATA(e, es, v, vs) assert_data(e, es, v, vs, #e, #v,__FILE__, __LINE__)
 
-void assert_equal(long exp, long value, const char *conditionExp, const char *conditionValue, const char* caller, int line);
+void assert_equal(long exp, long value, const char *conditionExp, const char *conditionValue, const char *caller, int line);
 #define ASSERT_EQUAL(e, v)      assert_equal(e, v, #e, #v, __FILE__, __LINE__)
 
-void assert_not_equal(long exp, long value, const char *conditionExp, const char *conditionValue, const char* caller, int line);
+void assert_not_equal(long exp, long value, const char *conditionExp, const char *conditionValue, const char *caller, int line);
 #define ASSERT_NOT_EQUAL(e, v)  assert_not_equal(e, v, #e, #v, __FILE__, __LINE__)
 
-void assert_null(void *value, const char *condition, const char* caller, int line);
+void assert_null(void *value, const char *condition, const char *caller, int line);
 #define ASSERT_NULL(v)          assert_null((void*)v, #v, __FILE__, __LINE__)
 
-void assert_not_null(void *value, const char *condition, const char* caller, int line);
+void assert_not_null(void *value, const char *condition, const char *caller, int line);
 #define ASSERT_NOT_NULL(v)      assert_not_null((void*)v, #v,__FILE__, __LINE__)
 
-void assert_true(bool value, const char *condition, const char* caller, int line);
+void assert_true(bool value, const char *condition, const char *caller, int line);
 #define ASSERT_TRUE(v)          assert_true(v, #v, __FILE__, __LINE__)
 
-void assert_false(bool value, const char *condition, const char* caller, int line);
+void assert_false(bool value, const char *condition, const char *caller, int line);
 #define ASSERT_FALSE(v)         assert_false(v, #v, __FILE__, __LINE__)
 
-void assert_fail(const char* caller, int line);
+void assert_fail(const char *caller, int line);
 #define ASSERT_FAIL()           assert_fail(__FILE__, __LINE__)
 
 #endif // SW_UNITTEST_UNITTEST_H

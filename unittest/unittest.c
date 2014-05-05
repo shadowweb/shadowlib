@@ -269,8 +269,8 @@ void assert_str(const char *exp, const char *value, const char *conditionExp, co
   }
 }
 
-void assert_data(const unsigned char *exp, size_t expSize,
-                 const unsigned char *value, size_t valueSize,
+void assert_data(const char *exp, size_t expSize,
+                 const char *value, size_t valueSize,
                  const char *conditionExp, const char *conditionValue,
                  const char* caller, int line)
 {
@@ -301,7 +301,7 @@ void assert_equal(long exp, long value, const char *conditionExp, const char *co
 
 void assert_not_equal(long exp, long value, const char *conditionExp, const char *conditionValue, const char* caller, int line)
 {
-  if (exp != value)
+  if (exp == value)
   {
     printfColor(SW_COLOR_ANSI_RED, "\t[   ASSERT ] Called from '%s:%d', %s == %s (%ld == %ld)\n", caller, line, conditionExp, conditionValue, exp, value);
     failedAssertsGlobal++;

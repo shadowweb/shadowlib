@@ -1,7 +1,7 @@
 builddir = build
 cc = gcc
 ar = ar
-cflags = -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -I.
+cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -I.
 
 rule cc
     command = $cc -MMD -MT $out -MF $out.d $cflags -c $in -o $out
@@ -34,4 +34,18 @@ build $builddir/collections/hash-functions.o:       cc collections/hash-function
 build $builddir/collections/hash-set-linear.o:      cc collections/hash-set-linear.c
 build $builddir/collections/murmur-hash3.o:         cc collections/murmur-hash3.c
 build $builddir/collections/collections.a:          ar $builddir/collections/hash-common.o $builddir/collections/hash-functions.o $builddir/collections/hash-set-linear.o $builddir/collections/murmur-hash3.o
+
+# collections test
+build $builddir/collections/hash-set-linear-test.o: cc collections/hash-set-linear-test.c
+build $builddir/collections/hash-set-linear-test:   link $builddir/collections/hash-set-linear-test.o $builddir/collections/collections.a $builddir/storage/storage.a $builddir/core/core.a $builddir/unittest/unittest.a
+
+
+# storage library
+build $builddir/storage/static-string.o:            cc storage/static-string.c
+build $builddir/storage/storage.a:                  ar $builddir/storage/static-string.o
+
+#storage test
+build $builddir/storage/static-string-test.o:       cc storage/static-string-test.c
+build $builddir/storage/static-string-test:         link $builddir/storage/static-string-test.o $builddir/storage/storage.a $builddir/collections/collections.a $builddir/unittest/unittest.a 
+
 

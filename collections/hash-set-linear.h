@@ -6,8 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// TODO: implement unittest
-
 typedef struct swHashSetLinear
 {
   uint32_t *hashes;

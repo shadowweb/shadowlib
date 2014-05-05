@@ -57,7 +57,7 @@ static inline bool swHashSetLinearInsertPositionFind(swHashSetLinear* set, void 
   size_t step = 0;
   while (swHashIsReal(nodeHash))
   {
-    if ((keyHash == nodeHash) && ((key == set->keys[nodeIndex]) || (set->keyEqual? (set->keyEqual(key, set->keys[nodeIndex]) == 0) : false)))
+    if ((keyHash == nodeHash) && ((key == set->keys[nodeIndex]) || (set->keyEqual? set->keyEqual(key, set->keys[nodeIndex]) : false)))
     {
       if (!replace)
         rtn = false;
@@ -245,7 +245,7 @@ static inline bool swHashSetLinearRemovePositionFind(swHashSetLinear* set, void 
   while (!swHashIsUnused(nodeHash))
   {
     if (swHashIsReal(nodeHash) && (keyHash == nodeHash) &&
-        ((key == set->keys[nodeIndex]) || (set->keyEqual? (set->keyEqual(key, set->keys[nodeIndex]) == 0) : false)))
+        ((key == set->keys[nodeIndex]) || (set->keyEqual? set->keyEqual(key, set->keys[nodeIndex]) : false)))
     {
       rtn = true;
       break;
