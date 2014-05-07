@@ -251,7 +251,8 @@ swTestDeclare(DictionaryTestRemove, NULL, NULL, swTestRun)
   }
   ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
   ASSERT_EQUAL(swHashSetLinearCount(dictionaryTestData->set), 0);
-  swTestLogLine("Removed %u slices\n", sliceIndex);
+  swTestLogLine("Removed %u slices, size = %zu, used = %zu, count = %zu\n",
+    sliceIndex, dictionaryTestData->set->size, dictionaryTestData->set->used, dictionaryTestData->set->count);
   return true;
 }
 
