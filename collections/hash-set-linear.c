@@ -92,10 +92,10 @@ static bool swHashSetLinearResize(swHashSetLinear *set)
   uint32_t newMod = 0, newMask = 0;
   swHashShiftSet(shift, &newSize, &newMod, &newMask);
 
-  void **newKeys = swMemoryCalloc(set->size, sizeof(void *));
+  void **newKeys = swMemoryCalloc(newSize, sizeof(void *));
   if (newKeys)
   {
-    uint32_t *newHashes = swMemoryCalloc(set->size, sizeof(uint32_t));
+    uint32_t *newHashes = swMemoryCalloc(newSize, sizeof(uint32_t));
     if (newHashes)
     {
       rtn = true;

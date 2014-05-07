@@ -37,15 +37,17 @@ build $builddir/collections/collections.a:          ar $builddir/collections/has
 
 # collections test
 build $builddir/collections/hash-set-linear-test.o: cc collections/hash-set-linear-test.c
-build $builddir/collections/hash-set-linear-test:   link $builddir/collections/hash-set-linear-test.o $builddir/collections/collections.a $builddir/storage/storage.a $builddir/core/core.a $builddir/unittest/unittest.a
-
+build $builddir/collections/hash-set-linear-test:   link $builddir/collections/hash-set-linear-test.o $builddir/collections/collections.a $builddir/storage/storage.a $builddir/core/core.a $builddir/unittest/unittest.a $builddir/utils/utils.a
 
 # storage library
 build $builddir/storage/static-string.o:            cc storage/static-string.c
 build $builddir/storage/storage.a:                  ar $builddir/storage/static-string.o
 
-#storage test
+# storage test
 build $builddir/storage/static-string-test.o:       cc storage/static-string-test.c
 build $builddir/storage/static-string-test:         link $builddir/storage/static-string-test.o $builddir/storage/storage.a $builddir/collections/collections.a $builddir/unittest/unittest.a 
 
+# utils library
+build $builddir/utils/file.o:                       cc utils/file.c
+build $builddir/utils/utils.a:                      ar $builddir/utils/file.o
 

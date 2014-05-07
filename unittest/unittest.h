@@ -60,7 +60,7 @@ static inline void swTestSuiteDataSet(swTestSuite *suite, void *data)
     suite->data = data;
 }
 
-static inline void *swTestSuteDataGet(swTestSuite *suite)
+static inline void *swTestSuiteDataGet(swTestSuite *suite)
 {
   return (suite)? suite->data : NULL;
 }

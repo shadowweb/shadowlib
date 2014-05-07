@@ -29,10 +29,12 @@
 #define SW_TIME_FORMAT  "(%05.3lfms %05.3lfus %"PRIu64"ns)"
 #define SW_TIME_FORMAT_PRINT(t) (double)(t)/1000000.0, (double)(t)/1000.0, (t)
 
-static const char* suiteNameGlobal = NULL;
-static const char* testNameGlobal = NULL;
-static bool colorOutputGlobal = false;
+static const char *suiteNameGlobal = NULL;
+static const char *testNameGlobal = NULL;
+static const char *testOffset = "    ";
 static uint32_t failedAssertsGlobal = 0;
+static bool colorOutputGlobal = false;
+static bool insideTest = false;
 
 static swTestSuite testSuiteGlobal __attribute__ ((section(".unittest"))) = { 0 };
 
@@ -81,7 +83,7 @@ static void printfColor(const char *color, char *fmt, ...)
 
 void swTestLogLine(char *fmt, ...)
 {
-  printf("%s", ((colorOutputGlobal)? SW_COLOR_ANSI_BMAGENTA : ""));
+  printf("%s%s", ((insideTest)? testOffset: ""), ((colorOutputGlobal)? SW_COLOR_ANSI_BMAGENTA : ""));
   va_list argp;
   va_start(argp, fmt);
   vprintf(fmt, argp);
@@ -95,7 +97,7 @@ static void swTestSuiteAction(swTestSuite *suite, const char *actionName, void (
   printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s\n", actionName, suite->suiteName);
   uint64_t actionRuntime = getCurrentTime();
   action(suite);
-    actionRuntime = getCurrentTime() - actionRuntime;
+  actionRuntime = getCurrentTime() - actionRuntime;
   printfColor (SW_COLOR_ANSI_GREEN, "%s Suite %s "SW_TIME_FORMAT"\n",
     actionName, suite->suiteName, SW_TIME_FORMAT_PRINT(actionRuntime));
   return;
@@ -103,29 +105,29 @@ static void swTestSuiteAction(swTestSuite *suite, const char *actionName, void (
 
 static void swTestAction(swTestSuite *suite, swTest *test, const char *actionName, void (*action)(swTestSuite *, swTest *))
 {
-  printfColor (SW_COLOR_ANSI_GREEN, "%s Test %s.%s\n", actionName, suite->suiteName, test->testName);
+  printfColor (SW_COLOR_ANSI_GREEN, "%s%s Test %s.%s\n", testOffset, actionName, suite->suiteName, test->testName);
   uint64_t actionRuntime = getCurrentTime();
   action(suite, test);
-    actionRuntime = getCurrentTime() - actionRuntime;
-  printfColor (SW_COLOR_ANSI_GREEN, "%s Test %s.%s "SW_TIME_FORMAT"\n",
-    actionName, suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(actionRuntime));
+  actionRuntime = getCurrentTime() - actionRuntime;
+  printfColor (SW_COLOR_ANSI_GREEN, "%s%s Test %s.%s "SW_TIME_FORMAT"\n",
+    testOffset, actionName, suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(actionRuntime));
   return;
 }
 
 static bool swTestRunExecute(swTestSuite *suite, swTest *test)
 {
   bool ret = false;
-  printfColor (SW_COLOR_ANSI_GREEN, "\t[ RUN      ] Test %s.%s\n", suite->suiteName, test->testName);
+  printfColor (SW_COLOR_ANSI_GREEN, "%s[ RUN      ] Test %s.%s\n", testOffset, suite->suiteName, test->testName);
   uint64_t testRuntime = getCurrentTime();
   ret = test->runFunc(suite, test);
   testRuntime = getCurrentTime() - testRuntime;
   ret = ret && (failedAssertsGlobal == 0);
   if (ret)
-    printfColor (SW_COLOR_ANSI_GREEN, "\t[       OK ] Test %s.%s "SW_TIME_FORMAT"\n",
-                 suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(testRuntime));
+    printfColor (SW_COLOR_ANSI_GREEN, "%s[       OK ] Test %s.%s "SW_TIME_FORMAT"\n",
+                 testOffset, suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(testRuntime));
   else
-    printfColor (SW_COLOR_ANSI_RED, "\t[   FAILED ] Test %s.%s "SW_TIME_FORMAT"\n",
-                 suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(testRuntime));
+    printfColor (SW_COLOR_ANSI_RED, "%s[   FAILED ] Test %s.%s "SW_TIME_FORMAT"\n",
+                 testOffset, suite->suiteName, test->testName, SW_TIME_FORMAT_PRINT(testRuntime));
   return ret;
 }
 
@@ -200,38 +202,35 @@ int swTestMain(int argc, char *argv[])
         printfColor(SW_COLOR_ANSI_BLUE, "[ START    ] Suite: '%s'\n", suite->suiteName);
         uint64_t suiteRuntime = getCurrentTime();
         if (suite->setupFunc)
-          // swTestSuiteAction(suite->suiteName, "[ SETUP    ]", suite->setupFunc, suite->data);
           swTestSuiteAction(suite, "[ SETUP    ]", suite->setupFunc);
 
+        insideTest = true;
         for (uint32_t i = 0; suite->tests[i] != NULL; i++)
         {
           swTest *test = suite->tests[i];
           if (testFilterFunc(test->testName) && !test->skip)
           {
-            printfColor(SW_COLOR_ANSI_BLUE, "\t[ START    ] Test: '%s'\n", test->testName);
+            printfColor(SW_COLOR_ANSI_BLUE, "%s[ START    ] Test: '%s'\n", testOffset, test->testName);
             if (test->setupFunc)
-              swTestAction(suite, test, "\t[ SETUP    ]", test->setupFunc);
-              // swTestAction(suite->suiteName, test->testName, "\t[ SETUP    ]", test->setupFunc, suite->data, test->data);
-            // bool result = swTestRunExecute(suite->suiteName, test->testName, test->runFunc, suite->data, test->data);
+              swTestAction(suite, test, "[ SETUP    ]", test->setupFunc);
             bool result = swTestRunExecute(suite, test);
             numOK += result;
             numFail += !result;
             numFailedAsserts += failedAssertsGlobal;
             failedAssertsGlobal = 0;
             if (test->teardownFunc)
-              // swTestAction(suite->suiteName, test->testName, "\t[ TEARDOWN ]", test->teardownFunc, suite->data, test->data);
-              swTestAction(suite, test, "\t[ TEARDOWN ]", test->teardownFunc);
-            printfColor(SW_COLOR_ANSI_BLUE, "\t[ END      ] Test: '%s'\n", test->testName);
+              swTestAction(suite, test, "[ TEARDOWN ]", test->teardownFunc);
+            printfColor(SW_COLOR_ANSI_BLUE, "%s[ END      ] Test: '%s'\n", testOffset, test->testName);
           }
           else
           {
             // print test skip
-            printfColor(SW_COLOR_ANSI_GREY, "\t[ SKIPPED  ] Test: '%s'\n", test->testName);
+            printfColor(SW_COLOR_ANSI_GREY, "%s[ SKIPPED  ] Test: '%s'\n", testOffset, test->testName);
             numTestSkip++;
           }
         }
+        insideTest = false;
         if (suite->teardownFunc)
-          // swTestSuiteAction(suite->suiteName, "[ TEARDOWN ]", suite->teardownFunc, suite->data);
           swTestSuiteAction(suite, "[ TEARDOWN ]", suite->teardownFunc);
         suiteRuntime = getCurrentTime() - suiteRuntime;
         printfColor(SW_COLOR_ANSI_BLUE, "[ END      ] Suite: '%s'\n", suite->suiteName);

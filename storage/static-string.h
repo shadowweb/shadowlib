@@ -16,10 +16,10 @@ typedef struct swStaticString
 #define swStaticStringDefine(str)                     {.len = sizeof(str) - 1, .data = str}
 #define swStaticStringDefineFromCstr(str)             {.len = strlen(str), .data = str}
 #define swStaticStringDefineWithLength(str, length)   {.len = length, .data = str}
-#define swStaticStringSetWithLength(str, length)      *(rds_static_string[]){{.len = length, .data = str}}
-#define swStaticStringSetFromCstr(str)                *(rds_static_string[]){{.len = strlen(str), .data = str}}
-#define swStaticStringSet(str)                        *(rds_static_string[]){{.len = sizeof(str), .data = str}}
-#define swStaticStringSetEmpty                        *(rds_static_string[]){{.len = 0, .data = NULL}}
+#define swStaticStringSetWithLength(str, length)      *(swStaticString[]){{.len = length, .data = str}}
+#define swStaticStringSetFromCstr(str)                *(swStaticString[]){{.len = strlen(str), .data = str}}
+#define swStaticStringSet(str)                        *(swStaticStrig[]){{.len = sizeof(str), .data = str}}
+#define swStaticStringSetEmpty                        *(swStaticSting[]){{.len = 0, .data = NULL}}
 
 uint32_t swStaticStringHash(const swStaticString *string);
 int swStaticStringCompare(const swStaticString *s1, const swStaticString *s2);
