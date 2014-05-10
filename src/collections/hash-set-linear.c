@@ -4,6 +4,23 @@
 
 #include <core/memory.h>
 
+static inline void swHashSetLinearClearInternal(swHashSetLinear *set)
+{
+  set->count = 0;
+  set->used = 0;
+
+  if (set->keyDelete)
+  {
+    for (uint32_t i = 0; i < set->size; i++)
+    {
+      if (swHashIsReal(set->hashes[i]))
+        set->keyDelete(set->keys[i]);
+    }
+  }
+  memset (set->hashes, 0, set->size * sizeof (uint32_t));
+  memset (set->keys, 0, set->size * sizeof (void *));
+}
+
 swHashSetLinear *swHashSetLinearNew(swHashKeyHashFunction keyHash, swHashKeyEqualFunction keyEqual, swHashKeyDeleteFunction keyDelete)
 {
   swHashSetLinear *rtn = NULL;
@@ -31,7 +48,7 @@ void swHashSetLinearDelete (swHashSetLinear *set)
 {
   if (set)
   {
-    swHashSetLinearClear(set);
+    swHashSetLinearClearInternal(set);
     if (set->keys)
       swMemoryFree(set->keys);
     if (set->hashes)
@@ -204,8 +221,8 @@ static bool swHashSetLinearUpsertAtPosition(swHashSetLinear *set, void *key, uin
       if (set->keyDelete)
         set->keyDelete(set->keys[nodeIndex]);
       set->keys[nodeIndex] = key;
-      rtn = true;
     }
+    rtn = true;
   }
   else
   {
@@ -296,19 +313,8 @@ void swHashSetLinearClear(swHashSetLinear *set)
 {
   if (set)
   {
-    set->count = 0;
-    set->used = 0;
-
-    if (set->keyDelete)
-    {
-      for (uint32_t i = 0; i < set->size; i++)
-      {
-        if (swHashIsReal(set->hashes[i]))
-          set->keyDelete(set->keys[i]);
-      }
-    }
-    memset (set->hashes, 0, set->size * sizeof (uint32_t));
-    memset (set->keys, 0, set->size * sizeof (void *));
+    swHashSetLinearClearInternal(set);
+    swHashSetLinearResize(set);
   }
 }
 

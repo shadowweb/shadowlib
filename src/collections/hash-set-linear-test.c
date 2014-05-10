@@ -119,7 +119,7 @@ void swDictionaryTestDataDelete(swDictionaryTestData *data)
   }
 }
 
-swDictionaryTestData *swDictionaryTestDataNew(const char *fileName)
+swDictionaryTestData *swDictionaryTestDataNew(const char *fileName, bool useKeyDelete)
 {
   swDictionaryTestData *rtn = NULL;
   if (fileName)
@@ -127,7 +127,7 @@ swDictionaryTestData *swDictionaryTestDataNew(const char *fileName)
     swDictionaryTestData *dictionaryTestData = swMemoryCalloc(1, sizeof(swDictionaryTestData));
     if (dictionaryTestData)
     {
-      if ((dictionaryTestData->set = swHashSetLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL)))
+      if ((dictionaryTestData->set = swHashSetLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, (useKeyDelete? swMemoryFree: NULL))))
       {
         if ((dictionaryTestData->fileData.len = swFileRead(fileName, &(dictionaryTestData->fileData.data))))
         {
@@ -145,7 +145,7 @@ swDictionaryTestData *swDictionaryTestDataNew(const char *fileName)
 void dictionaryTestSuiteSetup(swTestSuite *suite)
 {
   swTestLogLine("Creating dictionary test data ...\n");
-  swDictionaryTestData *dictionaryTestData = swDictionaryTestDataNew("/usr/share/dict/british-english");
+  swDictionaryTestData *dictionaryTestData = swDictionaryTestDataNew("/usr/share/dict/ngerman", false);
   ASSERT_NOT_NULL(dictionaryTestData);
   swTestSuiteDataSet(suite, dictionaryTestData);
 }
@@ -194,6 +194,7 @@ swTestDeclare(DictionaryTestClear, NULL, NULL, swTestRun)
   swHashSetLinearClear(dictionaryTestData->set);
   ASSERT_EQUAL(swHashSetLinearCount(dictionaryTestData->set), 0);
   ASSERT_EQUAL(dictionaryTestData->set->used, 0);
+  ASSERT_EQUAL(dictionaryTestData->set->size, 8);
   size_t sliceIndex = 0;
   for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
   {
@@ -259,3 +260,123 @@ swTestDeclare(DictionaryTestRemove, NULL, NULL, swTestRun)
 swTestSuiteStructDeclare(HashSetLinearDictionaryTest, dictionaryTestSuiteSetup, dictionaryTestSuiteTeardown, swTestRun,
                          &DictionaryTestInsert, &DictionaryTestContains, &DictionaryTestClear, &DictionaryTestUpsert,
                          &DictionaryTestExtract, &DictionaryTestInsert, &DictionaryTestRemove);
+
+void dictionaryRemoveTestSuiteSetup(swTestSuite *suite)
+{
+  swTestLogLine("Creating dictionary test data ...\n");
+  swDictionaryTestData *dictionaryTestData = swDictionaryTestDataNew("/usr/share/dict/ngerman", true);
+  ASSERT_NOT_NULL(dictionaryTestData);
+  swTestSuiteDataSet(suite, dictionaryTestData);
+}
+
+void dictionaryRemoveTestSuiteTeardown(swTestSuite *suite)
+{
+  swTestLogLine("Deleting dictionary test data ...\n");
+  swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
+  ASSERT_NOT_NULL(dictionaryTestData);
+  swDictionaryTestDataDelete(dictionaryTestData);
+}
+
+swTestDeclare(DictionaryRemoveTestInsertRemove, NULL, NULL, swTestRun)
+{
+  swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
+  size_t sliceIndex = 0;
+  for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
+  {
+    swStaticString *sliceCopy = swMemoryDuplicate(&(dictionaryTestData->fileSlices[sliceIndex]), sizeof(swStaticString));
+    if (sliceCopy)
+    {
+      if (!swHashSetLinearInsert(dictionaryTestData->set, sliceCopy))
+        break;
+    }
+  }
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(sliceIndex, swHashSetLinearCount(dictionaryTestData->set));
+  swTestLogLine("Inserted %u slices\n", sliceIndex);
+
+  for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
+  {
+    swStaticString key = dictionaryTestData->fileSlices[sliceIndex];
+    if (!swHashSetLinearRemove(dictionaryTestData->set, &key))
+      break;
+  }
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(swHashSetLinearCount(dictionaryTestData->set), 0);
+  swTestLogLine("Removed %u slices, size = %zu, used = %zu, count = %zu\n",
+    sliceIndex, dictionaryTestData->set->size, dictionaryTestData->set->used, dictionaryTestData->set->count);
+  return true;
+}
+
+swTestDeclare(DictionaryRemoveTestInsertClear, NULL, NULL, swTestRun)
+{
+  swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
+  size_t sliceIndex = 0;
+  for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
+  {
+    swStaticString *sliceCopy = swMemoryDuplicate(&(dictionaryTestData->fileSlices[sliceIndex]), sizeof(swStaticString));
+    if (sliceCopy)
+    {
+      if (!swHashSetLinearInsert(dictionaryTestData->set, sliceCopy))
+        break;
+    }
+  }
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(sliceIndex, swHashSetLinearCount(dictionaryTestData->set));
+  swTestLogLine("Inserted %u slices\n", sliceIndex);
+
+  for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
+  {
+    swStaticString *sliceCopy = swMemoryDuplicate(&(dictionaryTestData->fileSlices[sliceIndex]), sizeof(swStaticString));
+    if (sliceCopy)
+    {
+      if (!swHashSetLinearUpsert(dictionaryTestData->set, sliceCopy))
+        break;
+    }
+  }
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(sliceIndex, swHashSetLinearCount(dictionaryTestData->set));
+  swTestLogLine("Upserted %u slices\n", sliceIndex);
+
+  swHashSetLinearClear(dictionaryTestData->set);
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(swHashSetLinearCount(dictionaryTestData->set), 0);
+  swTestLogLine("Removed %u slices, size = %zu, used = %zu, count = %zu\n",
+    sliceIndex, dictionaryTestData->set->size, dictionaryTestData->set->used, dictionaryTestData->set->count);
+  return true;
+}
+
+swTestDeclare(DictionaryRemoveTestInsertExtract, NULL, NULL, swTestRun)
+{
+  swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
+  size_t sliceIndex = 0;
+  for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
+  {
+    swStaticString *keyCopy = swMemoryDuplicate(&(dictionaryTestData->fileSlices[sliceIndex]), sizeof(swStaticString));
+    if (keyCopy)
+    {
+      if (!swHashSetLinearInsert(dictionaryTestData->set, keyCopy))
+        break;
+    }
+  }
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(sliceIndex, swHashSetLinearCount(dictionaryTestData->set));
+  swTestLogLine("Inserted %u slices\n", sliceIndex);
+
+  for (sliceIndex = 0; sliceIndex < dictionaryTestData->slicesCount; sliceIndex++)
+  {
+    swStaticString key = dictionaryTestData->fileSlices[sliceIndex];
+    swStaticString *keyCopy = swHashSetLinearExtract(dictionaryTestData->set, &key);
+    if (keyCopy == &(dictionaryTestData->fileSlices[sliceIndex]))
+      break;
+    swMemoryFree(keyCopy);
+  }
+  ASSERT_EQUAL(sliceIndex, dictionaryTestData->slicesCount);
+  ASSERT_EQUAL(swHashSetLinearCount(dictionaryTestData->set), 0);
+  swTestLogLine("Extracted %u slices, size = %zu, used = %zu, count = %zu\n",
+    sliceIndex, dictionaryTestData->set->size, dictionaryTestData->set->used, dictionaryTestData->set->count);
+  return true;
+}
+
+swTestSuiteStructDeclare(HashSetLinearDictionaryRemoveTest, dictionaryRemoveTestSuiteSetup, dictionaryRemoveTestSuiteTeardown, swTestRun,
+                         &DictionaryRemoveTestInsertRemove, &DictionaryRemoveTestInsertClear, &DictionaryRemoveTestInsertExtract);
+
