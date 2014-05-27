@@ -22,6 +22,7 @@ bool swStaticArrayResize(swStaticArray *array, uint32_t index);
 
 #define swStaticArrayCount(a)             (a).count
 #define swStaticArraySize(a)              (a).size
+#define swStaticArrayData(a)              (a).storage
 
 #define swStaticArrayEnsureCapacity(a, i) ( ((a).size > (i)) ? true : swStaticArrayResize(&(a), i) )
 #define swStaticArrayGet(a, i, d)         ( ((a).size > (i)) ? ((d) = ((typeof(d) *)((a).storage))[i]), true : false )

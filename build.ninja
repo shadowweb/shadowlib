@@ -59,3 +59,13 @@ build $builddir/src/storage/static-string-test:         link $builddir/src/stora
 build $builddir/src/utils/file.o:                       cc src/utils/file.c
 build $builddir/src/utils/utils.a:                      ar $builddir/src/utils/file.o
 
+# io library
+build $builddir/src/io/edge-loop.o:                     cc src/io/edge-loop.c
+build $builddir/src/io/edge-timer.o:                    cc src/io/edge-timer.c
+build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o
+
+#io test
+build $builddir/src/io/edge-loop-test.o:                cc src/io/edge-loop-test.c
+build $builddir/src/io/edge-loop-test:                  link $builddir/src/io/edge-loop-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+
+
