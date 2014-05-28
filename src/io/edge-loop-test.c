@@ -49,7 +49,7 @@ swTestDeclare(EdgeTimerTest, NULL, NULL, swTestRun)
   ASSERT_NOT_NULL(loop);
   bool rtn = false;
   swEdgeTimer timer = {.timerCB = NULL};
-  if (swEdgeTimerInit(&timer, timerCallback))
+  if (swEdgeTimerInit(&timer, timerCallback, false))
   {
     if (swEdgeTimerStart(&timer, loop, 200, 200, false))
     {
@@ -120,7 +120,7 @@ void sendSignalCallback(swEdgeTimer *timer, uint64_t expiredCount)
 bool sendSignalTimerStart(swEdgeTimer *timer, swEdgeLoop *loop)
 {
   bool rtn = false;
-  if (timer && loop && swEdgeTimerInit(timer, sendSignalCallback))
+  if (timer && loop && swEdgeTimerInit(timer, sendSignalCallback, true))
   {
     if (swEdgeTimerStart(timer, loop, 200, 200, false))
       rtn = true;

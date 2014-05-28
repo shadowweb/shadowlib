@@ -19,7 +19,7 @@ typedef struct swEdgeTimer
   // unsigned int active : 1;
 } swEdgeTimer;
 
-bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb);
+bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb, bool realTime);
 // offset and interval is expressed in msec
 bool swEdgeTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, uint64_t offset, uint64_t interval, bool absolute);
 bool swEdgeTimerProcess(swEdgeTimer *timer, uint32_t events);

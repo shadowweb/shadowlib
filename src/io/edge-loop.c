@@ -12,8 +12,9 @@ typedef bool (*swEdgeWatcherProcess)(swEdgeWatcher *watcher, uint32_t events);
 
 static swEdgeWatcherProcess watcherProcess[swWatcherTypeMax] =
 {
-  [swWatcherTypeTimer] = (swEdgeWatcherProcess)swEdgeTimerProcess,
-  [swWatcherTypeSignal] = (swEdgeWatcherProcess)swEdgeSignalProcess,
+  [swWatcherTypeTimer]          = (swEdgeWatcherProcess)swEdgeTimerProcess,
+  [swWatcherTypePeriodicTimer]  = (swEdgeWatcherProcess)swEdgeTimerProcess,
+  [swWatcherTypeSignal]         = (swEdgeWatcherProcess)swEdgeSignalProcess,
 };
 
 swEdgeLoop *swEdgeLoopNew()

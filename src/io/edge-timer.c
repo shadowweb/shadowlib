@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb)
+bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb, bool realTime)
 {
   bool rtn = false;
   if (timer && cb)
@@ -15,9 +15,9 @@ bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb)
     swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
     watcher->event.events = (EPOLLIN | EPOLLRDHUP | EPOLLET);
     watcher->event.data.ptr = timer;
-    watcher->type = swWatcherTypeTimer;
+    watcher->type = (realTime)? swWatcherTypePeriodicTimer : swWatcherTypeTimer;
     timer->timerCB = cb;
-    if ((watcher->fd = timerfd_create(CLOCK_MONOTONIC, (TFD_NONBLOCK | TFD_CLOEXEC))) >= 0)
+    if ((watcher->fd = timerfd_create(((realTime)? CLOCK_REALTIME : CLOCK_MONOTONIC), (TFD_NONBLOCK | TFD_CLOEXEC))) >= 0)
       rtn = true;
   }
   return rtn;
