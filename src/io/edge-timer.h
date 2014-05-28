@@ -8,13 +8,15 @@ struct swEdgeTimer;
 
 typedef void (*swEdgeTimerCallback)(struct swEdgeTimer *timer, uint64_t expiredCount);
 
+// TODO: add periodic timer
+
 typedef struct swEdgeTimer
 {
   swEdgeWatcher watcher;
 
   swEdgeTimerCallback timerCB;
   struct itimerspec timerSpec;
-  unsigned int active : 1;
+  // unsigned int active : 1;
 } swEdgeTimer;
 
 bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb);
@@ -23,9 +25,5 @@ bool swEdgeTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, uint64_t offset, uin
 bool swEdgeTimerProcess(swEdgeTimer *timer, uint32_t events);
 void swEdgeTimerStop(swEdgeTimer *timer);
 void swEdgeTimerClose(swEdgeTimer *timer);
-
-#define swEdgeTimerDataGet(t)     swEdgeWatcherDataGet((swEdgeWatcher *)(t))
-#define swEdgeTimerDataSet(t, d)  swEdgeWatcherDataSet((swEdgeWatcher *)(t), (void *)(d))
-#define swEdgeTimerLoopGet(t)     swEdgeWatcherLoopGet((swEdgeWatcher *)(t))
 
 #endif // SW_IO_EDGETIMER_H

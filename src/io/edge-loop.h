@@ -40,11 +40,6 @@ typedef struct swEdgeWatcher
   void *data;
   swWatcherType type;
   int fd;
-
-  /*
-  char events[MAX_EVENTS];
-  uint8_t currentEvent;
-  */
 } swEdgeWatcher;
 
 swEdgeLoop *swEdgeLoopNew();
@@ -75,10 +70,8 @@ static inline swEdgeLoop *swEdgeWatcherLoopGet(swEdgeWatcher *watcher)
   return NULL;
 }
 
-/*
-#define swEdgeWatcherDataGet(w)     ((w)? ((swEdgeWatcher *)(w))->data : NULL)
-#define swEdgeWatcherDataSet(w, d)  do { if ((w) != NULL) ((swEdgeWatcher *)(w))->data = (d); } while(0)
-#define swEdgeWatcherLoopGet(w)     ((w)? ((swEdgeWatcher *)(w))->loop : NULL)
-*/
+#define swEdgeWatcherDataGet(t)     swEdgeWatcherDataGet((swEdgeWatcher *)(t))
+#define swEdgeWatcherDataSet(t, d)  swEdgeWatcherDataSet((swEdgeWatcher *)(t), (void *)(d))
+#define swEdgeWatcherLoopGet(t)     swEdgeWatcherLoopGet((swEdgeWatcher *)(t))
 
 #endif // SW_IO_EDGELOOP_H

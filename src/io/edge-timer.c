@@ -1,35 +1,10 @@
 #include "edge-timer.h"
 
+#include <core/time.h>
+
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-
-// TODO: create time functionality in core
-
-#define SW_TIME_1K  1000
-#define SW_TIME_1M  1000000
-#define SW_TIME_1B  1000000000
-
-#define swTimeNSecToSec(n)      (n)/SW_TIME_1B
-#define swTimeUSecToSec(n)      (n)/SW_TIME_1M
-#define swTimeMSecToSec(n)      (n)/SW_TIME_1K
-#define swTimeNSecToMSec(n)     (n)/SW_TIME_1M
-#define swTimeUSecToMSec(n)     (n)/SW_TIME_1K
-#define swTimeNSecToUSec(n)     (n)/SW_TIME_1K
-
-#define swTimeNSecToSecRem(n)   (n)%SW_TIME_1B
-#define swTimeUSecToSecRem(n)   (n)%SW_TIME_1M
-#define swTimeMSecToSecRem(n)   (n)%SW_TIME_1K
-#define swTimeNSecToMSecRem(n)  (n)%SW_TIME_1M
-#define swTimeUSecToMSecRem(n)  (n)%SW_TIME_1K
-#define swTimeNSecToUSecRem(n)  (n)%SW_TIME_1K
-
-#define swTimeSecToNSec(n)      (n)*SW_TIME_1B
-#define swTimeSecToUSec(n)      (n)*SW_TIME_1M
-#define swTimeSecToMSec(n)      (n)*SW_TIME_1K
-#define swTimeMSecToNSec(n)     (n)*SW_TIME_1M
-#define swTimeMSecToUSec(n)     (n)*SW_TIME_1K
-#define swTimeUSecToNSec(n)     (n)*SW_TIME_1K
 
 bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb)
 {
@@ -38,7 +13,6 @@ bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb)
   {
     memset(timer, 0, sizeof(swEdgeTimer));
     swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
-    // watcher->callback = (swEdgeWatcherCallback)cb;
     watcher->event.events = (EPOLLIN | EPOLLRDHUP | EPOLLET);
     watcher->event.data.ptr = timer;
     watcher->type = swWatcherTypeTimer;
@@ -64,8 +38,6 @@ bool swEdgeTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, uint64_t offset, uin
       if (swEdgeLoopWatcherAdd(loop, watcher))
       {
         watcher->loop = loop;
-        // TODO: maybe it is not needed if we can determine the same thing by checking watcher->loop
-        // timer->active = true;
         rtn = true;
       }
       else
@@ -99,7 +71,6 @@ bool swEdgeTimerProcess(swEdgeTimer *timer, uint32_t events)
   }
   return rtn;
 }
-
 
 void swEdgeTimerStop(swEdgeTimer *timer)
 {

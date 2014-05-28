@@ -62,7 +62,8 @@ build $builddir/src/utils/utils.a:                      ar $builddir/src/utils/f
 # io library
 build $builddir/src/io/edge-loop.o:                     cc src/io/edge-loop.c
 build $builddir/src/io/edge-timer.o:                    cc src/io/edge-timer.c
-build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o
+build $builddir/src/io/edge-signal.o:                   cc src/io/edge-signal.c
+build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o
 
 #io test
 build $builddir/src/io/edge-loop-test.o:                cc src/io/edge-loop-test.c

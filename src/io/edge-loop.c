@@ -1,5 +1,6 @@
 #include "edge-loop.h"
 #include "edge-timer.h"
+#include "edge-signal.h"
 
 #include <core/memory.h>
 
@@ -12,6 +13,7 @@ typedef bool (*swEdgeWatcherProcess)(swEdgeWatcher *watcher, uint32_t events);
 static swEdgeWatcherProcess watcherProcess[swWatcherTypeMax] =
 {
   [swWatcherTypeTimer] = (swEdgeWatcherProcess)swEdgeTimerProcess,
+  [swWatcherTypeSignal] = (swEdgeWatcherProcess)swEdgeSignalProcess,
 };
 
 swEdgeLoop *swEdgeLoopNew()
@@ -67,17 +69,20 @@ bool swEdgeLoopWatcherRemove(swEdgeLoop *loop, swEdgeWatcher *watcher)
   return rtn;
 }
 
-// TODO: add function calls for breaking event loop, running event loop once, and adding watchers
-// TODO: continue here, use static arrays
+// TODO: add function calls for running event loop once
+
 void swEdgeLoopRun(swEdgeLoop *loop)
 {
   if (loop)
   {
+    loop->shutdown = false;
     int defaultTimeout = 1000;  // 1 second
-    bool run = !loop->shutdown;
+    bool run = true;
     while (run)
     {
       int eventCount = epoll_wait(loop->fd, (struct epoll_event *)swStaticArrayData(loop->epollEvents), swStaticArraySize(loop->epollEvents), defaultTimeout);
+      // if (eventCount > 0)
+      //   printf("'%s': received %d events\n", __func__, eventCount);
       if (eventCount >= 0)
       {
         // process epollEvents
