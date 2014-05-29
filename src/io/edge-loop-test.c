@@ -1,6 +1,7 @@
 #include "edge-loop.h"
 #include "edge-timer.h"
 #include "edge-signal.h"
+#include "edge-event.h"
 
 #include "unittest/unittest.h"
 
@@ -167,5 +168,85 @@ swTestDeclare(EdgeSignalTest, NULL, NULL, swTestRun)
   return rtn;
 }
 
+static uint64_t eventsReceived = 0;
+
+void eventCallback(swEdgeEvent *eventWatcher, eventfd_t eventCount)
+{
+  if (eventWatcher)
+  {
+    swTestLogLine("Event occured %u time(s) ...\n", eventCount);
+    eventsReceived += eventCount;
+    if (eventsReceived > 5)
+      swEdgeLoopBreak(swEdgeWatcherLoopGet(eventWatcher));
+  }
+  else
+  {
+    ASSERT_FAIL();
+    swEdgeLoopBreak(swEdgeWatcherLoopGet(eventWatcher));
+  }
+}
+
+void sendEventCallback(swEdgeTimer *timer, uint64_t expiredCount)
+{
+  bool success = false;
+  if (timer)
+  {
+    swEdgeEvent *eventWatcher = swEdgeWatcherDataGet(timer);
+    if (eventWatcher)
+      success = swEdgeEventSend(eventWatcher) && swEdgeEventSend(eventWatcher) && swEdgeEventSend(eventWatcher);
+  }
+  if (!success)
+  {
+    ASSERT_FAIL();
+    swEdgeLoopBreak(swEdgeWatcherLoopGet(timer));
+  }
+}
+
+bool sendEventTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, swEdgeEvent *event)
+{
+  bool rtn = false;
+  if (timer && loop && swEdgeTimerInit(timer, sendEventCallback, true))
+  {
+    swEdgeWatcherDataSet(timer, event);
+    if (swEdgeTimerStart(timer, loop, 200, 200, false))
+      rtn = true;
+    else
+      swEdgeTimerClose(timer);
+  }
+  return rtn;
+}
+
+void sendEventTimerStop(swEdgeTimer *timer)
+{
+  if (timer)
+    swEdgeTimerClose(timer);
+}
+
+swTestDeclare(EdgeEventTest, NULL, NULL, swTestRun)
+{
+  swEdgeLoop *loop = swTestSuiteDataGet(suite);
+  ASSERT_NOT_NULL(loop);
+  bool rtn = false;
+  swEdgeEvent eventWatcher = {.eventCB = NULL};
+  if (swEdgeEventInit(&eventWatcher, eventCallback))
+  {
+    if (swEdgeEventStart(&eventWatcher, loop))
+    {
+      swEdgeTimer sendEventTimer = {.timerCB = NULL};
+      if (sendEventTimerStart(&sendEventTimer, loop, &eventWatcher))
+      {
+        swTestLogLine("Starting event loop ...\n");
+        swEdgeLoopRun(loop);
+        swTestLogLine("Stopping event loop ...\n");
+        rtn = true;
+        sendEventTimerStop(&sendEventTimer);
+      }
+      swEdgeEventStop(&eventWatcher);
+    }
+    swEdgeEventClose(&eventWatcher);
+  }
+  return rtn;
+}
+
 swTestSuiteStructDeclare(EdgeEventLoopTest, edgeLoopSetup, edgeLoopTeardown, swTestRun,
-                         &EdgeTimerTest, &EdgeSignalTest);
+                         &EdgeTimerTest, &EdgeSignalTest, &EdgeEventTest);

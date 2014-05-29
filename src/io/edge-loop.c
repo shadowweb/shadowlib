@@ -1,6 +1,7 @@
 #include "edge-loop.h"
 #include "edge-timer.h"
 #include "edge-signal.h"
+#include "edge-event.h"
 
 #include <core/memory.h>
 
@@ -15,6 +16,7 @@ static swEdgeWatcherProcess watcherProcess[swWatcherTypeMax] =
   [swWatcherTypeTimer]          = (swEdgeWatcherProcess)swEdgeTimerProcess,
   [swWatcherTypePeriodicTimer]  = (swEdgeWatcherProcess)swEdgeTimerProcess,
   [swWatcherTypeSignal]         = (swEdgeWatcherProcess)swEdgeSignalProcess,
+  [swWatcherTypeEvent]          = (swEdgeWatcherProcess)swEdgeEventProcess,
 };
 
 swEdgeLoop *swEdgeLoopNew()
@@ -90,7 +92,8 @@ void swEdgeLoopRun(swEdgeLoop *loop)
         for (int i = 0; i < eventCount; i++)
         {
           swEdgeWatcher *watcher = ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].data.ptr;
-          watcherProcess[watcher->type](watcher, ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].events);
+          if (watcher->type < swWatcherTypeMax && watcherProcess[watcher->type])
+            watcherProcess[watcher->type](watcher, ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].events);
         }
         // increase array size to accomodate more events
         if ((uint32_t)eventCount == swStaticArraySize(loop->epollEvents) && !swStaticArrayResize(&(loop->epollEvents), swStaticArraySize(loop->epollEvents)))

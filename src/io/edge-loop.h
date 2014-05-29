@@ -16,7 +16,7 @@ typedef enum swWatcherType
   swWatcherTypeTimer,           // timerfd monotonic
   swWatcherTypePeriodicTimer,   // timerfd real time
   swWatcherTypeSignal,          // signalfd
-  swWatcherTypeFile,            // inotify
+  // swWatcherTypeFile,            // inotify
   swWatcherTypeEvent,           // eventfd
   swWatcherTypeIO,              // socket
   swWatcherTypeMax
