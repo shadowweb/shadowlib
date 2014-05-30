@@ -6,7 +6,7 @@
 
 struct swEdgeEvent;
 
-typedef void (*swEdgeEventCallback)(struct swEdgeEvent *eventWatcher, eventfd_t eventCount);
+typedef void (*swEdgeEventCallback)(struct swEdgeEvent *eventWatcher, eventfd_t eventCount, uint32_t events);
 
 typedef struct swEdgeEvent
 {
@@ -17,7 +17,6 @@ typedef struct swEdgeEvent
 
 bool swEdgeEventInit(swEdgeEvent *eventWatcher, swEdgeEventCallback cb);
 bool swEdgeEventStart(swEdgeEvent *eventWatcher, swEdgeLoop *loop);
-bool swEdgeEventProcess(swEdgeEvent *eventWatcher, uint32_t events);
 bool swEdgeEventSend(swEdgeEvent *eventWatcher);
 void swEdgeEventStop(swEdgeEvent *eventWatcher);
 void swEdgeEventClose(swEdgeEvent *eventWatcher);

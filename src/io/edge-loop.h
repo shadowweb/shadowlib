@@ -24,9 +24,10 @@ typedef enum swWatcherType
 
 typedef struct swEdgeLoop
 {
-  // swStaticArray timers;
   swStaticArray epollEvents;
+  swStaticArray pendingEvents[2];
   int fd;
+  unsigned int currentPending : 1;
   unsigned int shutdown : 1;
 } swEdgeLoop;
 
@@ -49,6 +50,9 @@ void swEdgeLoopRunOnce(swEdgeLoop *loop);
 void swEdgeLoopBreak(swEdgeLoop *loop);
 bool swEdgeLoopWatcherAdd(swEdgeLoop *loop, swEdgeWatcher *watcher);
 bool swEdgeLoopWatcherRemove(swEdgeLoop *loop, swEdgeWatcher *watcher);
+bool swEdgeLoopWatcherModify(swEdgeLoop *loop, swEdgeWatcher *watcher);
+bool swEdgeLoopPendingAdd(swEdgeLoop *loop, swEdgeWatcher *watcher, uint32_t events);
+bool swEdgeLoopPendingRemove(swEdgeLoop *loop, swEdgeWatcher *watcher);
 
 static inline void *swEdgeWatcherDataGet(swEdgeWatcher *watcher)
 {

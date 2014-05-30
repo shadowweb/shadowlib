@@ -41,25 +41,6 @@ bool swEdgeEventStart(swEdgeEvent *eventWatcher, swEdgeLoop *loop)
     }
   }
   return rtn;
-
-}
-
-bool swEdgeEventProcess(swEdgeEvent *eventWatcher, uint32_t events)
-{
-  bool rtn = false;
-  if (eventWatcher)
-  {
-    swEdgeWatcher *watcher = (swEdgeWatcher *)eventWatcher;
-    eventfd_t value = 0;
-    int readSize = 0;
-    while ((readSize = read(watcher->fd, &value, sizeof(value))) == sizeof(value))
-      eventWatcher->eventCB(eventWatcher, value);
-    if (readSize < 0 && errno == EAGAIN)
-      rtn = true;
-    else if (readSize == 0)
-      swEdgeEventClose(eventWatcher);
-  }
-  return rtn;
 }
 
 bool swEdgeEventSend(swEdgeEvent *eventWatcher)

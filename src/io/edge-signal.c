@@ -51,33 +51,6 @@ bool swEdgeSignalStart(swEdgeSignal *signalWatcher, swEdgeLoop *loop, sigset_t m
   return rtn;
 }
 
-bool swEdgeSignalProcess(swEdgeSignal *signalWatcher, uint32_t events)
-{
-  bool rtn = false;
-  if (signalWatcher)
-  {
-    swEdgeWatcher *watcher = (swEdgeWatcher *)signalWatcher;
-    int readSize = 0;
-    struct signalfd_siginfo signalInfo = {0};
-    bool signalMismatch = false;
-    while ((readSize = read(watcher->fd, &signalInfo, sizeof(struct signalfd_siginfo))) == sizeof(struct signalfd_siginfo))
-    {
-      if (sigismember(&(signalWatcher->mask), signalInfo.ssi_signo) == 1)
-        signalWatcher->signalCB(signalWatcher, &signalInfo);
-      else
-      {
-        signalMismatch = true;
-        break;
-      }
-    }
-    if (readSize < 0 && errno == EAGAIN)
-      rtn = true;
-    else if (signalMismatch || readSize == 0)
-      swEdgeSignalClose(signalWatcher);
-  }
-  return rtn;
-}
-
 void swEdgeSignalStop(swEdgeSignal *signalWatcher)
 {
   swEdgeWatcher *watcher = (swEdgeWatcher *)signalWatcher;

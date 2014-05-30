@@ -50,28 +50,6 @@ bool swEdgeTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, uint64_t offset, uin
   return rtn;
 }
 
-bool swEdgeTimerProcess(swEdgeTimer *timer, uint32_t events)
-{
-  bool rtn = false;
-  if (timer)
-  {
-    swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
-    int readSize = 0;
-    uint64_t expiredCount = 0;
-    if ((readSize = read(watcher->fd, &expiredCount, sizeof(uint64_t))) == sizeof(uint64_t))
-    // while ((readSize = read(watcher->fd, &expiredCount, sizeof(uint64_t))) == sizeof(uint64_t))
-    {
-      timer->timerCB(timer, expiredCount);
-    }
-    // should close fd (I am not sure this will ever happen)
-    if (readSize < 0 && errno == EAGAIN)
-      rtn = true;
-    else if (readSize == 0)
-      swEdgeTimerClose(timer);
-  }
-  return rtn;
-}
-
 void swEdgeTimerStop(swEdgeTimer *timer)
 {
   swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
