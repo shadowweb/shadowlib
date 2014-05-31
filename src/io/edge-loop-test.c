@@ -1,7 +1,7 @@
 #include "edge-loop.h"
 #include "edge-timer.h"
 #include "edge-signal.h"
-#include "edge-event.h"
+#include "edge-async.h"
 #include "edge-io.h"
 
 #include "unittest/unittest.h"
@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <string.h>
 
 void edgeLoopSetup(swTestSuite *suite)
 {
@@ -31,7 +32,7 @@ void edgeLoopTeardown(swTestSuite *suite)
 void timerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
   uint64_t *totalExpired = swEdgeWatcherDataGet(timer);
-  if (totalExpired)
+  if (totalExpired && expiredCount && (events & swEdgeEventRead))
   {
     *totalExpired += expiredCount;
     swTestLogLine("Timer expired %llu time(s), total %llu times, events 0x%08x ...\n", expiredCount, *totalExpired, events);
@@ -73,7 +74,7 @@ static uint64_t sigQuitReceived = 0;
 
 void signalCallback(swEdgeSignal *signalWatcher, struct signalfd_siginfo *signalReceived, uint32_t events)
 {
-  if (signalWatcher && signalReceived &&
+  if (signalWatcher && signalReceived && (events & swEdgeEventRead) &&
       (signalReceived->ssi_signo == SIGINT || signalReceived->ssi_signo == SIGHUP || signalReceived->ssi_signo == SIGQUIT) &&
       signalReceived->ssi_pid == (uint32_t)getpid())
   {
@@ -105,7 +106,7 @@ void signalCallback(swEdgeSignal *signalWatcher, struct signalfd_siginfo *signal
 void sendSignalCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
   bool success = false;
-  if (timer)
+  if (timer && expiredCount && (events & swEdgeEventRead))
   {
     pid_t processId = getpid();
     if (kill(processId, SIGINT) == 0 && kill(processId, SIGHUP) == 0 && kill(processId, SIGQUIT) == 0)
@@ -173,30 +174,30 @@ swTestDeclare(EdgeSignalTest, NULL, NULL, swTestRun)
 
 static uint64_t eventsReceived = 0;
 
-void eventCallback(swEdgeEvent *eventWatcher, eventfd_t eventCount, uint32_t events)
+void eventCallback(swEdgeAsync *asyncWatcher, eventfd_t eventCount, uint32_t events)
 {
-  if (eventWatcher)
+  if (asyncWatcher && eventCount && (events & swEdgeEventRead))
   {
     swTestLogLine("Event occured %u time(s), events 0x%08x ...\n", eventCount, events);
     eventsReceived += eventCount;
     if (eventsReceived > 5)
-      swEdgeLoopBreak(swEdgeWatcherLoopGet(eventWatcher));
+      swEdgeLoopBreak(swEdgeWatcherLoopGet(asyncWatcher));
   }
   else
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(swEdgeWatcherLoopGet(eventWatcher));
+    swEdgeLoopBreak(swEdgeWatcherLoopGet(asyncWatcher));
   }
 }
 
 void sendEventCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
   bool success = false;
-  if (timer)
+  if (timer && expiredCount && (events & swEdgeEventRead))
   {
-    swEdgeEvent *eventWatcher = swEdgeWatcherDataGet(timer);
-    if (eventWatcher)
-      success = swEdgeEventSend(eventWatcher) && swEdgeEventSend(eventWatcher) && swEdgeEventSend(eventWatcher);
+    swEdgeAsync *asyncWatcher = swEdgeWatcherDataGet(timer);
+    if (asyncWatcher)
+      success = swEdgeAsyncSend(asyncWatcher) && swEdgeAsyncSend(asyncWatcher) && swEdgeAsyncSend(asyncWatcher);
   }
   if (!success)
   {
@@ -205,12 +206,12 @@ void sendEventCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t event
   }
 }
 
-bool sendEventTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, swEdgeEvent *event)
+bool sendEventTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, swEdgeAsync *async)
 {
   bool rtn = false;
   if (timer && loop && swEdgeTimerInit(timer, sendEventCallback, true))
   {
-    swEdgeWatcherDataSet(timer, event);
+    swEdgeWatcherDataSet(timer, async);
     if (swEdgeTimerStart(timer, loop, 200, 200, false))
       rtn = true;
     else
@@ -225,18 +226,18 @@ void sendEventTimerStop(swEdgeTimer *timer)
     swEdgeTimerClose(timer);
 }
 
-swTestDeclare(EdgeEventTest, NULL, NULL, swTestRun)
+swTestDeclare(EdgeAsyncTest, NULL, NULL, swTestRun)
 {
   swEdgeLoop *loop = swTestSuiteDataGet(suite);
   ASSERT_NOT_NULL(loop);
   bool rtn = false;
-  swEdgeEvent eventWatcher = {.eventCB = NULL};
-  if (swEdgeEventInit(&eventWatcher, eventCallback))
+  swEdgeAsync asyncWatcher = {.eventCB = NULL};
+  if (swEdgeAsyncInit(&asyncWatcher, eventCallback))
   {
-    if (swEdgeEventStart(&eventWatcher, loop))
+    if (swEdgeAsyncStart(&asyncWatcher, loop))
     {
       swEdgeTimer sendEventTimer = {.timerCB = NULL};
-      if (sendEventTimerStart(&sendEventTimer, loop, &eventWatcher))
+      if (sendEventTimerStart(&sendEventTimer, loop, &asyncWatcher))
       {
         swTestLogLine("Starting event loop ...\n");
         swEdgeLoopRun(loop, false);
@@ -244,9 +245,9 @@ swTestDeclare(EdgeEventTest, NULL, NULL, swTestRun)
         rtn = true;
         sendEventTimerStop(&sendEventTimer);
       }
-      swEdgeEventStop(&eventWatcher);
+      swEdgeAsyncStop(&asyncWatcher);
     }
-    swEdgeEventClose(&eventWatcher);
+    swEdgeAsyncClose(&asyncWatcher);
   }
   return rtn;
 }
@@ -260,16 +261,17 @@ typedef struct swIOTestData
 
 static swIOTestData ioTestData[2] = { { 0 } };
 
+#define MAX_DATA    1048576
+
 void ioCallback(swEdgeIO *ioWatcher, uint32_t events)
 {
   swIOTestData *testData = swEdgeWatcherDataGet(ioWatcher);
   if (testData)
   {
     char buff[1024] = {0};
-    // swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
     int fd = swEdgeIOFDGet(ioWatcher);
     // printf ("fd %d received events 0x%X\n", fd, events);
-    if (events & swEdgeIOEventRead)
+    if (events & swEdgeEventRead)
     {
       int bytesRead = 0;
       uint64_t i = 0;
@@ -290,11 +292,11 @@ void ioCallback(swEdgeIO *ioWatcher, uint32_t events)
           // done
           ASSERT_FAIL();
           shutdown(fd, SHUT_RD);
-          swEdgeIOEventUnSet(ioWatcher, swEdgeIOEventRead);
+          swEdgeIOEventUnSet(ioWatcher, swEdgeEventRead);
         }
       }
     }
-    if (events & swEdgeIOEventWrite)
+    if (events & swEdgeEventWrite)
       testData->writeReady = 1;
     if (testData->writeReady)
     {
@@ -319,27 +321,28 @@ void ioCallback(swEdgeIO *ioWatcher, uint32_t events)
           // done
           ASSERT_FAIL();
           shutdown(fd, SHUT_WR);
-          swEdgeIOEventUnSet(ioWatcher, swEdgeIOEventWrite);
+          swEdgeIOEventUnSet(ioWatcher, swEdgeEventWrite);
         }
       }
     }
 
-    if (events & ~(swEdgeIOEventRead | swEdgeIOEventWrite))
+    if (events & ~(swEdgeEventRead | swEdgeEventWrite))
       ASSERT_FAIL();
-    if (ioTestData[0].dataSent > 102400 && ioTestData[0].dataReceived > 102400 &&
-        ioTestData[1].dataSent > 102400 && ioTestData[1].dataReceived > 102400 )
+    if (ioTestData[0].dataSent > MAX_DATA && ioTestData[0].dataReceived > MAX_DATA &&
+        ioTestData[1].dataSent > MAX_DATA && ioTestData[1].dataReceived > MAX_DATA )
       swEdgeLoopBreak(swEdgeWatcherLoopGet(ioWatcher));
   }
 }
 
-swTestDeclare(EdgeIOTest, NULL, NULL, swTestRun)
+bool runIOTest(swTestSuite *suite, swTest *test, int type)
 {
   swEdgeLoop *loop = swTestSuiteDataGet(suite);
   ASSERT_NOT_NULL(loop);
   bool rtn = false;
   int fd[2];
-  if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd) == 0)
+  if (socketpair(AF_UNIX, type, 0, fd) == 0)
   {
+    memset(ioTestData, 0, sizeof(ioTestData));
     swTestLogLine("created soceket pair %d and %d\n", fd[0], fd[1]);
     swEdgeIO ioEvents[2] = {{{ .loop = NULL }, .ioCB = NULL}};
     if (swEdgeIOInit(&ioEvents[0], ioCallback) && swEdgeIOInit(&ioEvents[1], ioCallback))
@@ -347,12 +350,13 @@ swTestDeclare(EdgeIOTest, NULL, NULL, swTestRun)
       signal(SIGPIPE, SIG_IGN);
       swEdgeWatcherDataSet(&ioEvents[0], &ioTestData[0]);
       swEdgeWatcherDataSet(&ioEvents[1], &ioTestData[1]);
-      if (swEdgeIOStart(&ioEvents[0], loop, fd[0], (swEdgeIOEventRead | swEdgeIOEventWrite)) &&
-          swEdgeIOStart(&ioEvents[1], loop, fd[1], (swEdgeIOEventRead | swEdgeIOEventWrite)) )
+      if (swEdgeIOStart(&ioEvents[0], loop, fd[0], (swEdgeEventRead | swEdgeEventWrite)) &&
+          swEdgeIOStart(&ioEvents[1], loop, fd[1], (swEdgeEventRead | swEdgeEventWrite)) )
       {
-        swTestLogLine("Starting event loop ...\n");
         swEdgeLoopRun(loop, false);
-        swTestLogLine("Stopping event loop ...\n");
+        swTestLogLine("fd[0] = %d (r: %u, w: %u); fd[1] = %d  (r: %u, w: %u)\n",
+          fd[0], ioTestData[0].dataSent, ioTestData[0].dataReceived,
+          fd[1], ioTestData[1].dataSent, ioTestData[1].dataReceived);
         rtn = true;
       }
       swEdgeIOClose(&ioEvents[0]);
@@ -364,5 +368,15 @@ swTestDeclare(EdgeIOTest, NULL, NULL, swTestRun)
   return rtn;
 }
 
+swTestDeclare(EdgeIOTCPTest, NULL, NULL, swTestRun)
+{
+  return runIOTest(suite, test, SOCK_STREAM);
+}
+
+swTestDeclare(EdgeIOUDPTest, NULL, NULL, swTestRun)
+{
+  return runIOTest(suite, test, SOCK_DGRAM);
+}
+
 swTestSuiteStructDeclare(EdgeEventLoopTest, edgeLoopSetup, edgeLoopTeardown, swTestRun,
-                         &EdgeTimerTest, &EdgeSignalTest, &EdgeEventTest, &EdgeIOTest);
+                         &EdgeTimerTest, &EdgeSignalTest, &EdgeAsyncTest, &EdgeIOTCPTest, &EdgeIOUDPTest);

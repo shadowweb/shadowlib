@@ -17,12 +17,6 @@ typedef struct swEdgeIO
   uint32_t pendingPosition;
 } swEdgeIO;
 
-typedef enum swEdgeIOEvents
-{
-  swEdgeIOEventRead = EPOLLIN,
-  swEdgeIOEventWrite = EPOLLOUT
-} swEdgeIOEvents;
-
 bool swEdgeIOInit(swEdgeIO *ioWatcher, swEdgeIOCallback cb);
 bool swEdgeIOStart(swEdgeIO *ioWatcher, swEdgeLoop *loop, int fd, uint32_t events);
 bool swEdgeIOEventSet(swEdgeIO *ioWatcher, uint32_t events);

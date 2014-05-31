@@ -1,7 +1,7 @@
 #include "edge-loop.h"
 #include "edge-timer.h"
 #include "edge-signal.h"
-#include "edge-event.h"
+#include "edge-async.h"
 #include "edge-io.h"
 
 #include <core/memory.h>
@@ -62,23 +62,23 @@ static inline bool swEdgeLoopSignalProcess(swEdgeSignal *signalWatcher, uint32_t
   return rtn;
 }
 
-static inline bool swEdgeLoopEventProcess(swEdgeEvent *eventWatcher, uint32_t events)
+static inline bool swEdgeLoopAsyncProcess(swEdgeAsync *asyncWatcher, uint32_t events)
 {
   bool rtn = false;
-  if (eventWatcher)
+  if (asyncWatcher)
   {
     if (events & EPOLLIN)
     {
-      swEdgeWatcher *watcher = (swEdgeWatcher *)eventWatcher;
+      swEdgeWatcher *watcher = (swEdgeWatcher *)asyncWatcher;
       int readSize = 0;
       eventfd_t value = 0;
       while ((readSize = read(watcher->fd, &value, sizeof(value))) == sizeof(value))
-        eventWatcher->eventCB(eventWatcher, value, events);
+                asyncWatcher->eventCB(asyncWatcher, value, events);
       if (readSize < 0 && errno == EAGAIN)
         rtn = true;
     }
     if (!rtn)
-      eventWatcher->eventCB(eventWatcher, 0, events);
+            asyncWatcher->eventCB(asyncWatcher, 0, events);
   }
   return rtn;
 }
@@ -110,7 +110,7 @@ static swEdgeWatcherProcess watcherProcess[swWatcherTypeMax] =
   [swWatcherTypeTimer]          = (swEdgeWatcherProcess)swEdgeLoopTimerProcess,
   [swWatcherTypePeriodicTimer]  = (swEdgeWatcherProcess)swEdgeLoopTimerProcess,
   [swWatcherTypeSignal]         = (swEdgeWatcherProcess)swEdgeLoopSignalProcess,
-  [swWatcherTypeEvent]          = (swEdgeWatcherProcess)swEdgeLoopEventProcess,
+  [swWatcherTypeAsync]          = (swEdgeWatcherProcess)swEdgeLoopAsyncProcess,
   [swWatcherTypeIO]             = (swEdgeWatcherProcess)swEdgeLoopIOProcess,
 };
 

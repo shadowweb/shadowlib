@@ -24,14 +24,14 @@ bool swEdgeIOInit(swEdgeIO *ioWatcher, swEdgeIOCallback cb)
 bool swEdgeIOStart(swEdgeIO *ioWatcher, swEdgeLoop *loop, int fd, uint32_t events)
 {
   bool rtn = false;
-  if (ioWatcher && loop && (fd >= 0) && (events & (swEdgeIOEventRead | swEdgeIOEventWrite)))
+  if (ioWatcher && loop && (fd >= 0) && (events & (swEdgeEventRead | swEdgeEventWrite)))
   {
     swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
     watcher->fd = fd;
     watcher->event.events = EPOLLET;
-    if (events & swEdgeIOEventRead)
+    if (events & swEdgeEventRead)
       watcher->event.events |= (EPOLLIN | EPOLLRDHUP);
-    if (events & swEdgeIOEventWrite)
+    if (events & swEdgeEventWrite)
       watcher->event.events |= EPOLLOUT;
     if (swEdgeLoopWatcherAdd(loop, watcher))
     {
@@ -46,13 +46,13 @@ bool swEdgeIOEventSet(swEdgeIO *ioWatcher, uint32_t events)
 {
   bool rtn = false;
   swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
-  if (watcher && (watcher->loop) && (events & (swEdgeIOEventRead | swEdgeIOEventWrite)))
+  if (watcher && (watcher->loop) && (events & (swEdgeEventRead | swEdgeEventWrite)))
   {
     uint32_t oldEvents = watcher->event.events;
     watcher->event.events |= EPOLLET;
-    if (events & swEdgeIOEventRead)
+    if (events & swEdgeEventRead)
       watcher->event.events |= (EPOLLIN | EPOLLRDHUP);
-    if (events & swEdgeIOEventWrite)
+    if (events & swEdgeEventWrite)
       watcher->event.events |= EPOLLOUT;
     rtn = swEdgeLoopWatcherModify(watcher->loop, watcher);
     if (!rtn)
@@ -65,13 +65,13 @@ bool swEdgeIOEventUnSet(swEdgeIO *ioWatcher, uint32_t events)
 {
   bool rtn = false;
   swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
-  if (watcher && (watcher->loop) && ((events & swEdgeIOEventRead) || (events & swEdgeIOEventWrite)))
+  if (watcher && (watcher->loop) && ((events & swEdgeEventRead) || (events & swEdgeEventWrite)))
   {
     uint32_t oldEvents = watcher->event.events;
     watcher->event.events |= EPOLLET;
-    if (events & swEdgeIOEventRead)
+    if (events & swEdgeEventRead)
       watcher->event.events &= ~(EPOLLIN | EPOLLRDHUP);
-    if (events & swEdgeIOEventWrite)
+    if (events & swEdgeEventWrite)
       watcher->event.events &= ~EPOLLOUT;
     rtn = swEdgeLoopWatcherModify(watcher->loop, watcher);
     if (!rtn)

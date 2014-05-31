@@ -13,10 +13,19 @@ typedef enum swWatcherType
   swWatcherTypePeriodicTimer,   // timerfd real time
   swWatcherTypeSignal,          // signalfd
   // swWatcherTypeFile,            // inotify
-  swWatcherTypeEvent,           // eventfd
+  swWatcherTypeAsync,           // eventfd
   swWatcherTypeIO,              // socket
   swWatcherTypeMax
 } swWatcherType;
+
+typedef enum swEdgeEvents
+{
+  swEdgeEventRead = EPOLLIN,
+  swEdgeEventWrite = EPOLLOUT,
+  swEdgeEventError = EPOLLERR,
+  swEdgeEventHungUp = EPOLLHUP
+} swEdgeEvents;
+
 
 typedef struct swEdgeLoop
 {
