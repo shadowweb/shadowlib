@@ -7,10 +7,6 @@
 
 #include <collections/array.h>
 
-// TODO: continue with the edge loop
-
-#define MAX_EVENTS 8
-
 typedef enum swWatcherType
 {
   swWatcherTypeTimer,           // timerfd monotonic
@@ -31,12 +27,9 @@ typedef struct swEdgeLoop
   unsigned int shutdown : 1;
 } swEdgeLoop;
 
-// typedef void (*swEdgeWatcherCallback)(swEdgeWatcher *watcher, uint32_t events);
-
 typedef struct swEdgeWatcher
 {
   struct epoll_event event;
-  // swEdgeWatcherCallback *callback;
   swEdgeLoop *loop;
   void *data;
   swWatcherType type;
@@ -45,8 +38,7 @@ typedef struct swEdgeWatcher
 
 swEdgeLoop *swEdgeLoopNew();
 void swEdgeLoopDelete(swEdgeLoop *loop);
-void swEdgeLoopRun(swEdgeLoop *loop);
-void swEdgeLoopRunOnce(swEdgeLoop *loop);
+void swEdgeLoopRun(swEdgeLoop *loop, bool once);
 void swEdgeLoopBreak(swEdgeLoop *loop);
 bool swEdgeLoopWatcherAdd(swEdgeLoop *loop, swEdgeWatcher *watcher);
 bool swEdgeLoopWatcherRemove(swEdgeLoop *loop, swEdgeWatcher *watcher);

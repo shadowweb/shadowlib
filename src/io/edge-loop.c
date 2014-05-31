@@ -224,9 +224,7 @@ bool swEdgeLoopPendingRemove(swEdgeLoop *loop, swEdgeWatcher *watcher)
   return rtn;
 }
 
-// TODO: add function calls for running event loop once
-
-void swEdgeLoopRun(swEdgeLoop *loop)
+void swEdgeLoopRun(swEdgeLoop *loop, bool once)
 {
   if (loop)
   {
@@ -253,9 +251,8 @@ void swEdgeLoopRun(swEdgeLoop *loop)
           run = !loop->shutdown;
       }
       else
-      {
         run = false;
-      }
+
       if (pendingCount)
       {
         uint32_t lastPending = loop->currentPending;
@@ -273,6 +270,8 @@ void swEdgeLoopRun(swEdgeLoop *loop)
         }
         loop->pendingEvents[lastPending].count = 0;
       }
+      if (once)
+        run = false;
     }
   }
 }

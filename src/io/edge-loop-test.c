@@ -58,7 +58,7 @@ swTestDeclare(EdgeTimerTest, NULL, NULL, swTestRun)
     if (swEdgeTimerStart(&timer, loop, 200, 200, false))
     {
       swEdgeWatcherDataSet(&timer, &totalExpired);
-      swEdgeLoopRun(loop);
+      swEdgeLoopRun(loop, false);
       rtn = true;
       swEdgeTimerStop(&timer);
     }
@@ -159,7 +159,7 @@ swTestDeclare(EdgeSignalTest, NULL, NULL, swTestRun)
       if (sendSignalTimerStart(&sendSignalTimer, loop))
       {
         swTestLogLine("Starting event loop ...\n");
-        swEdgeLoopRun(loop);
+        swEdgeLoopRun(loop, false);
         swTestLogLine("Stopping event loop ...\n");
         rtn = true;
         sendSignalTimerStop(&sendSignalTimer);
@@ -239,7 +239,7 @@ swTestDeclare(EdgeEventTest, NULL, NULL, swTestRun)
       if (sendEventTimerStart(&sendEventTimer, loop, &eventWatcher))
       {
         swTestLogLine("Starting event loop ...\n");
-        swEdgeLoopRun(loop);
+        swEdgeLoopRun(loop, false);
         swTestLogLine("Stopping event loop ...\n");
         rtn = true;
         sendEventTimerStop(&sendEventTimer);
@@ -351,7 +351,7 @@ swTestDeclare(EdgeIOTest, NULL, NULL, swTestRun)
           swEdgeIOStart(&ioEvents[1], loop, fd[1], (swEdgeIOEventRead | swEdgeIOEventWrite)) )
       {
         swTestLogLine("Starting event loop ...\n");
-        swEdgeLoopRun(loop);
+        swEdgeLoopRun(loop, false);
         swTestLogLine("Stopping event loop ...\n");
         rtn = true;
       }
