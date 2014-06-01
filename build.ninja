@@ -65,7 +65,8 @@ build $builddir/src/io/edge-timer.o:                    cc src/io/edge-timer.c
 build $builddir/src/io/edge-signal.o:                   cc src/io/edge-signal.c
 build $builddir/src/io/edge-async.o:                    cc src/io/edge-async.c
 build $builddir/src/io/edge-io.o:                       cc src/io/edge-io.c
-build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o
+build $builddir/src/io/socket-address.o:                cc src/io/socket-address.c
+build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o $builddir/src/io/socket-address.o
 
 #io test
 build $builddir/src/io/edge-loop-test.o:                cc src/io/edge-loop-test.c

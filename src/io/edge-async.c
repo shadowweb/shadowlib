@@ -72,4 +72,3 @@ void swEdgeAsyncClose(swEdgeAsync *asyncWatcher)
 {
   swEdgeAsyncStop(asyncWatcher);
 }
-
