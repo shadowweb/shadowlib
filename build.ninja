@@ -49,11 +49,14 @@ build $builddir/src/collections/array-test:             link $builddir/src/colle
 
 # storage library
 build $builddir/src/storage/static-string.o:            cc src/storage/static-string.c
-build $builddir/src/storage/storage.a:                  ar $builddir/src/storage/static-string.o
+build $builddir/src/storage/static-buffer.o:            cc src/storage/static-buffer.c
+build $builddir/src/storage/storage.a:                  ar $builddir/src/storage/static-string.o $builddir/src/storage/static-buffer.o
 
 # storage test
 build $builddir/src/storage/static-string-test.o:       cc src/storage/static-string-test.c
 build $builddir/src/storage/static-string-test:         link $builddir/src/storage/static-string-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a 
+build $builddir/src/storage/static-buffer-test.o:       cc src/storage/static-buffer-test.c
+build $builddir/src/storage/static-buffer-test:         link $builddir/src/storage/static-buffer-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a 
 
 # utils library
 build $builddir/src/utils/file.o:                       cc src/utils/file.c

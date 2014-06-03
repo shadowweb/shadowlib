@@ -44,7 +44,7 @@ bool swSocketAddressInitInet6(swSocketAddress *address, char *ip6, uint16_t port
     struct sockaddr_in6 *inet6 = &(address->inet6);
         inet6->sin6_family = AF_INET6;
         inet6->sin6_port = htons(port);
-    if (inet_pton(AF_INET, ip6, &(inet6->sin6_addr)) > 0)
+    if (inet_pton(AF_INET6, ip6, &(inet6->sin6_addr)) > 0)
     {
       address->len = sizeof(struct sockaddr_in6);
       rtn = true;

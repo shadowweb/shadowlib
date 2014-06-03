@@ -2,10 +2,9 @@
 #define SW_IO_SOCKETADDRESS_H
 
 #include <stdbool.h>
- #include <sys/socket.h>
+#include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
-// #include <arpa/inet.h>
 
 typedef struct swSocketAddress
 {
