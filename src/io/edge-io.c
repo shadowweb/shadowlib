@@ -12,7 +12,6 @@ bool swEdgeIOInit(swEdgeIO *ioWatcher, swEdgeIOCallback cb)
   {
     memset(ioWatcher, 0, sizeof(swEdgeIO));
     swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
-    // watcher->event.events = (EPOLLIN | EPOLLRDHUP | EPOLLET);
     watcher->event.data.ptr = ioWatcher;
     watcher->type = swWatcherTypeIO;
         ioWatcher->ioCB = cb;
@@ -80,33 +79,11 @@ bool swEdgeIOEventUnSet(swEdgeIO *ioWatcher, uint32_t events)
   return rtn;
 }
 
-bool swEdgeIOPendingSet(swEdgeIO *ioWatcher, uint32_t events)
-{
-  bool rtn = false;
-  swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
-  if (ioWatcher)
-  {
-    if (ioWatcher->pendingEvents)
-    {
-      ioWatcher->pendingEvents |= events;
-      rtn = true;
-    }
-    else
-      rtn = swEdgeLoopPendingAdd(swEdgeWatcherLoopGet(ioWatcher), watcher, events);
-  }
-  return rtn;
-}
-
 void swEdgeIOStop(swEdgeIO *ioWatcher)
 {
   swEdgeWatcher *watcher = (swEdgeWatcher *)ioWatcher;
   if (ioWatcher && watcher->loop)
   {
-    if (ioWatcher->pendingEvents)
-    {
-      swEdgeLoopPendingRemove(watcher->loop, watcher);
-      ioWatcher->pendingEvents = 0;
-    }
     swEdgeLoopWatcherRemove(watcher->loop, watcher);
     watcher->loop = NULL;
     watcher->fd = -1;

@@ -13,15 +13,12 @@ typedef struct swEdgeIO
   swEdgeWatcher watcher;
 
   swEdgeIOCallback ioCB;
-  uint32_t pendingEvents;
-  uint32_t pendingPosition;
 } swEdgeIO;
 
 bool swEdgeIOInit(swEdgeIO *ioWatcher, swEdgeIOCallback cb);
 bool swEdgeIOStart(swEdgeIO *ioWatcher, swEdgeLoop *loop, int fd, uint32_t events);
 bool swEdgeIOEventSet(swEdgeIO *ioWatcher, uint32_t events);
 bool swEdgeIOEventUnSet(swEdgeIO *ioWatcher, uint32_t events);
-bool swEdgeIOPendingSet(swEdgeIO *ioWatcher, uint32_t events);
 void swEdgeIOStop(swEdgeIO *ioWatcher);
 void swEdgeIOClose(swEdgeIO *ioWatcher);
 

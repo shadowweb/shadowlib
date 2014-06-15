@@ -14,7 +14,6 @@ typedef struct swEdgeTimer
 
   swEdgeTimerCallback timerCB;
   struct itimerspec timerSpec;
-  // unsigned int active : 1;
 } swEdgeTimer;
 
 bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb, bool realTime);

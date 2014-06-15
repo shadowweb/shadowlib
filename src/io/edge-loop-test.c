@@ -284,7 +284,7 @@ void ioCallback(swEdgeIO *ioWatcher, uint32_t events)
       }
       // printf ("fd %d read %d bytes\n", fd, testData->dataReceived);
       if (i == 10)
-        ASSERT_TRUE(swEdgeIOPendingSet(ioWatcher, events));
+        ASSERT_TRUE(swEdgeWatcherPendingSet((swEdgeWatcher *)ioWatcher, events));
       else
       {
         if (!(bytesRead < 0 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))))
@@ -311,7 +311,7 @@ void ioCallback(swEdgeIO *ioWatcher, uint32_t events)
       }
       // printf ("fd %d wrote %d bytes\n", fd, testData->dataSent);
       if (i == 10)
-        ASSERT_TRUE(swEdgeIOPendingSet(ioWatcher, events));
+        ASSERT_TRUE(swEdgeWatcherPendingSet((swEdgeWatcher *)ioWatcher, events));
       else
       {
         if (bytesWritten < 0 && ((errno == EAGAIN) || (errno == EWOULDBLOCK)))

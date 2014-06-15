@@ -15,6 +15,7 @@ typedef struct swSocketAddress
     struct sockaddr_un       unixDomain;
     struct sockaddr_in       inet;
     struct sockaddr_in6      inet6;
+    struct sockaddr          addr;
   };
 } swSocketAddress;
 

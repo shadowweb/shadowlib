@@ -41,6 +41,9 @@ typedef struct swEdgeWatcher
   struct epoll_event event;
   swEdgeLoop *loop;
   void *data;
+
+  uint32_t pendingEvents;
+  uint32_t pendingPosition;
   swWatcherType type;
   int fd;
 } swEdgeWatcher;
@@ -52,8 +55,7 @@ void swEdgeLoopBreak(swEdgeLoop *loop);
 bool swEdgeLoopWatcherAdd(swEdgeLoop *loop, swEdgeWatcher *watcher);
 bool swEdgeLoopWatcherRemove(swEdgeLoop *loop, swEdgeWatcher *watcher);
 bool swEdgeLoopWatcherModify(swEdgeLoop *loop, swEdgeWatcher *watcher);
-bool swEdgeLoopPendingAdd(swEdgeLoop *loop, swEdgeWatcher *watcher, uint32_t events);
-bool swEdgeLoopPendingRemove(swEdgeLoop *loop, swEdgeWatcher *watcher);
+bool swEdgeLoopPendingSet(swEdgeLoop *loop, swEdgeWatcher *watcher, uint32_t events);
 
 static inline void *swEdgeWatcherDataGet(swEdgeWatcher *watcher)
 {
@@ -74,6 +76,8 @@ static inline swEdgeLoop *swEdgeWatcherLoopGet(swEdgeWatcher *watcher)
     return watcher->loop;
   return NULL;
 }
+
+bool swEdgeWatcherPendingSet(swEdgeWatcher *watcher, uint32_t events);
 
 #define swEdgeWatcherDataGet(t)     swEdgeWatcherDataGet((swEdgeWatcher *)(t))
 #define swEdgeWatcherDataSet(t, d)  swEdgeWatcherDataSet((swEdgeWatcher *)(t), (void *)(d))

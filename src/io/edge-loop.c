@@ -25,13 +25,13 @@ static inline bool swEdgeLoopTimerProcess(swEdgeTimer *timerWatcher, uint32_t ev
       int readSize = 0;
       uint64_t expiredCount = 0;
       while ((readSize = read(watcher->fd, &expiredCount, sizeof(uint64_t))) == sizeof(uint64_t))
-                timerWatcher->timerCB(timerWatcher, expiredCount, events);
+        timerWatcher->timerCB(timerWatcher, expiredCount, events);
       // should close fd (I am not sure this will ever happen)
       if (readSize < 0 && errno == EAGAIN)
         rtn = true;
     }
     if (!rtn)
-            timerWatcher->timerCB(timerWatcher, 0, events);
+      timerWatcher->timerCB(timerWatcher, 0, events);
   }
   return rtn;
 }
@@ -73,12 +73,12 @@ static inline bool swEdgeLoopAsyncProcess(swEdgeAsync *asyncWatcher, uint32_t ev
       int readSize = 0;
       eventfd_t value = 0;
       while ((readSize = read(watcher->fd, &value, sizeof(value))) == sizeof(value))
-                asyncWatcher->eventCB(asyncWatcher, value, events);
+        asyncWatcher->eventCB(asyncWatcher, value, events);
       if (readSize < 0 && errno == EAGAIN)
         rtn = true;
     }
     if (!rtn)
-            asyncWatcher->eventCB(asyncWatcher, 0, events);
+      asyncWatcher->eventCB(asyncWatcher, 0, events);
   }
   return rtn;
 }
@@ -88,18 +88,9 @@ static inline bool swEdgeLoopIOProcess(swEdgeIO *ioWatcher, uint32_t events)
   bool rtn = false;
   if (ioWatcher && ioWatcher->ioCB)
   {
-    if (ioWatcher->pendingEvents)
-    {
-      // printf("'%s' (%d): delaying till pending is called, events 0x%x, pending events 0x%x\n",
-      //        __func__, swEdgeIOFDGet(ioWatcher), events, ioWatcher->pendingEvents);
-      ioWatcher->pendingEvents |= events;
-    }
-    else
-    {
-      // printf("'%s' (%d): calling ioCB with events 0x%x\n",
-      //        __func__, swEdgeIOFDGet(ioWatcher), events);
-      ioWatcher->ioCB(ioWatcher, events);
-    }
+    // printf("'%s' (%d): calling ioCB with events 0x%x\n",
+    //        __func__, swEdgeIOFDGet(ioWatcher), events);
+    ioWatcher->ioCB(ioWatcher, events);
     rtn = true;
   }
   return rtn;
@@ -170,7 +161,31 @@ bool swEdgeLoopWatcherRemove(swEdgeLoop *loop, swEdgeWatcher *watcher)
   if (loop && watcher)
   {
     if (epoll_ctl(loop->fd, EPOLL_CTL_DEL, watcher->fd, &(watcher->event)) == 0)
-      rtn = true;
+    {
+      if (!watcher->pendingEvents)
+        rtn = true;
+      else
+      {
+        swEdgeWatcher *watcherLast = NULL;
+        if (swStaticArrayPop(loop->pendingEvents[loop->currentPending], watcherLast))
+        {
+          if (watcherLast != watcher)
+          {
+            if (swStaticArraySet(loop->pendingEvents[loop->currentPending], watcher->pendingPosition, watcherLast))
+            {
+              watcherLast->pendingPosition = watcher->pendingPosition;
+              watcher->pendingEvents = 0;
+              rtn = true;
+            }
+          }
+          else
+          {
+            watcher->pendingEvents = 0;
+            rtn = true;
+          }
+        }
+      }
+    }
   }
   return rtn;
 }
@@ -186,38 +201,24 @@ bool swEdgeLoopWatcherModify(swEdgeLoop *loop, swEdgeWatcher *watcher)
   return rtn;
 }
 
-bool swEdgeLoopPendingAdd(swEdgeLoop *loop, swEdgeWatcher *watcher, uint32_t events)
+bool swEdgeWatcherPendingSet(swEdgeWatcher *watcher, uint32_t events)
 {
   bool rtn = false;
+  swEdgeLoop *loop = swEdgeWatcherLoopGet(watcher);
   if (loop && watcher && watcher->type == swWatcherTypeIO)
   {
-    swEdgeIO *ioWatcher = (swEdgeIO *)watcher;
-    if (swStaticArrayPush(loop->pendingEvents[loop->currentPending], watcher))
+    if (watcher->pendingEvents)
     {
-      ioWatcher->pendingPosition = swStaticArrayCount(loop->pendingEvents[loop->currentPending]) - 1;
-      ioWatcher->pendingEvents = events;
+      watcher->pendingEvents |= events;
       rtn = true;
     }
-  }
-  return rtn;
-}
-
-bool swEdgeLoopPendingRemove(swEdgeLoop *loop, swEdgeWatcher *watcher)
-{
-  bool rtn = false;
-  swEdgeIO *ioWatcher = (swEdgeIO *)watcher;
-  if (loop && watcher && watcher->type == swWatcherTypeIO && ioWatcher->pendingEvents)
-  {
-    swEdgeIO *ioWatcherLast = NULL;
-    if (swStaticArrayPop(loop->pendingEvents[loop->currentPending], ioWatcherLast))
+    else
     {
-      if (ioWatcherLast != ioWatcher)
+      if (swStaticArrayPush(loop->pendingEvents[loop->currentPending], watcher))
       {
-        if (swStaticArraySet(loop->pendingEvents[loop->currentPending], ioWatcher->pendingPosition, ioWatcherLast))
-        {
-          ioWatcherLast->pendingPosition = ioWatcher->pendingPosition;
-          rtn = true;
-        }
+        watcher->pendingPosition = swStaticArrayCount(loop->pendingEvents[loop->currentPending]) - 1;
+        watcher->pendingEvents = events;
+        rtn = true;
       }
     }
   }
@@ -237,22 +238,33 @@ void swEdgeLoopRun(swEdgeLoop *loop, bool once)
       int eventCount = epoll_wait(loop->fd, (struct epoll_event *)swStaticArrayData(loop->epollEvents), swStaticArraySize(loop->epollEvents), ((pendingCount)? 0 : defaultTimeout));
       if (eventCount >= 0)
       {
-        // process epollEvents
+        // first pass: transfer all events to pending
         for (int i = 0; i < eventCount; i++)
         {
           swEdgeWatcher *watcher = ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].data.ptr;
-          if (watcher->type < swWatcherTypeMax && watcherProcess[watcher->type])
-            watcherProcess[watcher->type](watcher, ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].events);
+          if (watcher->type < swWatcherTypeMax)
+          {
+            if(!watcher->pendingEvents)
+            {
+              if (swStaticArrayPush(loop->pendingEvents[loop->currentPending], watcher))
+              {
+                watcher->pendingPosition = swStaticArrayCount(loop->pendingEvents[loop->currentPending]) - 1;
+                watcher->pendingEvents = ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].events;
+              }
+            }
+            else
+              watcher->pendingEvents |= ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].events;
+          }
         }
-        // increase array size to accomodate more events
+        // resize array if needed
         if ((uint32_t)eventCount == swStaticArraySize(loop->epollEvents) && !swStaticArrayResize(&(loop->epollEvents), swStaticArraySize(loop->epollEvents)))
           run = false;
-        if (loop->shutdown)
-          run = !loop->shutdown;
       }
       else
         run = false;
 
+      // second pass: run all pending events
+      pendingCount = swStaticArrayCount(loop->pendingEvents[loop->currentPending]);
       if (pendingCount)
       {
         uint32_t lastPending = loop->currentPending;
@@ -260,16 +272,17 @@ void swEdgeLoopRun(swEdgeLoop *loop, bool once)
         for (uint32_t i = 0; i < pendingCount; i++)
         {
           swEdgeWatcher *watcher = NULL;
-          if (swStaticArrayGet(loop->pendingEvents[lastPending], i, watcher) && (watcher->type == swWatcherTypeIO))
+          if (swStaticArrayGet(loop->pendingEvents[lastPending], i, watcher) && watcherProcess[watcher->type])
           {
-            swEdgeIO *ioWatcher = (swEdgeIO *)watcher;
-            uint32_t pendingEvents = ioWatcher->pendingEvents;
-            ioWatcher->pendingEvents = 0;
+            uint32_t pendingEvents = watcher->pendingEvents;
+            watcher->pendingEvents = 0;
             watcherProcess[watcher->type](watcher, pendingEvents);
           }
         }
         loop->pendingEvents[lastPending].count = 0;
       }
+      if (loop->shutdown)
+        run = !loop->shutdown;
       if (once)
         run = false;
     }
@@ -281,4 +294,3 @@ void swEdgeLoopBreak(swEdgeLoop *loop)
   if (loop)
     loop->shutdown = true;
 }
-
