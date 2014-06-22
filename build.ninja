@@ -69,10 +69,17 @@ build $builddir/src/io/edge-signal.o:                   cc src/io/edge-signal.c
 build $builddir/src/io/edge-async.o:                    cc src/io/edge-async.c
 build $builddir/src/io/edge-io.o:                       cc src/io/edge-io.c
 build $builddir/src/io/socket-address.o:                cc src/io/socket-address.c
-build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o $builddir/src/io/socket-address.o
+build $builddir/src/io/socket.o:                        cc src/io/socket.c
+build $builddir/src/io/tcp-connection.o:                cc src/io/tcp-connection.c
+build $builddir/src/io/tcp-client.o:                    cc src/io/tcp-client.c
+build $builddir/src/io/tcp-server.o:                    cc src/io/tcp-server.c
+build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o $builddir/src/io/socket-address.o $builddir/src/io/socket.o $builddir/src/io/tcp-connection.o $builddir/src/io/tcp-client.o $builddir/src/io/tcp-server.o
 
-#io test
+# io test
 build $builddir/src/io/edge-loop-test.o:                cc src/io/edge-loop-test.c
 build $builddir/src/io/edge-loop-test:                  link $builddir/src/io/edge-loop-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
+# tcp test
+build $builddir/src/io/tcp-test.o:                       cc src/io/tcp-test.c
+build $builddir/src/io/tcp-test:                         link $builddir/src/io/tcp-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 

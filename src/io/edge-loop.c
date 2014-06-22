@@ -12,6 +12,22 @@
 
 #define SW_EPOLLEVENTS_SIZE 64
 
+static const char const *swWatcherTypeText[swWatcherTypeMax] =
+{
+  [swWatcherTypeTimer]          = "Timer",
+  [swWatcherTypePeriodicTimer]  = "PeriodicTimer",
+  [swWatcherTypeSignal]         = "Signal",
+  [swWatcherTypeAsync]          = "Async",
+  [swWatcherTypeIO]             = "IO",
+};
+
+const char const *swWatcherTypeTextGet(swWatcherType watcherType)
+{
+  if (watcherType > swWatcherTypeNone && watcherType < swWatcherTypeMax)
+    return swWatcherTypeText[watcherType];
+  return NULL;
+}
+
 typedef bool (*swEdgeWatcherProcess)(swEdgeWatcher *watcher, uint32_t events);
 
 static inline bool swEdgeLoopTimerProcess(swEdgeTimer *timerWatcher, uint32_t events)
@@ -113,8 +129,8 @@ swEdgeLoop *swEdgeLoopNew()
   {
     if (swStaticArrayInit(&(newLoop->epollEvents), sizeof(struct epoll_event), SW_EPOLLEVENTS_SIZE))
     {
-      if (swStaticArrayInit(&(newLoop->pendingEvents[0]), sizeof(swEdgeIO *), SW_EPOLLEVENTS_SIZE) &&
-          swStaticArrayInit(&(newLoop->pendingEvents[1]), sizeof(swEdgeIO *), SW_EPOLLEVENTS_SIZE))
+      if (swStaticArrayInit(&(newLoop->pendingEvents[0]), sizeof(swEdgeWatcher *), SW_EPOLLEVENTS_SIZE) &&
+          swStaticArrayInit(&(newLoop->pendingEvents[1]), sizeof(swEdgeWatcher *), SW_EPOLLEVENTS_SIZE))
       {
         if ((newLoop->fd = epoll_create1(EPOLL_CLOEXEC)) >= 0)
         {
@@ -166,19 +182,9 @@ bool swEdgeLoopWatcherRemove(swEdgeLoop *loop, swEdgeWatcher *watcher)
         rtn = true;
       else
       {
-        swEdgeWatcher *watcherLast = NULL;
-        if (swStaticArrayPop(loop->pendingEvents[loop->currentPending], watcherLast))
+        if (swStaticArrayCount(loop->pendingEvents[watcher->pendingArray]) > watcher->pendingPosition)
         {
-          if (watcherLast != watcher)
-          {
-            if (swStaticArraySet(loop->pendingEvents[loop->currentPending], watcher->pendingPosition, watcherLast))
-            {
-              watcherLast->pendingPosition = watcher->pendingPosition;
-              watcher->pendingEvents = 0;
-              rtn = true;
-            }
-          }
-          else
+          if (swStaticArraySet(loop->pendingEvents[watcher->pendingArray], watcher->pendingPosition, NULL))
           {
             watcher->pendingEvents = 0;
             rtn = true;
@@ -218,6 +224,7 @@ bool swEdgeWatcherPendingSet(swEdgeWatcher *watcher, uint32_t events)
       {
         watcher->pendingPosition = swStaticArrayCount(loop->pendingEvents[loop->currentPending]) - 1;
         watcher->pendingEvents = events;
+        watcher->pendingArray = loop->currentPending;
         rtn = true;
       }
     }
@@ -242,12 +249,13 @@ void swEdgeLoopRun(swEdgeLoop *loop, bool once)
         for (int i = 0; i < eventCount; i++)
         {
           swEdgeWatcher *watcher = ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].data.ptr;
-          if (watcher->type < swWatcherTypeMax)
+          if (watcher->type > swWatcherTypeNone && watcher->type < swWatcherTypeMax)
           {
             if(!watcher->pendingEvents)
             {
               if (swStaticArrayPush(loop->pendingEvents[loop->currentPending], watcher))
               {
+                watcher->pendingArray = loop->currentPending;
                 watcher->pendingPosition = swStaticArrayCount(loop->pendingEvents[loop->currentPending]) - 1;
                 watcher->pendingEvents = ((struct epoll_event *)swStaticArrayData(loop->epollEvents))[i].events;
               }
@@ -272,7 +280,7 @@ void swEdgeLoopRun(swEdgeLoop *loop, bool once)
         for (uint32_t i = 0; i < pendingCount; i++)
         {
           swEdgeWatcher *watcher = NULL;
-          if (swStaticArrayGet(loop->pendingEvents[lastPending], i, watcher) && watcherProcess[watcher->type])
+          if (swStaticArrayGet(loop->pendingEvents[lastPending], i, watcher) && watcher && watcherProcess[watcher->type])
           {
             uint32_t pendingEvents = watcher->pendingEvents;
             watcher->pendingEvents = 0;
@@ -294,3 +302,32 @@ void swEdgeLoopBreak(swEdgeLoop *loop)
   if (loop)
     loop->shutdown = true;
 }
+
+/*
+void swEdgeLoopPendingPrint(swEdgeLoop *loop)
+{
+  if (loop)
+  {
+    printf("currentPending = %u\n", loop->currentPending);
+    for (uint8_t i = 0; i < 2; i++)
+    {
+      printf("Pending %u: ", i);
+      for(uint32_t j = 0; j < loop->pendingEvents[i].count; j++)
+      {
+        swEdgeWatcher *watcher = NULL;
+        if (swStaticArrayGet(loop->pendingEvents[i], j, watcher))
+        {
+          if (watcher)
+            printf("%p (%s, %u, %u, 0x%x), ", (void *)watcher, swWatcherTypeTextGet(watcher->type), watcher->pendingArray, watcher->pendingPosition, watcher->pendingEvents);
+          else
+            printf("%p (%s, %u, %u, 0x%x), ", (void *)watcher, "", 0, 0, 0);
+        }
+        else
+          printf("%p, ", (void *)NULL);
+      }
+      printf("\n");
+    }
+  }
+}
+*/
+

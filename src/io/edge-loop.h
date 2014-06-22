@@ -9,6 +9,7 @@
 
 typedef enum swWatcherType
 {
+  swWatcherTypeNone = 0,
   swWatcherTypeTimer,           // timerfd monotonic
   swWatcherTypePeriodicTimer,   // timerfd real time
   swWatcherTypeSignal,          // signalfd
@@ -17,6 +18,8 @@ typedef enum swWatcherType
   swWatcherTypeIO,              // socket
   swWatcherTypeMax
 } swWatcherType;
+
+const char const *swWatcherTypeTextGet(swWatcherType watcherType);
 
 typedef enum swEdgeEvents
 {
@@ -36,14 +39,18 @@ typedef struct swEdgeLoop
   unsigned int shutdown : 1;
 } swEdgeLoop;
 
+#define SWEDGELOOP_PENDINGBITS 31
+#define SWEDGELOOP_PENDINGMAX  0x7FFFFFF
+
 typedef struct swEdgeWatcher
 {
   struct epoll_event event;
   swEdgeLoop *loop;
   void *data;
 
+  unsigned pendingArray: 1;
+  unsigned pendingPosition: SWEDGELOOP_PENDINGBITS;
   uint32_t pendingEvents;
-  uint32_t pendingPosition;
   swWatcherType type;
   int fd;
 } swEdgeWatcher;
@@ -82,5 +89,7 @@ bool swEdgeWatcherPendingSet(swEdgeWatcher *watcher, uint32_t events);
 #define swEdgeWatcherDataGet(t)     swEdgeWatcherDataGet((swEdgeWatcher *)(t))
 #define swEdgeWatcherDataSet(t, d)  swEdgeWatcherDataSet((swEdgeWatcher *)(t), (void *)(d))
 #define swEdgeWatcherLoopGet(t)     swEdgeWatcherLoopGet((swEdgeWatcher *)(t))
+
+// void swEdgeLoopPendingPrint(swEdgeLoop *loop);
 
 #endif // SW_IO_EDGELOOP_H
