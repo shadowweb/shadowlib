@@ -54,7 +54,7 @@ static void swTCPClientReconnectTimerCallback(swEdgeTimer *timer, uint64_t expir
   swEdgeTimerStop(timer);
   swTCPClient *client = swEdgeWatcherDataGet(timer);
   swSocket *sock = (swSocket *)client;
-  if (sock && (sock->fd >= 0))
+  if (sock && (sock->fd < 0))
   {
     bool rtn = false;
     swTCPConnectionErrorType errorCode = swTCPConnectionErrorNone;

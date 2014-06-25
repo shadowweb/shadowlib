@@ -79,14 +79,14 @@ void swTCPConnectionCleanup(swTCPConnection *conn);
 bool swTCPConnectionStart(swTCPConnection *conn, swEdgeLoop *loop);
 void swTCPConnectionClose(swTCPConnection *conn, swTCPConnectionErrorType errorCode);
 
-static inline void *swTCPConnetionDataGet(swTCPConnection *conn)
+static inline void *swTCPConnectionDataGet(swTCPConnection *conn)
 {
   if (conn)
     return conn->data;
   return NULL;
 }
 
-static inline void swTCPConnetionDataSet(swTCPConnection *conn, void *data)
+static inline void swTCPConnectionDataSet(swTCPConnection *conn, void *data)
 {
   if (conn)
     conn->data = data;
@@ -97,5 +97,8 @@ static inline void swTCPConnetionDataSet(swTCPConnection *conn, void *data)
 
 swSocketReturnType swTCPConnectionRead(swTCPConnection *conn, swStaticBuffer *buffer, ssize_t *bytesRead);
 swSocketReturnType swTCPConnectionWrite(swTCPConnection *conn, swStaticBuffer *buffer, ssize_t *bytesWritten);
+
+swSocketReturnType swTCPConnectionReadFrom(swTCPConnection *conn, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesRead);
+swSocketReturnType swTCPConnectionWriteTo(swTCPConnection *conn, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten);
 
 #endif // SW_IO_TCPCONNECTION_H

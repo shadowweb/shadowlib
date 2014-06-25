@@ -83,8 +83,6 @@ void swSocketClose(swSocket *sock);
 void swSocketDelete(swSocket *sock);
 
 // TODO: implement the following functionality
-//       swUDPServer(int domain)
-//       swUDPClient(int domain)
 //       swSSLServer(int domain) -- default socket type is TCP
 //       swSSLClient(int domain) -- default socket type is TCP
 

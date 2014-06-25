@@ -214,3 +214,39 @@ swSocketReturnType swTCPConnectionWrite(swTCPConnection *conn, swStaticBuffer *b
   }
   return rtn;
 }
+
+swSocketReturnType swTCPConnectionReadFrom(swTCPConnection *conn, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesRead)
+{
+  swSocketReturnType rtn = swSocketReturnNone;
+  if (conn)
+  {
+    if ((rtn = swSocketReceiveFrom((swSocket *)conn, buffer, address, bytesRead)) == swSocketReturnOK)
+      swEdgeWatcherPendingSet((swEdgeWatcher *)&(conn->ioEvent), swEdgeEventRead);
+    else if (rtn == swSocketReturnNotReady)
+    {
+      if (!swEdgeTimerStart(&(conn->readTimer), conn->loop, conn->readTimeout, conn->readTimeout, false))
+        swTCPConnectionClose(conn, swTCPConnectionErrorOtherError);
+    }
+    else
+      swTCPConnectionClose(conn, ((rtn == swSocketReturnClose)? swTCPConnectionErrorSocketClose : swTCPConnectionErrorSocketError));
+  }
+  return rtn;
+}
+
+swSocketReturnType swTCPConnectionWriteTo(swTCPConnection *conn, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten)
+{
+  swSocketReturnType rtn = swSocketReturnNone;
+  if (conn)
+  {
+    if ((rtn = swSocketSendTo((swSocket *)conn, buffer, address, bytesWritten)) == swSocketReturnOK)
+      swEdgeWatcherPendingSet((swEdgeWatcher *)&(conn->ioEvent), swEdgeEventWrite);
+    else if (rtn == swSocketReturnNotReady)
+    {
+      if (!swEdgeTimerStart(&(conn->writeTimer), conn->loop, conn->writeTimeout, conn->writeTimeout, false))
+        swTCPConnectionClose(conn, swTCPConnectionErrorOtherError);
+    }
+    else
+      swTCPConnectionClose(conn, ((rtn == swSocketReturnClose ) ? swTCPConnectionErrorSocketClose : swTCPConnectionErrorSocketError));
+  }
+  return rtn;
+}
