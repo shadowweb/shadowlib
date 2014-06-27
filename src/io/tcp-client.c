@@ -10,25 +10,25 @@ static void swTCPClientConnectTimerCallback(swEdgeTimer *timer, uint64_t expired
   {
     client->connecting = false;
     swEdgeIOStop(&(client->connectEvent));
-    swTCPConnectionClose((swTCPConnection *)client, swTCPConnectionErrorConnectTimeout);
+    swSocketIOClose((swSocketIO *)client, swSocketIOErrorConnectTimeout);
   }
 }
 
-static inline bool swTCPClientConnectProcess(swTCPClient *client, swSocketReturnType ret, swTCPConnectionErrorType *errorCode)
+static inline bool swTCPClientConnectProcess(swTCPClient *client, swSocketReturnType ret, swSocketIOErrorType *errorCode)
 {
   bool rtn = false;
   if ( ret > swSocketReturnNone)
   {
     if (ret == swSocketReturnOK)
     {
-      if (swTCPConnectionStart((swTCPConnection *)client, client->loop))
+      if (swSocketIOStart((swSocketIO *)client, client->loop))
       {
         rtn = true;
         if (client->connectedFunc)
           client->connectedFunc(client);
       }
       else
-        *errorCode = swTCPConnectionErrorOtherError;
+        *errorCode = swSocketIOErrorOtherError;
     }
     else if (ret == swSocketReturnInProgress)
     {
@@ -36,16 +36,16 @@ static inline bool swTCPClientConnectProcess(swTCPClient *client, swSocketReturn
       rtn = swEdgeIOStart(&(client->connectEvent), client->loop, ((swSocket *)client)->fd, swEdgeEventWrite) &&
         swEdgeTimerStart(&(client->connectTimer), client->loop, client->connectTimeout, 0, false);
       if (!rtn)
-        *errorCode = swTCPConnectionErrorOtherError;
+        *errorCode = swSocketIOErrorOtherError;
     }
     else
     {
       rtn = true;
-      swTCPConnectionClose((swTCPConnection *)client, swTCPConnectionErrorConnectFailed);
+      swSocketIOClose((swSocketIO *)client, swSocketIOErrorConnectFailed);
     }
   }
   else
-    *errorCode = swTCPConnectionErrorConnectFailed;
+    *errorCode = swSocketIOErrorConnectFailed;
   return rtn;
 }
 
@@ -57,7 +57,7 @@ static void swTCPClientReconnectTimerCallback(swEdgeTimer *timer, uint64_t expir
   if (sock && (sock->fd < 0))
   {
     bool rtn = false;
-    swTCPConnectionErrorType errorCode = swTCPConnectionErrorNone;
+    swSocketIOErrorType errorCode = swSocketIOErrorNone;
     if ((expiredCount > 0) && (events & swEdgeEventRead))
     {
       swSocketReturnType ret = swSocketReconnect(sock);
@@ -66,7 +66,7 @@ static void swTCPClientReconnectTimerCallback(swEdgeTimer *timer, uint64_t expir
     if (!rtn)
     {
       client->reconnect = false;
-      swTCPConnectionClose((swTCPConnection *)client, errorCode);
+      swSocketIOClose((swSocketIO *)client, errorCode);
     }
   }
 }
@@ -80,34 +80,34 @@ static void swTCPClientConnectEventCallback(swEdgeIO *ioWatcher, uint32_t events
     swEdgeTimerStop(&(client->connectTimer));
     client->connecting = false;
     bool rtn = false;
-    swTCPConnectionErrorType errorCode = swTCPConnectionErrorNone;
+    swSocketIOErrorType errorCode = swSocketIOErrorNone;
     if ((events & swEdgeEventWrite) && !(events & (swEdgeEventError | swEdgeEventHungUp)))
     {
       swSocket *sock = (swSocket *)client;
       if (swSocketIsConnected(sock, NULL))
       {
-        if (swTCPConnectionStart((swTCPConnection *)client, client->loop))
+        if (swSocketIOStart((swSocketIO *)client, client->loop))
         {
           rtn = true;
           if (client->connectedFunc)
             client->connectedFunc(client);
         }
         else
-          errorCode = swTCPConnectionErrorOtherError;
+          errorCode = swSocketIOErrorOtherError;
       }
       else
-        errorCode = swTCPConnectionErrorConnectedCheckFailed;
+        errorCode = swSocketIOErrorConnectedCheckFailed;
     }
     else
-      errorCode = ((events & swEdgeEventError) ? swTCPConnectionErrorSocketError : swTCPConnectionErrorSocketHangUp);
+      errorCode = ((events & swEdgeEventError) ? swSocketIOErrorSocketError : swSocketIOErrorSocketHangUp);
     if (!rtn)
-      swTCPConnectionClose((swTCPConnection *)client, errorCode);
+      swSocketIOClose((swSocketIO *)client, errorCode);
   }
 }
 
-static void swTCPClientConnectionCloseCallback(swTCPConnection *conn)
+static void swTCPClientConnectionCloseCallback(swSocketIO *io)
 {
-  swTCPClient *client = (swTCPClient *)conn;
+  swTCPClient *client = (swTCPClient *)io;
   if (client && !client->closing)
   {
     client->closing = true;
@@ -123,7 +123,7 @@ static void swTCPClientConnectionCloseCallback(swTCPConnection *conn)
     {
       swEdgeTimerStop(&(client->reconnectTimer));
       if (!swEdgeTimerStart(&(client->reconnectTimer), client->loop, client->reconnectTimeout, 0, false))
-        swTCPConnectionClose((swTCPConnection *)client, swTCPConnectionErrorOtherError);
+        swSocketIOClose((swSocketIO *)client, swSocketIOErrorOtherError);
     }
     client->closing = false;
   }
@@ -149,7 +149,7 @@ bool swTCPClientInit(swTCPClient *client)
   if (client)
   {
     memset(client, 0, sizeof(swTCPClient));
-    if (swTCPConnectionInit((swTCPConnection *)client))
+    if (swSocketIOInit((swSocketIO *)client))
     {
       if (swEdgeTimerInit(&(client->connectTimer), swTCPClientConnectTimerCallback, false))
       {
@@ -160,9 +160,9 @@ bool swTCPClientInit(swTCPClient *client)
           if (swEdgeIOInit(&(client->connectEvent), swTCPClientConnectEventCallback))
           {
             swEdgeWatcherDataSet(&(client->connectEvent), client);
-            client->connectTimeout = client->reconnectTimeout = SW_TCPCONNECTION_DEFAULT_TIMEOUT;
+            client->connectTimeout = client->reconnectTimeout = SW_SOCKETIO_DEFAULT_TIMEOUT;
             client->reconnect = true;
-            ((swTCPConnection *)client)->closeFunc = swTCPClientConnectionCloseCallback;
+            ((swSocketIO *)client)->closeFunc = swTCPClientConnectionCloseCallback;
             rtn = true;
           }
         }
@@ -183,7 +183,7 @@ void swTCPClientCleanup(swTCPClient *client)
     swEdgeIOClose(&(client->connectEvent));
     swEdgeTimerClose(&(client->reconnectTimer));
     swEdgeTimerClose(&(client->connectTimer));
-    swTCPConnectionCleanup((swTCPConnection *)client);
+    swSocketIOCleanup((swSocketIO *)client);
     client->cleaning = false;
   }
 }
@@ -206,7 +206,7 @@ bool swTCPClientStart(swTCPClient *client, swSocketAddress *address, swEdgeLoop 
     swSocket *sock = (swSocket *)client;
     if (swSocketInit(sock, address->storage.ss_family, SOCK_STREAM))
     {
-      swTCPConnectionErrorType errorCode = swTCPConnectionErrorNone;
+      swSocketIOErrorType errorCode = swSocketIOErrorNone;
       if (!bindAddress || swSocketBind(sock, bindAddress))
       {
         client->loop = loop;
@@ -214,11 +214,11 @@ bool swTCPClientStart(swTCPClient *client, swSocketAddress *address, swEdgeLoop 
         rtn = swTCPClientConnectProcess(client, ret, &errorCode);
       }
       else
-        errorCode = swTCPConnectionErrorConnectFailed;
+        errorCode = swSocketIOErrorConnectFailed;
       if (!rtn)
       {
         client->reconnect = false;
-        swTCPConnectionClose((swTCPConnection *)client, errorCode);
+        swSocketIOClose((swSocketIO *)client, errorCode);
       }
     }
   }
@@ -234,7 +234,7 @@ void swTCPClientStop(swTCPClient *client)
     swEdgeIOStop(&(client->connectEvent));
     swEdgeTimerStop(&(client->connectTimer));
     swEdgeTimerStop(&(client->reconnectTimer));
-    swTCPConnectionClose((swTCPConnection *)client, swTCPConnectionErrorNone);
+    swSocketIOClose((swSocketIO *)client, swSocketIOErrorNone);
 
     client->loop = NULL;
     if (client->stopFunc)
@@ -248,7 +248,7 @@ bool swTCPClientClose(swTCPClient *client)
   if (client && client->loop)
   {
     if (((swSocket *)client)->fd >= 0)
-      swTCPConnectionClose((swTCPConnection *)client, swTCPConnectionErrorNone);
+      swSocketIOClose((swSocketIO *)client, swSocketIOErrorNone);
     rtn = true;
   }
   return rtn;

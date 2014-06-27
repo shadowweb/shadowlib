@@ -70,12 +70,12 @@ build $builddir/src/io/edge-async.o:                    cc src/io/edge-async.c
 build $builddir/src/io/edge-io.o:                       cc src/io/edge-io.c
 build $builddir/src/io/socket-address.o:                cc src/io/socket-address.c
 build $builddir/src/io/socket.o:                        cc src/io/socket.c
-build $builddir/src/io/tcp-connection.o:                cc src/io/tcp-connection.c
+build $builddir/src/io/socket-io.o:                     cc src/io/socket-io.c
 build $builddir/src/io/tcp-client.o:                    cc src/io/tcp-client.c
 build $builddir/src/io/tcp-server.o:                    cc src/io/tcp-server.c
 build $builddir/src/io/udp-client.o:                    cc src/io/udp-client.c
 build $builddir/src/io/udp-server.o:                    cc src/io/udp-server.c
-build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o $builddir/src/io/socket-address.o $builddir/src/io/socket.o $builddir/src/io/tcp-connection.o $builddir/src/io/tcp-client.o $builddir/src/io/tcp-server.o $builddir/src/io/udp-client.o $builddir/src/io/udp-server.o
+build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o $builddir/src/io/socket-address.o $builddir/src/io/socket.o $builddir/src/io/socket-io.o $builddir/src/io/tcp-client.o $builddir/src/io/tcp-server.o $builddir/src/io/udp-client.o $builddir/src/io/udp-server.o
 
 # io test
 build $builddir/src/io/edge-loop-test.o:                cc src/io/edge-loop-test.c

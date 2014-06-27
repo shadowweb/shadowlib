@@ -34,9 +34,9 @@ static ssize_t serverBytesRead = 0;
 static ssize_t serverBytesWritten = 0;
 static ssize_t clientBytesRead = 0;
 static ssize_t clientBytesWritten = 0;
-static swTCPConnection *serverConnection = NULL;
+static swTCPServer *serverConnection = NULL;
 
-void onServerReadReady(swTCPConnection *conn)
+void onServerReadReady(swTCPServer *server)
 {
   // swTestLogLine("Server: read ready, bytes read = %zd\n", serverBytesRead);
   swSocketReturnType ret = swSocketReturnNone;
@@ -44,7 +44,7 @@ void onServerReadReady(swTCPConnection *conn)
   ssize_t bytesRead = 0;
   for (uint32_t i = 0; i < 10; i++)
   {
-    ret = swTCPConnectionRead(conn, &buffer, &bytesRead);
+    ret = swTCPServerRead(server, &buffer, &bytesRead);
     if (ret != swSocketReturnOK)
       break;
     serverBytesRead += bytesRead;
@@ -52,13 +52,13 @@ void onServerReadReady(swTCPConnection *conn)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(conn->loop);
+    swEdgeLoopBreak(server->io.loop);
   }
   else if (serverBytesRead > EXPECT_BYTES && clientBytesRead > EXPECT_BYTES)
-    swEdgeLoopBreak(conn->loop);
+    swEdgeLoopBreak(server->io.loop);
 }
 
-void onServerWriteReady(swTCPConnection *conn)
+void onServerWriteReady(swTCPServer *server)
 {
   // swTestLogLine("Server: write ready, bytes written = %zd\n", serverBytesWritten);
   swSocketReturnType ret = swSocketReturnNone;
@@ -66,7 +66,7 @@ void onServerWriteReady(swTCPConnection *conn)
   ssize_t bytesWritten = 0;
   for (uint32_t i = 0; i < 10; i++)
   {
-    ret = swTCPConnectionWrite(conn, &buffer, &bytesWritten);
+    ret = swTCPServerWrite(server, &buffer, &bytesWritten);
     if (ret != swSocketReturnOK)
       break;
     serverBytesWritten += bytesWritten;
@@ -74,35 +74,35 @@ void onServerWriteReady(swTCPConnection *conn)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(conn->loop);
+    swEdgeLoopBreak(server->io.loop);
   }
 }
 
-bool onServerReadTimeout(swTCPConnection *conn)
+bool onServerReadTimeout(swTCPServer *server)
 {
   swTestLogLine("Server: read timeout\n");
   return false;
 }
 
-bool onServerWriteTimeout(swTCPConnection *conn)
+bool onServerWriteTimeout(swTCPServer *server)
 {
   swTestLogLine("Server: write timeout\n");
   return false;
 }
 
-void onServerError(swTCPConnection *conn, swTCPConnectionErrorType errorCode)
+void onServerError(swTCPServer *server, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Server: error \"%s\"\n", swTCPConnectionErrorTextGet(errorCode));
+  swTestLogLine("Server: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
-void onServerClose(swTCPConnection *conn)
+void onServerClose(swTCPServer *server)
 {
   // swTestLogLine("Server: close\n");
-  swTCPConnectionDelete(conn);
+  swTCPServerDelete(server);
   serverConnection = NULL;
 }
 
-bool onAccept(swTCPServer *server)
+bool onAccept(swTCPServerAcceptor *serverAcceptor)
 {
   static uint32_t lifetimeServerConnectionsCount = 0;
   lifetimeServerConnectionsCount++;
@@ -110,31 +110,31 @@ bool onAccept(swTCPServer *server)
   return true;
 }
 
-void onStop(swTCPServer *server)
+void onStop(swTCPServerAcceptor *serverAcceptor)
 {
   // swTestLogLine("Acceptor: stopping\n");
 }
 
-void onError(swTCPServer *server, swTCPConnectionErrorType errorCode)
+void onError(swTCPServerAcceptor *serverAcceptor, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Acceptor: error \"%s\"\n", swTCPConnectionErrorTextGet(errorCode));
+  swTestLogLine("Acceptor: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
-bool onConnectionSetup(swTCPServer *server, swTCPConnection *conn)
+bool onConnectionSetup(swTCPServerAcceptor *serverAcceptor, swTCPServer *server)
 {
   bool rtn = false;
   // swTestLogLine("Server: new connection setup\n");
-  if (conn)
+  if (server)
   {
-    serverConnection = conn;
-    swTCPConnectionReadTimeoutSet(conn, 1000);
-    swTCPConnectionWriteTimeoutSet(conn, 1000);
-    swTCPConnectionReadReadyFuncSet(conn, onServerReadReady);
-    swTCPConnectionWriteReadyFuncSet(conn, onServerWriteReady);
-    swTCPConnectionReadTimeoutFuncSet(conn, onServerReadTimeout);
-    swTCPConnectionWriteTimeoutFuncSet(conn, onServerWriteTimeout);
-    swTCPConnectionErrorFuncSet(conn, onServerError);
-    swTCPConnectionCloseFuncSet(conn, onServerClose);
+    serverConnection = server;
+    swTCPServerReadTimeoutSet     (server, 1000);
+    swTCPServerWriteTimeoutSet    (server, 1000);
+    swTCPServerReadReadyFuncSet   (server, onServerReadReady);
+    swTCPServerWriteReadyFuncSet  (server, onServerWriteReady);
+    swTCPServerReadTimeoutFuncSet (server, onServerReadTimeout);
+    swTCPServerWriteTimeoutFuncSet(server, onServerWriteTimeout);
+    swTCPServerErrorFuncSet       (server, onServerError);
+    swTCPServerCloseFuncSet       (server, onServerClose);
     rtn = true;
   }
   ASSERT_TRUE(rtn);
@@ -156,7 +156,7 @@ void onClientStop(swTCPClient *client)
   // swTestLogLine("Client: stop\n");
 }
 
-void onClientReadReady(swTCPConnection *conn)
+void onClientReadReady(swTCPClient *client)
 {
   // swTestLogLine("Client: read ready, bytes read = %zd\n", clientBytesRead);
   swSocketReturnType ret = swSocketReturnNone;
@@ -164,7 +164,7 @@ void onClientReadReady(swTCPConnection *conn)
   ssize_t bytesRead = 0;
   for (uint32_t i = 0; i < 10; i++)
   {
-    ret = swTCPConnectionRead(conn, &buffer, &bytesRead);
+    ret = swTCPClientRead(client, &buffer, &bytesRead);
     if (ret != swSocketReturnOK)
       break;
     clientBytesRead += bytesRead;
@@ -172,13 +172,13 @@ void onClientReadReady(swTCPConnection *conn)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(conn->loop);
+    swEdgeLoopBreak(client->loop);
   }
   else if (serverBytesRead > EXPECT_BYTES && clientBytesRead > EXPECT_BYTES)
-    swEdgeLoopBreak(conn->loop);
+    swEdgeLoopBreak(client->loop);
 }
 
-void onClientWriteReady(swTCPConnection *conn)
+void onClientWriteReady(swTCPClient *client)
 {
   // swTestLogLine("Client: write ready, bytes written = %zd\n", clientBytesWritten);
   swSocketReturnType ret = swSocketReturnNone;
@@ -186,7 +186,7 @@ void onClientWriteReady(swTCPConnection *conn)
   ssize_t bytesWritten = 0;
   for (uint32_t i = 0; i < 10; i++)
   {
-    ret = swTCPConnectionWrite(conn, &buffer, &bytesWritten);
+    ret = swTCPClientWrite(client, &buffer, &bytesWritten);
     if (ret != swSocketReturnOK)
       break;
     clientBytesWritten += bytesWritten;
@@ -194,25 +194,25 @@ void onClientWriteReady(swTCPConnection *conn)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(conn->loop);
+    swEdgeLoopBreak(client->loop);
   }
 }
 
-bool onClientReadTimeout(swTCPConnection *conn)
+bool onClientReadTimeout(swTCPClient *client)
 {
   swTestLogLine("Client: read timeout\n");
   return false;
 }
 
-bool onClientWriteTimeout(swTCPConnection *conn)
+bool onClientWriteTimeout(swTCPClient *client)
 {
   swTestLogLine("Client: write timeout\n");
   return false;
 }
 
-void onClientError(swTCPConnection *conn, swTCPConnectionErrorType errorCode)
+void onClientError(swTCPClient *client, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Client: error \"%s\"\n", swTCPConnectionErrorTextGet(errorCode));
+  swTestLogLine("Client: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
 bool runClientServerTest(swSocketAddress *address,  swEdgeLoop *loop)
@@ -220,16 +220,16 @@ bool runClientServerTest(swSocketAddress *address,  swEdgeLoop *loop)
   ASSERT_NOT_NULL(loop);
   ASSERT_NOT_NULL(address);
   bool rtn = false;
-  swTCPServer *server = swTCPServerNew();
-  if (server)
+  swTCPServerAcceptor *serverAcceptor = swTCPServerAcceptorNew();
+  if (serverAcceptor)
   {
     // set callbacks
-    swTCPServerAcceptFuncSet(server, onAccept);
-    swTCPServerStopFuncSet(server, onStop);
-    swTCPServerErrorFuncSet(server, onError);
-    swTCPServerSetupFuncSet(server, onConnectionSetup);
+    swTCPServerAcceptorAcceptFuncSet  (serverAcceptor, onAccept);
+    swTCPServerAcceptorStopFuncSet    (serverAcceptor, onStop);
+    swTCPServerAcceptorErrorFuncSet   (serverAcceptor, onError);
+    swTCPServerAcceptorSetupFuncSet   (serverAcceptor, onConnectionSetup);
 
-    if (swTCPServerStart(server, loop, address))
+    if (swTCPServerAcceptorStart(serverAcceptor, loop, address))
     {
       swTCPClient *client = swTCPClientNew();
       if (client)
@@ -241,13 +241,13 @@ bool runClientServerTest(swSocketAddress *address,  swEdgeLoop *loop)
         swTCPClientCloseFuncSet(client, onClientClose);
         swTCPClientStopFuncSet(client, onClientStop);
 
-        swTCPConnectionReadTimeoutSet(client, 1000);
-        swTCPConnectionWriteTimeoutSet(client, 1000);
-        swTCPConnectionReadReadyFuncSet(client, onClientReadReady);
-        swTCPConnectionWriteReadyFuncSet(client, onClientWriteReady);
-        swTCPConnectionReadTimeoutFuncSet(client, onClientReadTimeout);
-        swTCPConnectionWriteTimeoutFuncSet(client, onClientWriteTimeout);
-        swTCPConnectionErrorFuncSet(client, onClientError);
+        swTCPClientReadTimeoutSet(client, 1000);
+        swTCPClientWriteTimeoutSet(client, 1000);
+        swTCPClientReadReadyFuncSet(client, onClientReadReady);
+        swTCPClientWriteReadyFuncSet(client, onClientWriteReady);
+        swTCPClientReadTimeoutFuncSet(client, onClientReadTimeout);
+        swTCPClientWriteTimeoutFuncSet(client, onClientWriteTimeout);
+        swTCPClientErrorFuncSet(client, onClientError);
 
         if (swTCPClientStart(client, address, loop, NULL))
         {
@@ -258,16 +258,16 @@ bool runClientServerTest(swSocketAddress *address,  swEdgeLoop *loop)
           serverBytesRead = serverBytesWritten = clientBytesRead = clientBytesWritten = 0;
           if (serverConnection)
           {
-            swTCPConnectionDelete(serverConnection);
+            swTCPServerDelete(serverConnection);
             serverConnection = NULL;
           }
           swTCPClientStop(client);
         }
         swTCPClientDelete(client);
       }
-      swTCPServerStop(server);
+      swTCPServerAcceptorStop(serverAcceptor);
     }
-    swTCPServerDelete(server);
+    swTCPServerAcceptorDelete(serverAcceptor);
   }
   return rtn;
 }

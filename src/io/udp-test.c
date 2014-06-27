@@ -52,10 +52,10 @@ void onServerReadReady(swUDPServer *server)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(server->conn.loop);
+    swEdgeLoopBreak(server->io.loop);
   }
   else if (serverBytesRead > EXPECT_BYTES && clientBytesRead > EXPECT_BYTES)
-    swEdgeLoopBreak(server->conn.loop);
+    swEdgeLoopBreak(server->io.loop);
 }
 
 void onServerWriteReady(swUDPServer *server)
@@ -76,12 +76,12 @@ void onServerWriteReady(swUDPServer *server)
     if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
     {
       ASSERT_FAIL();
-      swEdgeLoopBreak(server->conn.loop);
+      swEdgeLoopBreak(server->io.loop);
     }
   }
   else if (server)
   {
-    swEdgeWatcherPendingSet((swEdgeWatcher *)&(server->conn.ioEvent), swEdgeEventWrite);
+    swEdgeWatcherPendingSet((swEdgeWatcher *)&(server->io.ioEvent), swEdgeEventWrite);
   }
 }
 
@@ -97,9 +97,9 @@ bool onServerWriteTimeout(swUDPServer *server)
   return false;
 }
 
-void onServerError(swUDPServer *server, swTCPConnectionErrorType errorCode)
+void onServerError(swUDPServer *server, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Server: error \"%s\"\n", swTCPConnectionErrorTextGet(errorCode));
+  swTestLogLine("Server: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
 void onServerClose(swUDPServer *server)
@@ -176,9 +176,9 @@ bool onClientWriteTimeout(swUDPClient *client)
   return false;
 }
 
-void onClientError(swUDPClient *client, swTCPConnectionErrorType errorCode)
+void onClientError(swUDPClient *client, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Client: error \"%s\"\n", swTCPConnectionErrorTextGet(errorCode));
+  swTestLogLine("Client: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
 bool runClientServerTest(swSocketAddress *address,  swEdgeLoop *loop, swSocketAddress *bindAddress)

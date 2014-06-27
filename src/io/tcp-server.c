@@ -3,13 +3,13 @@
 #include <core/memory.h>
 
 // TODO: consider limiting the number of accepts on the same pass, if we do limit, set pending on the loop
-static void swTCPServerAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t events)
+static void swTCPServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t events)
 {
-  swTCPServer *server = swEdgeWatcherDataGet(ioWatcher);
-  if (server)
+  swTCPServerAcceptor *serverAcceptor = swEdgeWatcherDataGet(ioWatcher);
+  if (serverAcceptor)
   {
-    swSocket *sock = (swSocket *)server;
-    swTCPConnectionErrorType errorCode = swTCPConnectionErrorNone;
+    swSocket *sock = (swSocket *)serverAcceptor;
+    swSocketIOErrorType errorCode = swSocketIOErrorNone;
     if ((events & swEdgeEventRead) && !(events & (swEdgeEventError | swEdgeEventHungUp)))
     {
       swSocketReturnType ret = swSocketReturnNone;
@@ -18,14 +18,14 @@ static void swTCPServerAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t events)
         swSocket acceptedSock = {.type = SOCK_STREAM, .fd = -1};
         if ((ret = swSocketAccept(sock, &acceptedSock)) == swSocketReturnOK)
         {
-          if (!server->acceptFunc || server->acceptFunc(server))
+          if (!serverAcceptor->acceptFunc || serverAcceptor->acceptFunc(serverAcceptor))
           {
-            swTCPConnection *conn = swTCPConnectionNew();
-            if (conn)
+            swTCPServer *server = swTCPServerNew();
+            if (server)
             {
-              conn->sock = acceptedSock;
-              if (!(!server->setupFunc || server->setupFunc(server, conn)) || !swTCPConnectionStart(conn, server->loop))
-                swTCPConnectionDelete(conn);
+              server->io.sock = acceptedSock;
+              if (!(!serverAcceptor->setupFunc || serverAcceptor->setupFunc(serverAcceptor, server)) || !swTCPServerStart(server, serverAcceptor->loop))
+                swTCPServerDelete(server);
             }
           }
           else
@@ -35,104 +35,104 @@ static void swTCPServerAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t events)
           break;
       }
       if (ret != swSocketReturnNotReady)
-        errorCode = swTCPConnectionErrorAcceptFailed;
+        errorCode = swSocketIOErrorAcceptFailed;
     }
     else
-      errorCode = ((events & swEdgeEventError) ? swTCPConnectionErrorSocketError : swTCPConnectionErrorSocketHangUp);
+      errorCode = ((events & swEdgeEventError) ? swSocketIOErrorSocketError : swSocketIOErrorSocketHangUp);
     if (errorCode)
     {
-      if (server->errorFunc)
-        server->errorFunc(server, errorCode);
-      swTCPServerStop(server);
+      if (serverAcceptor->errorFunc)
+        serverAcceptor->errorFunc(serverAcceptor, errorCode);
+      swTCPServerAcceptorStop(serverAcceptor);
     }
   }
 }
 
-swTCPServer *swTCPServerNew()
+swTCPServerAcceptor *swTCPServerAcceptorNew()
 {
-  swTCPServer *rtn = swMemoryCalloc(1, sizeof(swTCPServer));
+  swTCPServerAcceptor *rtn = swMemoryCalloc(1, sizeof(swTCPServerAcceptor));
   if (rtn)
   {
-    if (!swTCPServerInit(rtn))
+    if (!swTCPServerAcceptorInit(rtn))
     {
-      swTCPServerDelete(rtn);
+      swTCPServerAcceptorDelete(rtn);
       rtn = NULL;
     }
   }
   return rtn;
 }
 
-bool swTCPServerInit(swTCPServer *server)
+bool swTCPServerAcceptorInit(swTCPServerAcceptor *serverAcceptor)
 {
   bool rtn = false;
-  if (server)
+  if (serverAcceptor)
   {
-    if (swEdgeIOInit(&(server->acceptEvent), swTCPServerAcceptEventCallback))
+    if (swEdgeIOInit(&(serverAcceptor->acceptEvent), swTCPServerAcceptorAcceptEventCallback))
     {
-      swEdgeWatcherDataSet(&(server->acceptEvent), server);
+      swEdgeWatcherDataSet(&(serverAcceptor->acceptEvent), serverAcceptor);
       rtn = true;
     }
   }
   return rtn;
 }
 
-void swTCPServerCleanup(swTCPServer *server)
+void swTCPServerAcceptorCleanup(swTCPServerAcceptor *serverAcceptor)
 {
-  if (server)
+  if (serverAcceptor)
   {
-    server->loop = NULL;
-    swEdgeIOClose(&(server->acceptEvent));
+    serverAcceptor->loop = NULL;
+    swEdgeIOClose(&(serverAcceptor->acceptEvent));
   }
 }
 
-void swTCPServerDelete(swTCPServer *server)
+void swTCPServerAcceptorDelete(swTCPServerAcceptor *serverAcceptor)
 {
-  if (server)
+  if (serverAcceptor)
   {
-    swTCPServerCleanup(server);
-    swMemoryFree(server);
+    swTCPServerAcceptorCleanup(serverAcceptor);
+    swMemoryFree(serverAcceptor);
   }
 }
 
-bool swTCPServerStart(swTCPServer *server, swEdgeLoop *loop, swSocketAddress *address)
+bool swTCPServerAcceptorStart(swTCPServerAcceptor *serverAcceptor, swEdgeLoop *loop, swSocketAddress *address)
 {
   bool rtn = false;
-  if(server && loop && address)
+  if(serverAcceptor && loop && address)
   {
-    swSocket *sock = (swSocket *)server;
+    swSocket *sock = (swSocket *)serverAcceptor;
     if (swSocketInit(sock, address->storage.ss_family, SOCK_STREAM))
     {
-      swTCPConnectionErrorType errorCode = swTCPConnectionErrorNone;
+      swSocketIOErrorType errorCode = swSocketIOErrorNone;
       if (swSocketListen(sock, address) == swSocketReturnOK)
       {
-        if (swEdgeIOStart(&(server->acceptEvent), loop, sock->fd, swEdgeEventRead))
+        if (swEdgeIOStart(&(serverAcceptor->acceptEvent), loop, sock->fd, swEdgeEventRead))
         {
-          server->loop = loop;
+          serverAcceptor->loop = loop;
           rtn = true;
         }
         else
-          errorCode = swTCPConnectionErrorOtherError;
+          errorCode = swSocketIOErrorOtherError;
       }
       else
-        errorCode = swTCPConnectionErrorListenFailed;
+        errorCode = swSocketIOErrorListenFailed;
       if (!rtn)
       {
-        if (errorCode && server->errorFunc)
-          server->errorFunc(server, errorCode);
-        swSocketClose((swSocket *)server);
+        if (errorCode && serverAcceptor->errorFunc)
+          serverAcceptor->errorFunc(serverAcceptor, errorCode);
+        swSocketClose((swSocket *)serverAcceptor);
       }
     }
   }
   return rtn;
 }
 
-void swTCPServerStop(swTCPServer *server)
+void swTCPServerAcceptorStop(swTCPServerAcceptor *serverAcceptor)
 {
-  if (server)
+  if (serverAcceptor)
   {
-    swEdgeIOStop(&(server->acceptEvent));
-    swSocketClose((swSocket *)server);
-    if (server->stopFunc)
-      server->stopFunc(server);
+    swEdgeIOStop(&(serverAcceptor->acceptEvent));
+    swSocketClose((swSocket *)serverAcceptor);
+    if (serverAcceptor->stopFunc)
+      serverAcceptor->stopFunc(serverAcceptor);
   }
 }

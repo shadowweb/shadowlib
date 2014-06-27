@@ -8,13 +8,13 @@ bool swUDPServerStart(swUDPServer *server, swEdgeLoop *loop, swSocketAddress *ad
     swSocket *sock = (swSocket *)server;
     if (swSocketInit(sock, address->storage.ss_family, SOCK_DGRAM))
     {
-      swTCPConnection *conn = (swTCPConnection *)server;
+      swSocketIO *io = (swSocketIO *)server;
       if (swSocketBind(sock, address))
-        rtn = swTCPConnectionStart(conn, loop);
+        rtn = swSocketIOStart(io, loop);
       if (!rtn)
       {
-        if (conn->errorFunc)
-          conn->errorFunc(conn, swTCPConnectionErrorOtherError);
+        if (io->errorFunc)
+          io->errorFunc(io, swSocketIOErrorOtherError);
         swSocketClose(sock);
       }
     }

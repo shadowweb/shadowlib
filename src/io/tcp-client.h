@@ -1,7 +1,7 @@
 #ifndef SW_IO_TCPCLIENT_H
 #define SW_IO_TCPCLIENT_H
 
-#include "tcp-connection.h"
+#include "socket-io.h"
 
 typedef struct swTCPClient  swTCPClient;
 
@@ -9,9 +9,15 @@ typedef void (*swTCPClientConnectedFunc)(swTCPClient *client);
 typedef void (*swTCPClientCloseFunc)(swTCPClient *client);
 typedef void (*swTCPClientStopFunc)(swTCPClient *client);
 
+typedef void (*swTCPClientReadReadyFunc)    (swTCPClient *client);
+typedef void (*swTCPClientWriteReadyFunc)   (swTCPClient *client);
+typedef bool (*swTCPClientReadTimeoutFunc)  (swTCPClient *client);
+typedef bool (*swTCPClientWriteTimeoutFunc) (swTCPClient *client);
+typedef void (*swTCPClientErrorFunc)        (swTCPClient *client, swSocketIOErrorType errorCode);
+
 struct swTCPClient
 {
-  swTCPConnection conn;
+  swSocketIO io;
   swEdgeTimer connectTimer;
   swEdgeTimer reconnectTimer;
   swEdgeIO connectEvent;
@@ -46,7 +52,18 @@ bool swTCPClientStart(swTCPClient *client, swSocketAddress *address, swEdgeLoop 
 void swTCPClientStop(swTCPClient *client);
 bool swTCPClientClose(swTCPClient *client);
 
-#define swTCPClientRead(c, b, br)   swTCPConnectionRead((swTCPConnecton *)c, b, br)
-#define swTCPClientWrite(c, b, bw)  swTCPConnectionWrite((swTCPConnecton *)c, b, bw)
+static inline swSocketReturnType swTCPClientRead  (swTCPClient *client, swStaticBuffer *buffer, ssize_t *bytesRead)     { return swSocketIORead    ((swSocketIO *)client, buffer, bytesRead);    }
+static inline swSocketReturnType swTCPClientWrite (swTCPClient *client, swStaticBuffer *buffer, ssize_t *bytesWritten)  { return swSocketIOWrite   ((swSocketIO *)client, buffer, bytesWritten); }
+
+static inline void *swTCPClientDataGet(swTCPClient *client)             { return swSocketIODataGet((swSocketIO *)(client)); }
+static inline void  swTCPClientDataSet(swTCPClient *client, void *data) { swSocketIODataSet((swSocketIO *)(client), data);  }
+
+static inline void swTCPClientReadTimeoutSet      (swTCPClient *client, uint64_t timeout)                 { swSocketIOReadTimeoutSet     (client, timeout);                          }
+static inline void swTCPClientWriteTimeoutSet     (swTCPClient *client, uint64_t timeout)                 { swSocketIOWriteTimeoutSet    (client, timeout);                          }
+static inline void swTCPClientReadReadyFuncSet    (swTCPClient *client, swTCPClientReadReadyFunc func)    { swSocketIOReadReadyFuncSet   (client, (swSocketIOReadReadyFunc)func);    }
+static inline void swTCPClientWriteReadyFuncSet   (swTCPClient *client, swTCPClientWriteReadyFunc func)   { swSocketIOWriteReadyFuncSet  (client, (swSocketIOWriteReadyFunc)func);   }
+static inline void swTCPClientReadTimeoutFuncSet  (swTCPClient *client, swTCPClientReadTimeoutFunc func)  { swSocketIOReadTimeoutFuncSet (client, (swSocketIOReadTimeoutFunc)func);  }
+static inline void swTCPClientWriteTimeoutFuncSet (swTCPClient *client, swTCPClientWriteTimeoutFunc func) { swSocketIOWriteTimeoutFuncSet(client, (swSocketIOWriteTimeoutFunc)func); }
+static inline void swTCPClientErrorFuncSet        (swTCPClient *client, swTCPClientErrorFunc func)        { swSocketIOErrorFuncSet       (client, (swSocketIOErrorFunc)func);        }
 
 #endif // SW_IO_TCPCLIENT_H
