@@ -1,7 +1,9 @@
 builddir = build
+buildthirdpartydir = build-third-party
 cc = gcc
 ar = ar
-cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -Isrc
+cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -pthread -Isrc
+ldflags = -pthread
 
 rule cc
     command = $cc -MMD -MT $out -MF $out.d $cflags -c $in -o $out
@@ -12,7 +14,10 @@ rule ar
     command = rm -f $out && $ar crs $out $in
 
 rule link
-    command = $cc $in -o $out -lrt
+    command = $cc $ldflags $in -o $out -lrt
+
+rule build-openssl
+    command = third-party/openssl/build-openssl.sh $in
 
 
 # unittest library
@@ -89,3 +94,6 @@ build $builddir/src/io/tcp-test:                         link $builddir/src/io/t
 build $builddir/src/io/udp-test.o:                       cc src/io/udp-test.c
 build $builddir/src/io/udp-test:                         link $builddir/src/io/udp-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
+# openssl library
+build $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl: $
+                                                         build-openssl third-party/openssl/openssl-1.0.1h.tar.gz
