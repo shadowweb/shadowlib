@@ -2,7 +2,7 @@ builddir = build
 buildthirdpartydir = build-third-party
 cc = gcc
 ar = ar
-cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -pthread -Isrc
+cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -pthread -Isrc -I${buildthirdpartydir}/include
 ldflags = -pthread
 
 rule cc
@@ -97,3 +97,8 @@ build $builddir/src/io/udp-test:                         link $builddir/src/io/u
 # openssl library
 build $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl: $
                                                          build-openssl third-party/openssl/openssl-1.0.1h.tar.gz
+# openssl
+build $builddir/src/openssl/init.o:                      cc src/openssl/init.c
+build $builddir/src/openssl/ssl-context.o:               cc src/openssl/ssl-context.c
+build $builddir/src/openssl/ssl-certificate.o:           cc src/openssl/ssl-certificate.c
+build $builddir/src/openssl/openssl.a:                   ar $builddir/src/openssl/init.o $builddir/src/openssl/ssl-context.o $builddir/src/openssl/ssl-certificate.o
