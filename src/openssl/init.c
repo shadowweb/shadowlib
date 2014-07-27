@@ -99,6 +99,6 @@ void swOpenSSLStop()
   CRYPTO_set_locking_callback(NULL);
   CRYPTO_set_id_callback(NULL);
   for (int i = 0; i < CRYPTO_num_locks(); i++)
-      pthread_rwlock_destroy(&swLocks[i]);
+    pthread_rwlock_destroy(&swLocks[i]);
   swMemoryFree(swLocks);
 }

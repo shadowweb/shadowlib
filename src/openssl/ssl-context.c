@@ -1,3 +1,6 @@
+#include <openssl/x509_vfy.h>
+#include <openssl/err.h>
+
 #include "ssl-context.h"
 
 typedef const SSL_METHOD *(*swSSLMethodCallback)(void);
@@ -38,5 +41,50 @@ swSSLContext *swSSLContextNew(swSSLMethod method, swSSLMethodMode mode)
   swSSLContext *rtn = NULL;
   if (method > swSSLMethodNone && method < swSSLMethodMax && mode >= swSSLMethodModeNone && mode < swSSLMethodModeMax)
     rtn = SSL_CTX_new((methodCallbacks[mode][method])());
+  return rtn;
+}
+
+bool swSSLContextLoadVerifyCertificates(swSSLContext *context, swStaticString *certificatesString)
+{
+  bool rtn = false;
+  if (context && certificatesString)
+  {
+    X509_STORE * certificatesStore = context->cert_store;
+    if (certificatesStore)
+    {
+      BIO *input = BIO_new_mem_buf(certificatesString->data, certificatesString->len);
+      if (input)
+      {
+        STACK_OF(X509_INFO) *certificatesInfo = PEM_X509_INFO_read_bio(input, NULL, NULL, NULL);
+        if (certificatesInfo)
+        {
+          uint32_t count = 0;
+          for(int i = 0; i < sk_X509_INFO_num(certificatesInfo); i++)
+          {
+            X509_INFO *certInfo = sk_X509_INFO_value(certificatesInfo, i);
+            if (certInfo)
+            {
+              if (certInfo->x509)
+              {
+                X509_STORE_add_cert(certificatesStore, certInfo->x509);
+                count++;
+              }
+              if (certInfo->crl)
+              {
+                X509_STORE_add_crl(certificatesStore, certInfo->crl);
+                count++;
+              }
+            }
+          }
+          rtn = (count != 0);
+        }
+        else
+          X509err(X509_F_X509_LOAD_CERT_CRL_FILE,ERR_R_PEM_LIB);
+        BIO_free(input);
+      }
+      else
+        X509err(X509_F_X509_LOAD_CERT_CRL_FILE,ERR_R_SYS_LIB);
+    }
+  }
   return rtn;
 }

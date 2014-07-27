@@ -18,4 +18,8 @@ static inline void swSSLCertificateDelete(swSSLCertificate *certificate)
 swSSLCertificate *swSSLCertificateNewFromPEM(swStaticString *string);
 swSSLCertificate *swSSLCertificateNewFromDER(swStaticBuffer *buffer);
 
+typedef X509_STORE_CTX swSSLCertificateStoreContext;
+
+typedef int (*swSSLCertificateVerifyCallback)(int result, swSSLCertificateStoreContext *context);
+
 #endif // SW_OPENSSL_SSLCERTIFICATE_H
