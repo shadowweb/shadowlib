@@ -1,7 +1,7 @@
+#include "open-ssl/ssl-context.h"
+
 #include <openssl/x509_vfy.h>
 #include <openssl/err.h>
-
-#include "ssl-context.h"
 
 typedef const SSL_METHOD *(*swSSLMethodCallback)(void);
 

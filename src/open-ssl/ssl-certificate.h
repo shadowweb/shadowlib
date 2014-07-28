@@ -1,7 +1,7 @@
 #ifndef SW_OPENSSL_SSLCERTIFICATE_H
 #define SW_OPENSSL_SSLCERTIFICATE_H
 
-#include "openssl/x509.h"
+#include <openssl/x509.h>
 
 #include "storage/static-string.h"
 #include "storage/static-buffer.h"
