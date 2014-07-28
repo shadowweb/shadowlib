@@ -5,8 +5,8 @@
 
 #include <openssl/ssl.h>
 
-#include "openssl/ssl-certificate.h"
-#include "openssl/ssl-key.h"
+#include "open-ssl/ssl-certificate.h"
+#include "open-ssl/ssl-key.h"
 
 typedef SSL_CTX swSSLContext;
 

@@ -97,9 +97,9 @@ build $builddir/src/io/udp-test:                         link $builddir/src/io/u
 # openssl library
 build $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl: $
                                                          build-openssl third-party/openssl/openssl-1.0.1h.tar.gz
-# openssl
-build $builddir/src/openssl/init.o:                      cc src/openssl/init.c
-build $builddir/src/openssl/ssl-context.o:               cc src/openssl/ssl-context.c
-build $builddir/src/openssl/ssl-certificate.o:           cc src/openssl/ssl-certificate.c
-build $builddir/src/openssl/ssl-key.o:                   cc src/openssl/ssl-key.c
-build $builddir/src/openssl/openssl.a:                   ar $builddir/src/openssl/init.o $builddir/src/openssl/ssl-context.o $builddir/src/openssl/ssl-certificate.o $builddir/src/openssl/ssl-key.o
+# open-ssl
+build $builddir/src/open-ssl/init.o:                     cc src/open-ssl/init.c
+build $builddir/src/open-ssl/ssl-context.o:              cc src/open-ssl/ssl-context.c
+build $builddir/src/open-ssl/ssl-certificate.o:          cc src/open-ssl/ssl-certificate.c
+build $builddir/src/open-ssl/ssl-key.o:                  cc src/open-ssl/ssl-key.c
+build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-ssl/init.o $builddir/src/open-ssl/ssl-context.o $builddir/src/open-ssl/ssl-certificate.o $builddir/src/open-ssl/ssl-key.o
