@@ -102,4 +102,8 @@ build $builddir/src/open-ssl/init.o:                     cc src/open-ssl/init.c
 build $builddir/src/open-ssl/ssl-context.o:              cc src/open-ssl/ssl-context.c
 build $builddir/src/open-ssl/ssl-certificate.o:          cc src/open-ssl/ssl-certificate.c
 build $builddir/src/open-ssl/ssl-key.o:                  cc src/open-ssl/ssl-key.c
-build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-ssl/init.o $builddir/src/open-ssl/ssl-context.o $builddir/src/open-ssl/ssl-certificate.o $builddir/src/open-ssl/ssl-key.o
+build $builddir/src/open-ssl/ssl.o:                      cc src/open-ssl/ssl.c
+build $builddir/src/open-ssl/ssl-socket-io.o:            cc src/open-ssl/ssl-socket-io.c
+build $builddir/src/open-ssl/ssl-client.o:               cc src/open-ssl/ssl-client.c
+build $builddir/src/open-ssl/ssl-server.o:               cc src/open-ssl/ssl-server.c
+build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-ssl/init.o $builddir/src/open-ssl/ssl-context.o $builddir/src/open-ssl/ssl-certificate.o $builddir/src/open-ssl/ssl-key.o $builddir/src/open-ssl/ssl.o $builddir/src/open-ssl/ssl-socket-io.o $builddir/src/open-ssl/ssl-client.o $builddir/src/open-ssl/ssl-server.o

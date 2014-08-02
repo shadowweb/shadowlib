@@ -87,13 +87,13 @@ static void swSocketIOIOEventCallback(swEdgeIO *ioWatcher, uint32_t events)
       {
         swEdgeTimerStop(&(io->readTimer));
         if (io->readReadyFunc)
-                    io->readReadyFunc(io);
+          io->readReadyFunc(io);
       }
       if (events & swEdgeEventWrite)
       {
         swEdgeTimerStop(&(io->writeTimer));
         if (io->writeReadyFunc)
-                    io->writeReadyFunc(io);
+          io->writeReadyFunc(io);
       }
     }
     else

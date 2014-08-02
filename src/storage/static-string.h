@@ -18,11 +18,12 @@ typedef struct swStaticString
 #define swStaticStringDefineWithLength(str, length)   {.len = length, .data = str}
 #define swStaticStringSetWithLength(str, length)      *(swStaticString[]){{.len = length, .data = str}}
 #define swStaticStringSetFromCstr(str)                *(swStaticString[]){{.len = strlen(str), .data = str}}
-#define swStaticStringSet(str)                        *(swStaticStrig[]){{.len = sizeof(str) - 1, .data = str}}
-#define swStaticStringSetEmpty                        *(swStaticSting[]){{.len = 0, .data = NULL}}
+#define swStaticStringSet(str)                        *(swStaticString[]){{.len = sizeof(str) - 1, .data = str}}
+#define swStaticStringSetEmpty                        *(swStaticString[]){{.len = 0, .data = NULL}}
 
 uint32_t swStaticStringHash(const swStaticString *string);
 int swStaticStringCompare(const swStaticString *s1, const swStaticString *s2);
 bool swStaticStringEqual(const swStaticString *s1, const swStaticString *s2);
+bool swStaticStringSame(const swStaticString *s1, const swStaticString *s2);
 
 #endif // SW_STORAGE_STATICSTRING_H

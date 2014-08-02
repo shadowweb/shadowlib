@@ -1,15 +1,15 @@
-#include "tcp-server.h"
+#include "open-ssl/ssl-server.h"
 
 #include <core/memory.h>
 
 // TODO: consider limiting the number of accepts on the same pass, if we do limit, set pending on the loop
-static void swTCPServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t events)
+static void swSSLServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t events)
 {
-  swTCPServerAcceptor *serverAcceptor = swEdgeWatcherDataGet(ioWatcher);
+  swSSLServerAcceptor *serverAcceptor = swEdgeWatcherDataGet(ioWatcher);
   if (serverAcceptor)
   {
     swSocket *sock = (swSocket *)serverAcceptor;
-    swSocketIOErrorType errorCode = swSocketIOErrorNone;
+    swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
     if ((events & swEdgeEventRead) && !(events & (swEdgeEventError | swEdgeEventHungUp)))
     {
       swSocketReturnType ret = swSocketReturnNone;
@@ -20,12 +20,19 @@ static void swTCPServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t
         {
           if (!serverAcceptor->acceptFunc || serverAcceptor->acceptFunc(serverAcceptor))
           {
-            swTCPServer *server = swTCPServerNew();
-            if (server)
+            swSSL *ssl = swSSLNewFromFD(serverAcceptor->context, acceptedSock.fd, false);
+            if (ssl)
             {
-              server->io.sock = acceptedSock;
-              if (!(!serverAcceptor->setupFunc || serverAcceptor->setupFunc(serverAcceptor, server)) || !swTCPServerStart(server, serverAcceptor->loop))
-                swTCPServerDelete(server);
+              swSSLServer *server = swSSLServerNew();
+              if (server)
+              {
+                server->io.sock = acceptedSock;
+                server->io.ssl = ssl;
+                if (!(!serverAcceptor->setupFunc || serverAcceptor->setupFunc(serverAcceptor, server)) || !swSSLServerStart(server, serverAcceptor->loop))
+                  swSSLServerDelete(server);
+              }
+              else
+                swSSLDelete(ssl);
             }
           }
           else
@@ -35,41 +42,45 @@ static void swTCPServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t
           break;
       }
       if (ret != swSocketReturnNotReady)
-        errorCode = swSocketIOErrorAcceptFailed;
+        errorCode = swSSLSocketIOErrorAcceptFailed;
     }
     else
-      errorCode = ((events & swEdgeEventError) ? swSocketIOErrorSocketError : swSocketIOErrorSocketHangUp);
+      errorCode = ((events & swEdgeEventError) ? swSSLSocketIOErrorSocketError : swSSLSocketIOErrorSocketHangUp);
     if (errorCode)
     {
       if (serverAcceptor->errorFunc)
         serverAcceptor->errorFunc(serverAcceptor, errorCode);
-      swTCPServerAcceptorStop(serverAcceptor);
+      swSSLServerAcceptorStop(serverAcceptor);
     }
   }
 }
 
-swTCPServerAcceptor *swTCPServerAcceptorNew()
+swSSLServerAcceptor *swSSLServerAcceptorNew(swSSLContext *context)
 {
-  swTCPServerAcceptor *rtn = swMemoryMalloc(sizeof(swTCPServerAcceptor));
-  if (rtn)
+  swSSLServerAcceptor *rtn = NULL;
+  if (context)
   {
-    if (!swTCPServerAcceptorInit(rtn))
+    if ((rtn = swMemoryMalloc(sizeof(swSSLServerAcceptor))))
     {
-      swTCPServerAcceptorDelete(rtn);
-      rtn = NULL;
+      if (!swSSLServerAcceptorInit(rtn, context))
+      {
+        swSSLServerAcceptorDelete(rtn);
+        rtn = NULL;
+      }
     }
   }
   return rtn;
 }
 
-bool swTCPServerAcceptorInit(swTCPServerAcceptor *serverAcceptor)
+bool swSSLServerAcceptorInit(swSSLServerAcceptor *serverAcceptor, swSSLContext *context)
 {
   bool rtn = false;
-  if (serverAcceptor)
+  if (serverAcceptor && context)
   {
-    memset(serverAcceptor, 0, sizeof(swTCPServerAcceptor));
-    if (swEdgeIOInit(&(serverAcceptor->acceptEvent), swTCPServerAcceptorAcceptEventCallback))
+    memset(serverAcceptor, 0, sizeof(swSSLServerAcceptor));
+    if (swEdgeIOInit(&(serverAcceptor->acceptEvent), swSSLServerAcceptorAcceptEventCallback))
     {
+      serverAcceptor->context = context;
       swEdgeWatcherDataSet(&(serverAcceptor->acceptEvent), serverAcceptor);
       rtn = true;
     }
@@ -77,25 +88,26 @@ bool swTCPServerAcceptorInit(swTCPServerAcceptor *serverAcceptor)
   return rtn;
 }
 
-void swTCPServerAcceptorCleanup(swTCPServerAcceptor *serverAcceptor)
+void swSSLServerAcceptorCleanup(swSSLServerAcceptor *serverAcceptor)
 {
   if (serverAcceptor)
   {
     serverAcceptor->loop = NULL;
+    serverAcceptor->context = NULL;
     swEdgeIOClose(&(serverAcceptor->acceptEvent));
   }
 }
 
-void swTCPServerAcceptorDelete(swTCPServerAcceptor *serverAcceptor)
+void swSSLServerAcceptorDelete(swSSLServerAcceptor *serverAcceptor)
 {
   if (serverAcceptor)
   {
-    swTCPServerAcceptorCleanup(serverAcceptor);
+    swSSLServerAcceptorCleanup(serverAcceptor);
     swMemoryFree(serverAcceptor);
   }
 }
 
-bool swTCPServerAcceptorStart(swTCPServerAcceptor *serverAcceptor, swEdgeLoop *loop, swSocketAddress *address)
+bool swSSLServerAcceptorStart(swSSLServerAcceptor *serverAcceptor, swEdgeLoop *loop, swSocketAddress *address)
 {
   bool rtn = false;
   if(serverAcceptor && loop && address)
@@ -103,7 +115,7 @@ bool swTCPServerAcceptorStart(swTCPServerAcceptor *serverAcceptor, swEdgeLoop *l
     swSocket *sock = (swSocket *)serverAcceptor;
     if (swSocketInit(sock, address->storage.ss_family, SOCK_STREAM))
     {
-      swSocketIOErrorType errorCode = swSocketIOErrorNone;
+      swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
       if (swSocketListen(sock, address) == swSocketReturnOK)
       {
         if (swEdgeIOStart(&(serverAcceptor->acceptEvent), loop, sock->fd, swEdgeEventRead))
@@ -112,10 +124,10 @@ bool swTCPServerAcceptorStart(swTCPServerAcceptor *serverAcceptor, swEdgeLoop *l
           rtn = true;
         }
         else
-          errorCode = swSocketIOErrorOtherError;
+          errorCode = swSSLSocketIOErrorOtherError;
       }
       else
-        errorCode = swSocketIOErrorListenFailed;
+        errorCode = swSSLSocketIOErrorListenFailed;
       if (!rtn)
       {
         if (errorCode && serverAcceptor->errorFunc)
@@ -127,7 +139,7 @@ bool swTCPServerAcceptorStart(swTCPServerAcceptor *serverAcceptor, swEdgeLoop *l
   return rtn;
 }
 
-void swTCPServerAcceptorStop(swTCPServerAcceptor *serverAcceptor)
+void swSSLServerAcceptorStop(swSSLServerAcceptor *serverAcceptor)
 {
   if (serverAcceptor)
   {

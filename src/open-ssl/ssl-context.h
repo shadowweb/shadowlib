@@ -75,8 +75,4 @@ static inline bool swSSLContextSetKey(swSSLContext *context, swSSLKey *key)
 
 bool swSSLContextLoadVerifyCertificates(swSSLContext *context, swStaticString *certificatesString);
 
-// TODO: add x509 and private/public key classes
-// TODO: add setting up CA certificate and key
-// TODO: set up certificate used for handshake (client or server)
-
 #endif // SW_OPENSSL_SSLCONTEXT_H

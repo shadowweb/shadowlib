@@ -52,3 +52,11 @@ bool swStaticStringEqual(const swStaticString *s1, const swStaticString *s2)
   }
   return ret;
 }
+
+bool swStaticStringSame(const swStaticString *s1, const swStaticString *s2)
+{
+  bool ret = false;
+  if ((s1 == s2) || (s1 && s2 && s1->data == s2->data && s1->len == s2->len))
+    ret = true;
+  return ret;
+}

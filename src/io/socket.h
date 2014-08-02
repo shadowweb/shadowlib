@@ -17,6 +17,9 @@ typedef enum swSocketReturnType
   swSocketReturnOK,
   swSocketReturnInProgress,
   swSocketReturnNotReady,
+  swSocketReturnWriteNotReady,
+  swSocketReturnReadNotReady,
+  swSocketReturnInvalidBuffer,
   swSocketReturnClose,
   swSocketReturnError,
   swSocketReturnMax

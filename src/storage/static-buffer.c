@@ -53,3 +53,11 @@ bool swStaticBufferEqual(const swStaticBuffer *b1, const swStaticBuffer *b2)
   }
   return ret;
 }
+
+bool swStaticBufferSame(const swStaticBuffer *b1, const swStaticBuffer *b2)
+{
+  bool ret = false;
+  if ((b1 == b2) || (b1 && b2 && b1->data == b2->data && b1->len == b2->len))
+    ret = true;
+  return ret;
+}
