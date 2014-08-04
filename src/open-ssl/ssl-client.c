@@ -235,7 +235,7 @@ bool swSSLClientStart(swSSLClient *client, swSocketAddress *address, swEdgeLoop 
   return rtn;
 }
 
-void swSSClientStop(swSSLClient *client)
+void swSSLClientStop(swSSLClient *client)
 {
   if (client && client->loop)
   {

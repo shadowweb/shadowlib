@@ -14,7 +14,7 @@ rule ar
     command = rm -f $out && $ar crs $out $in
 
 rule link
-    command = $cc $ldflags $in -o $out -lrt
+    command = $cc $ldflags $in -o $out -lrt -ldl
 
 rule build-openssl
     command = third-party/openssl/build-openssl.sh $in
@@ -107,3 +107,9 @@ build $builddir/src/open-ssl/ssl-socket-io.o:            cc src/open-ssl/ssl-soc
 build $builddir/src/open-ssl/ssl-client.o:               cc src/open-ssl/ssl-client.c
 build $builddir/src/open-ssl/ssl-server.o:               cc src/open-ssl/ssl-server.c
 build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-ssl/init.o $builddir/src/open-ssl/ssl-context.o $builddir/src/open-ssl/ssl-certificate.o $builddir/src/open-ssl/ssl-key.o $builddir/src/open-ssl/ssl.o $builddir/src/open-ssl/ssl-socket-io.o $builddir/src/open-ssl/ssl-client.o $builddir/src/open-ssl/ssl-server.o
+
+# ssl test
+build $builddir/src/open-ssl/ssl-test.o:                 cc src/open-ssl/ssl-test.c
+build $builddir/src/open-ssl/ssl-test:                   link $builddir/src/open-ssl/ssl-test.o $builddir/src/open-ssl/openssl.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $builddir/src/utils/utils.a $buildthirdpartydir/lib/openssl/libssl.a $buildthirdpartydir/lib/openssl/libcrypto.a
+
+

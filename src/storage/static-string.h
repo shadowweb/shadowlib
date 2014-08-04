@@ -12,7 +12,7 @@ typedef struct swStaticString
   char *data;
 } swStaticString;
 
-#define swStaticStringDefineEempty                    {.len = 0, .data = NULL}
+#define swStaticStringDefineEmpty                     {.len = 0, .data = NULL}
 #define swStaticStringDefine(str)                     {.len = sizeof(str) - 1, .data = str}
 #define swStaticStringDefineFromCstr(str)             {.len = strlen(str), .data = str}
 #define swStaticStringDefineWithLength(str, length)   {.len = length, .data = str}

@@ -63,7 +63,7 @@ static inline void swSSLContextSetVerify(swSSLContext *context, uint32_t verifyM
 static inline bool swSSLContextSetCertificate(swSSLContext *context, swSSLCertificate *cert)
 {
   if (context && cert)
-    return SSL_CTX_use_certificate(context ,cert);
+    return SSL_CTX_use_certificate(context, cert);
   return false;
 }
 static inline bool swSSLContextSetKey(swSSLContext *context, swSSLKey *key)

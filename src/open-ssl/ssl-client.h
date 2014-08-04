@@ -59,12 +59,12 @@ static inline swSocketReturnType swSSLClientWrite (swSSLClient *client, swStatic
 static inline void *swSSLClientDataGet(swSSLClient *client)             { return swSSLSocketIODataGet((swSSLSocketIO *)(client)); }
 static inline void  swSSLClientDataSet(swSSLClient *client, void *data) { swSSLSocketIODataSet((swSSLSocketIO *)(client), data);  }
 
-static inline void swSSLlientReadTimeoutSet      (swSSLClient *client, uint64_t timeout)                 { swSSLSocketIOReadTimeoutSet     (client, timeout);                          }
-static inline void swSSLlientWriteTimeoutSet     (swSSLClient *client, uint64_t timeout)                 { swSSLSocketIOWriteTimeoutSet    (client, timeout);                          }
-static inline void swSSLlientReadReadyFuncSet    (swSSLClient *client, swSSLClientReadReadyFunc func)    { swSSLSocketIOReadReadyFuncSet   (client, (swSSLSocketIOReadReadyFunc)func);    }
-static inline void swSSLlientWriteReadyFuncSet   (swSSLClient *client, swSSLClientWriteReadyFunc func)   { swSSLSocketIOWriteReadyFuncSet  (client, (swSSLSocketIOWriteReadyFunc)func);   }
-static inline void swSSLlientReadTimeoutFuncSet  (swSSLClient *client, swSSLClientReadTimeoutFunc func)  { swSSLSocketIOReadTimeoutFuncSet (client, (swSSLSocketIOReadTimeoutFunc)func);  }
-static inline void swSSLlientWriteTimeoutFuncSet (swSSLClient *client, swSSLClientWriteTimeoutFunc func) { swSSLSocketIOWriteTimeoutFuncSet(client, (swSSLSocketIOWriteTimeoutFunc)func); }
-static inline void swSSLlientErrorFuncSet        (swSSLClient *client, swSSLClientErrorFunc func)        { swSSLSocketIOErrorFuncSet       (client, (swSSLSocketIOErrorFunc)func);        }
+static inline void swSSLClientReadTimeoutSet      (swSSLClient *client, uint64_t timeout)                 { swSSLSocketIOReadTimeoutSet     (client, timeout);                          }
+static inline void swSSLClientWriteTimeoutSet     (swSSLClient *client, uint64_t timeout)                 { swSSLSocketIOWriteTimeoutSet    (client, timeout);                          }
+static inline void swSSLClientReadReadyFuncSet    (swSSLClient *client, swSSLClientReadReadyFunc func)    { swSSLSocketIOReadReadyFuncSet   (client, (swSSLSocketIOReadReadyFunc)func);    }
+static inline void swSSLClientWriteReadyFuncSet   (swSSLClient *client, swSSLClientWriteReadyFunc func)   { swSSLSocketIOWriteReadyFuncSet  (client, (swSSLSocketIOWriteReadyFunc)func);   }
+static inline void swSSLClientReadTimeoutFuncSet  (swSSLClient *client, swSSLClientReadTimeoutFunc func)  { swSSLSocketIOReadTimeoutFuncSet (client, (swSSLSocketIOReadTimeoutFunc)func);  }
+static inline void swSSLClientWriteTimeoutFuncSet (swSSLClient *client, swSSLClientWriteTimeoutFunc func) { swSSLSocketIOWriteTimeoutFuncSet(client, (swSSLSocketIOWriteTimeoutFunc)func); }
+static inline void swSSLClientErrorFuncSet        (swSSLClient *client, swSSLClientErrorFunc func)        { swSSLSocketIOErrorFuncSet       (client, (swSSLSocketIOErrorFunc)func);        }
 
 #endif // SW_IO_TCPCLIENT_H
