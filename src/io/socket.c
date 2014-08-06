@@ -6,6 +6,27 @@
 #include <fcntl.h>
 #include <errno.h>
 
+static const char const *swSocketReturnTypeText[swSocketReturnMax] =
+{
+  [swSocketReturnNone]            = "None",
+  [swSocketReturnOK]              = "OK",
+  [swSocketReturnInProgress]      = "InProgress",
+  [swSocketReturnNotReady]        = "NotReady",
+  [swSocketReturnWriteNotReady]   = "WriteNotReady",
+  [swSocketReturnReadNotReady]    = "ReadNotReady",
+  [swSocketReturnInvalidBuffer]   = "InvalidBuffer",
+  [swSocketReturnClose]           = "Close",
+  [swSocketReturnError]           = "Error",
+};
+
+
+const char const *swSocketReturnTypeTextGet(swSocketReturnType returnCode)
+{
+  if (returnCode >= swSocketReturnNone && returnCode < swSocketReturnMax)
+    return swSocketReturnTypeText[returnCode];
+  return NULL;
+}
+
 swSocket *swSocketNew(int domain, int type)
 {
   swSocket *rtn = swMemoryMalloc(sizeof(swSocket));

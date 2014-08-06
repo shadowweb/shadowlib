@@ -25,6 +25,8 @@ typedef enum swSocketReturnType
   swSocketReturnMax
 } swSocketReturnType;
 
+const char const *swSocketReturnTypeTextGet(swSocketReturnType returnCode);
+
 typedef struct swSocket swSocket;
 
 typedef swSocketReturnType (*swSocketReadFunc)(swSocket *sock, swStaticBuffer *buffer);
@@ -84,9 +86,5 @@ bool swSocketIsConnected(swSocket *sock, int *returnError);
 
 void swSocketClose(swSocket *sock);
 void swSocketDelete(swSocket *sock);
-
-// TODO: implement the following functionality
-//       swSSLServer(int domain) -- default socket type is TCP
-//       swSSLClient(int domain) -- default socket type is TCP
 
 #endif // SW_IO_SOCKET_H

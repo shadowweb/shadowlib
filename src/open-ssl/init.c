@@ -1,4 +1,4 @@
-#include "open-ssl//init.h"
+#include "open-ssl/init.h"
 
 #include "core/memory.h"
 
@@ -6,6 +6,7 @@
 #include <openssl/rand.h>
 #include <openssl/err.h>
 #include <openssl/conf.h>
+#include <openssl/engine.h>
 
 #include <pthread.h>
 
@@ -67,8 +68,9 @@ bool swOpenSSLStart()
   bool rtn = false;
   SSL_library_init();
   SSL_load_error_strings();
-  OPENSSL_add_all_algorithms_conf();
+  // setting id callback beforw OPENSSL_add_all_algorithms_conf to prevent memory leak after cleanup
   CRYPTO_set_id_callback((unsigned long(*)())pthread_self);
+  OPENSSL_add_all_algorithms_conf();
   RAND_poll();
   if ((swLocks = swMemoryCalloc(CRYPTO_num_locks(), sizeof(pthread_rwlock_t))))
   {
@@ -85,6 +87,8 @@ bool swOpenSSLStart()
 
 void swOpenSSLStop()
 {
+  // cleanup engine before removing thread error state, otherwise we will still have memory leaks after cleanup
+  ENGINE_cleanup();
   ERR_remove_thread_state(NULL);
   CONF_modules_unload(1);
   ERR_free_strings();

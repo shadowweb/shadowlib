@@ -244,14 +244,12 @@ swSSLContext *createServerContext()
               {
                 rtn = serverSSLContext;
               }
-              else
-                swSSLKeyDelete(key);
+              swSSLKeyDelete(key);
             }
             swMemoryFree(keyData.data);
           }
         }
-        else
-          swSSLCertificateDelete(certificate);
+        swSSLCertificateDelete(certificate);
       }
       swMemoryFree(certificateData.data);
     }
@@ -359,4 +357,4 @@ swTestDeclare(SSLClientServerOverUnixTest, NULL, NULL, swTestRun)
 }
 
 swTestSuiteStructDeclare(SSLClientServerTestSuite, edgeLoopSetup, edgeLoopTeardown, swTestRun,
-                         &SSLClientServerOverIP4Test, &SSLClientServerOverIP6Test , &SSLClientServerOverUnixTest);
+                         &SSLClientServerOverIP4Test, &SSLClientServerOverIP6Test, &SSLClientServerOverUnixTest);

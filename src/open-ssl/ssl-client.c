@@ -139,7 +139,7 @@ static void swSSLClientConnectionCloseCallback(swSSLSocketIO *io)
 
 swSSLClient *swSSLClientNew(swSSLContext *context)
 {
-  swSSLClient *rtn = swMemoryMalloc(sizeof(swSSLClient));
+  swSSLClient *rtn = NULL;
   if ((rtn= swMemoryMalloc(sizeof(swSSLClient))))
   {
     if (!swSSLClientInit(rtn, context))

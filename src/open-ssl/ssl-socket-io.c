@@ -143,7 +143,6 @@ bool swSSLSocketIOInit(swSSLSocketIO *io)
         {
           swEdgeWatcherDataSet(&(io->ioEvent), io);
           io->readTimeout = io->writeTimeout = SW_SSLSOCKETIO_DEFAULT_TIMEOUT;
-
           rtn = true;
         }
       }

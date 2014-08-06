@@ -28,11 +28,15 @@ bool swEdgeTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, uint64_t offset, uin
   bool rtn = false;
   if (timer && loop)
   {
+    swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
+    if (watcher->loop)
+      swEdgeLoopWatcherRemove(watcher->loop, watcher);
+
     timer->timerSpec.it_value.tv_sec      = swTimeMSecToSec(offset);
     timer->timerSpec.it_value.tv_nsec     = swTimeMSecToNSec( swTimeMSecToSecRem(offset) );
     timer->timerSpec.it_interval.tv_sec   = swTimeMSecToSec(interval);
     timer->timerSpec.it_interval.tv_nsec  = swTimeMSecToNSec( swTimeMSecToSecRem(interval) );
-    swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
+
     if (timerfd_settime(watcher->fd, ((absolute)? TFD_TIMER_ABSTIME : 0), &(timer->timerSpec), NULL) == 0)
     {
       if (swEdgeLoopWatcherAdd(loop, watcher))

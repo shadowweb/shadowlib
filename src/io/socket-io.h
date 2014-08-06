@@ -1,11 +1,11 @@
 #ifndef SW_IO_SOCKETIO_H
 #define SW_IO_SOCKETIO_H
 
-#include "socket.h"
-#include "socket-address.h"
-#include "edge-loop.h"
-#include "edge-io.h"
-#include "edge-timer.h"
+#include "io/socket.h"
+#include "io/socket-address.h"
+#include "io/edge-loop.h"
+#include "io/edge-io.h"
+#include "io/edge-timer.h"
 
 #define SW_SOCKETIO_DEFAULT_TIMEOUT  60000 // 60s
 
