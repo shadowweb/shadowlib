@@ -10,11 +10,11 @@ static void swSSLClientConnectTimerCallback(swEdgeTimer *timer, uint64_t expired
   {
     client->connecting = false;
     swEdgeIOStop(&(client->connectEvent));
-    swSSLSocketIOClose((swSSLSocketIO *)client, swSSLSocketIOErrorConnectTimeout);
+    swSSLSocketIOClose((swSSLSocketIO *)client, swSocketIOErrorConnectTimeout);
   }
 }
 
-static inline bool swSSLClientConnectProcess(swSSLClient *client, swSocketReturnType ret, swSSLSocketIOErrorType *errorCode)
+static inline bool swSSLClientConnectProcess(swSSLClient *client, swSocketReturnType ret, swSocketIOErrorType *errorCode)
 {
   bool rtn = false;
   if ( ret > swSocketReturnNone)
@@ -32,7 +32,7 @@ static inline bool swSSLClientConnectProcess(swSSLClient *client, swSocketReturn
         }
       }
       if (!rtn)
-        *errorCode = swSSLSocketIOErrorOtherError;
+        *errorCode = swSocketIOErrorOtherError;
     }
     else if (ret == swSocketReturnInProgress)
     {
@@ -40,16 +40,16 @@ static inline bool swSSLClientConnectProcess(swSSLClient *client, swSocketReturn
       rtn = swEdgeIOStart(&(client->connectEvent), client->loop, ((swSocket *)client)->fd, swEdgeEventWrite) &&
         swEdgeTimerStart(&(client->connectTimer), client->loop, client->connectTimeout, 0, false);
       if (!rtn)
-        *errorCode = swSSLSocketIOErrorOtherError;
+        *errorCode = swSocketIOErrorOtherError;
     }
     else
     {
       rtn = true;
-      swSSLSocketIOClose((swSSLSocketIO *)client, swSSLSocketIOErrorConnectFailed);
+      swSSLSocketIOClose((swSSLSocketIO *)client, swSocketIOErrorConnectFailed);
     }
   }
   else
-    *errorCode = swSSLSocketIOErrorConnectFailed;
+    *errorCode = swSocketIOErrorConnectFailed;
   return rtn;
 }
 
@@ -61,7 +61,7 @@ static void swSSLClientReconnectTimerCallback(swEdgeTimer *timer, uint64_t expir
   if (sock && (sock->fd < 0))
   {
     bool rtn = false;
-    swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
+    swSocketIOErrorType errorCode = swSocketIOErrorNone;
     if ((expiredCount > 0) && (events & swEdgeEventRead))
     {
       swSocketReturnType ret = swSocketReconnect(sock);
@@ -84,7 +84,7 @@ static void swSSLClientConnectEventCallback(swEdgeIO *ioWatcher, uint32_t events
     swEdgeTimerStop(&(client->connectTimer));
     client->connecting = false;
     bool rtn = false;
-    swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
+    swSocketIOErrorType errorCode = swSocketIOErrorNone;
     if ((events & swEdgeEventWrite) && !(events & (swEdgeEventError | swEdgeEventHungUp)))
     {
       swSocket *sock = (swSocket *)client;
@@ -101,13 +101,13 @@ static void swSSLClientConnectEventCallback(swEdgeIO *ioWatcher, uint32_t events
           }
         }
         if (!rtn)
-          errorCode = swSSLSocketIOErrorOtherError;
+          errorCode = swSocketIOErrorOtherError;
       }
       else
-        errorCode = swSSLSocketIOErrorConnectedCheckFailed;
+        errorCode = swSocketIOErrorConnectedCheckFailed;
     }
     else
-      errorCode = ((events & swEdgeEventError) ? swSSLSocketIOErrorSocketError : swSSLSocketIOErrorSocketHangUp);
+      errorCode = ((events & swEdgeEventError) ? swSocketIOErrorSocketError : swSocketIOErrorSocketHangUp);
     if (!rtn)
       swSSLSocketIOClose((swSSLSocketIO *)client, errorCode);
   }
@@ -131,7 +131,7 @@ static void swSSLClientConnectionCloseCallback(swSSLSocketIO *io)
     {
       swEdgeTimerStop(&(client->reconnectTimer));
       if (!swEdgeTimerStart(&(client->reconnectTimer), client->loop, client->reconnectTimeout, 0, false))
-        swSSLSocketIOClose((swSSLSocketIO *)client, swSSLSocketIOErrorOtherError);
+        swSSLSocketIOClose((swSSLSocketIO *)client, swSocketIOErrorOtherError);
     }
     client->closing = false;
   }
@@ -168,9 +168,9 @@ bool swSSLClientInit(swSSLClient *client, swSSLContext *context)
           if (swEdgeIOInit(&(client->connectEvent), swSSLClientConnectEventCallback))
           {
             swEdgeWatcherDataSet(&(client->connectEvent), client);
-            client->connectTimeout = client->reconnectTimeout = SW_SSLSOCKETIO_DEFAULT_TIMEOUT;
+            client->connectTimeout = client->reconnectTimeout = SW_SOCKETIO_DEFAULT_TIMEOUT;
             client->reconnect = true;
-            ((swSSLSocketIO *)client)->closeFunc = swSSLClientConnectionCloseCallback;
+            ((swSocketIO *)client)->closeFunc = (swSocketIOCloseFunc)swSSLClientConnectionCloseCallback;
             client->context = context;
             rtn = true;
           }
@@ -216,7 +216,7 @@ bool swSSLClientStart(swSSLClient *client, swSocketAddress *address, swEdgeLoop 
     swSocket *sock = (swSocket *)client;
     if (swSocketInit(sock, address->storage.ss_family, SOCK_STREAM))
     {
-      swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
+      swSocketIOErrorType errorCode = swSocketIOErrorNone;
       if (!bindAddress || swSocketBind(sock, bindAddress))
       {
         client->loop = loop;
@@ -224,7 +224,7 @@ bool swSSLClientStart(swSSLClient *client, swSocketAddress *address, swEdgeLoop 
         rtn = swSSLClientConnectProcess(client, ret, &errorCode);
       }
       else
-        errorCode = swSSLSocketIOErrorConnectFailed;
+        errorCode = swSocketIOErrorConnectFailed;
       if (!rtn)
       {
         client->reconnect = false;
@@ -244,7 +244,7 @@ void swSSLClientStop(swSSLClient *client)
     swEdgeIOStop(&(client->connectEvent));
     swEdgeTimerStop(&(client->connectTimer));
     swEdgeTimerStop(&(client->reconnectTimer));
-    swSSLSocketIOClose((swSSLSocketIO *)client, swSSLSocketIOErrorNone);
+    swSSLSocketIOClose((swSSLSocketIO *)client, swSocketIOErrorNone);
 
     client->loop = NULL;
     if (client->stopFunc)
@@ -258,7 +258,7 @@ bool swSSLClientClose(swSSLClient *client)
   if (client && client->loop)
   {
     if (((swSocket *)client)->fd >= 0)
-      swSSLSocketIOClose((swSSLSocketIO *)client, swSSLSocketIOErrorNone);
+      swSSLSocketIOClose((swSSLSocketIO *)client, swSocketIOErrorNone);
     rtn = true;
   }
   return rtn;

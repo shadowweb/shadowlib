@@ -26,6 +26,12 @@ const char const *swSocketIOErrorTextGet(swSocketIOErrorType errorCode)
   return NULL;
 }
 
+static inline void swSocketIOSocketCleanup(swSocketIO *io)
+{
+  swSocket *sock = (swSocket *)io;
+  swSocketClose(sock);
+}
+
 void swSocketIOClose(swSocketIO *io, swSocketIOErrorType errorCode)
 {
   if (io)
@@ -35,10 +41,9 @@ void swSocketIOClose(swSocketIO *io, swSocketIOErrorType errorCode)
     // cleanup IO watcher before closing the socket, otherwise epoll_ctl is not going to like
     // this file descriptor
     swEdgeIOStop(&(io->ioEvent));
-    swSocket *sock = (swSocket *)io;
-    swSocketClose(sock);
     swEdgeTimerStop(&(io->readTimer));
     swEdgeTimerStop(&(io->writeTimer));
+    io->socketCleanupFunc(io);
     if (io->closeFunc)
       io->closeFunc(io);
   }
@@ -131,6 +136,7 @@ bool swSocketIOInit(swSocketIO *io)
         {
           swEdgeWatcherDataSet(&(io->ioEvent), io);
           io->readTimeout = io->writeTimeout = SW_SOCKETIO_DEFAULT_TIMEOUT;
+          io->socketCleanupFunc = swSocketIOSocketCleanup;
           rtn = true;
         }
       }

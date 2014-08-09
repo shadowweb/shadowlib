@@ -30,8 +30,8 @@ static inline swSocketReturnType swUDPServerWrite(swUDPServer *server, swStaticB
 static inline swSocketReturnType swUDPServerReadFrom(swUDPServer *server, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesRead)   { return swSocketIOReadFrom((swSocketIO *)server, buffer, address, bytesRead);    }
 static inline swSocketReturnType swUDPServerWriteTo(swUDPServer *server, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten) { return swSocketIOWriteTo ((swSocketIO *)server, buffer, address, bytesWritten); }
 
-static inline void *swUDPServerDataGet(swUDPServer *server)            { return swSocketIODataGet((swSocketIO *)(server)); }
-static inline void swUDPServerDataSet(swUDPServer *server, void *data) { swSocketIODataSet((swSocketIO *)(server), data);  }
+static inline void *swUDPServerDataGet(swUDPServer *server)            { return swSocketIODataGet(server); }
+static inline void swUDPServerDataSet(swUDPServer *server, void *data) { swSocketIODataSet(server, data);  }
 
 static inline void swUDPServerReadTimeoutSet      (swUDPServer *server, uint64_t timeout)                 { swSocketIOReadTimeoutSet     (server, timeout);                          }
 static inline void swUDPServerWriteTimeoutSet     (swUDPServer *server, uint64_t timeout)                 { swSocketIOWriteTimeoutSet    (server, timeout);                          }

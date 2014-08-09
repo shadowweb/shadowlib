@@ -51,8 +51,8 @@ static inline swSocketReturnType swUDPClientWrite   (swUDPClient *client, swStat
 static inline swSocketReturnType swUDPClientReadFrom(swUDPClient *client, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesRead)     { return swSocketIOReadFrom((swSocketIO *)client, buffer, address, bytesRead);    }
 static inline swSocketReturnType swUDPClientWriteTo (swUDPClient *client, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten)  { return swSocketIOWriteTo ((swSocketIO *)client, buffer, address, bytesWritten); }
 
-static inline void *swUDPClientDataGet(swUDPClient *client)             { return swSocketIODataGet((swSocketIO *)(client)); }
-static inline void  swUDPClientDataSet(swUDPClient *client, void *data) { swSocketIODataSet((swSocketIO *)(client), data);  }
+static inline void *swUDPClientDataGet(swUDPClient *client)             { return swSocketIODataGet(client); }
+static inline void  swUDPClientDataSet(swUDPClient *client, void *data) { swSocketIODataSet(client, data);  }
 
 static inline void swUDPClientReadTimeoutSet      (swUDPClient *client, uint64_t timeout)                 { swSocketIOReadTimeoutSet     (client, timeout);                          }
 static inline void swUDPClientWriteTimeoutSet     (swUDPClient *client, uint64_t timeout)                 { swSocketIOWriteTimeoutSet    (client, timeout);                          }

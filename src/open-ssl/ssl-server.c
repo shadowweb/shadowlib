@@ -9,7 +9,7 @@ static void swSSLServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t
   if (serverAcceptor)
   {
     swSocket *sock = (swSocket *)serverAcceptor;
-    swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
+    swSocketIOErrorType errorCode = swSocketIOErrorNone;
     if ((events & swEdgeEventRead) && !(events & (swEdgeEventError | swEdgeEventHungUp)))
     {
       swSocketReturnType ret = swSocketReturnNone;
@@ -26,7 +26,7 @@ static void swSSLServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t
               swSSLServer *server = swSSLServerNew();
               if (server)
               {
-                server->io.sock = acceptedSock;
+                server->io.socketIO.sock = acceptedSock;
                 server->io.ssl = ssl;
                 if (!(!serverAcceptor->setupFunc || serverAcceptor->setupFunc(serverAcceptor, server)) || !swSSLServerStart(server, serverAcceptor->loop))
                   swSSLServerDelete(server);
@@ -42,10 +42,10 @@ static void swSSLServerAcceptorAcceptEventCallback(swEdgeIO *ioWatcher, uint32_t
           break;
       }
       if (ret != swSocketReturnNotReady)
-        errorCode = swSSLSocketIOErrorAcceptFailed;
+        errorCode = swSocketIOErrorAcceptFailed;
     }
     else
-      errorCode = ((events & swEdgeEventError) ? swSSLSocketIOErrorSocketError : swSSLSocketIOErrorSocketHangUp);
+      errorCode = ((events & swEdgeEventError) ? swSocketIOErrorSocketError : swSocketIOErrorSocketHangUp);
     if (errorCode)
     {
       if (serverAcceptor->errorFunc)
@@ -115,7 +115,7 @@ bool swSSLServerAcceptorStart(swSSLServerAcceptor *serverAcceptor, swEdgeLoop *l
     swSocket *sock = (swSocket *)serverAcceptor;
     if (swSocketInit(sock, address->storage.ss_family, SOCK_STREAM))
     {
-      swSSLSocketIOErrorType errorCode = swSSLSocketIOErrorNone;
+      swSocketIOErrorType errorCode = swSocketIOErrorNone;
       if (swSocketListen(sock, address) == swSocketReturnOK)
       {
         if (swEdgeIOStart(&(serverAcceptor->acceptEvent), loop, sock->fd, swEdgeEventRead))
@@ -124,10 +124,10 @@ bool swSSLServerAcceptorStart(swSSLServerAcceptor *serverAcceptor, swEdgeLoop *l
           rtn = true;
         }
         else
-          errorCode = swSSLSocketIOErrorOtherError;
+          errorCode = swSocketIOErrorOtherError;
       }
       else
-        errorCode = swSSLSocketIOErrorListenFailed;
+        errorCode = swSocketIOErrorListenFailed;
       if (!rtn)
       {
         if (errorCode && serverAcceptor->errorFunc)

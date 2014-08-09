@@ -55,8 +55,8 @@ bool swTCPClientClose(swTCPClient *client);
 static inline swSocketReturnType swTCPClientRead  (swTCPClient *client, swStaticBuffer *buffer, ssize_t *bytesRead)     { return swSocketIORead    ((swSocketIO *)client, buffer, bytesRead);    }
 static inline swSocketReturnType swTCPClientWrite (swTCPClient *client, swStaticBuffer *buffer, ssize_t *bytesWritten)  { return swSocketIOWrite   ((swSocketIO *)client, buffer, bytesWritten); }
 
-static inline void *swTCPClientDataGet(swTCPClient *client)             { return swSocketIODataGet((swSocketIO *)(client)); }
-static inline void  swTCPClientDataSet(swTCPClient *client, void *data) { swSocketIODataSet((swSocketIO *)(client), data);  }
+static inline void *swTCPClientDataGet(swTCPClient *client)             { return swSocketIODataGet(client); }
+static inline void  swTCPClientDataSet(swTCPClient *client, void *data) { swSocketIODataSet(client, data);  }
 
 static inline void swTCPClientReadTimeoutSet      (swTCPClient *client, uint64_t timeout)                 { swSocketIOReadTimeoutSet     (client, timeout);                          }
 static inline void swTCPClientWriteTimeoutSet     (swTCPClient *client, uint64_t timeout)                 { swSocketIOWriteTimeoutSet    (client, timeout);                          }

@@ -39,6 +39,8 @@ typedef bool (*swSocketIOWriteTimeoutFunc)(swSocketIO *io);
 typedef void (*swSocketIOErrorFunc)       (swSocketIO *io, swSocketIOErrorType errorCode);
 typedef void (*swSocketIOCloseFunc)       (swSocketIO *io);
 
+typedef void (*swSocketIOSocketCleanupFunc)(swSocketIO *io);
+
 struct swSocketIO
 {
   swSocket sock;
@@ -57,6 +59,8 @@ struct swSocketIO
   swSocketIOWriteTimeoutFunc writeTimeoutFunc;
   swSocketIOErrorFunc errorFunc;
   swSocketIOCloseFunc closeFunc;
+
+  swSocketIOSocketCleanupFunc socketCleanupFunc;
 
   unsigned int cleaning : 1;
   unsigned int deleting : 1;

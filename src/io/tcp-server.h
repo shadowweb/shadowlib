@@ -73,8 +73,8 @@ static inline void swTCPServerStop  (swTCPServer *server) { swSocketIOClose((swS
 static inline swSocketReturnType swTCPServerRead  (swTCPServer *server, swStaticBuffer *buffer, ssize_t *bytesRead)     { return swSocketIORead  ((swSocketIO *)server, buffer, bytesRead);    }
 static inline swSocketReturnType swTCPServerWrite (swTCPServer *server, swStaticBuffer *buffer, ssize_t *bytesWritten)  { return swSocketIOWrite ((swSocketIO *)server, buffer, bytesWritten); }
 
-static inline void *swTCPServerDataGet(swTCPServer *server)            { return swSocketIODataGet((swSocketIO *)(server)); }
-static inline void swTCPServerDataSet(swTCPServer *server, void *data) { swSocketIODataSet((swSocketIO *)(server), data);  }
+static inline void *swTCPServerDataGet(swTCPServer *server)            { return swSocketIODataGet(server); }
+static inline void swTCPServerDataSet(swTCPServer *server, void *data) { swSocketIODataSet(server, data);  }
 
 static inline void swTCPServerReadTimeoutSet      (swTCPServer *server, uint64_t timeout)                 { swSocketIOReadTimeoutSet     (server, timeout);                          }
 static inline void swTCPServerWriteTimeoutSet     (swTCPServer *server, uint64_t timeout)                 { swSocketIOWriteTimeoutSet    (server, timeout);                          }

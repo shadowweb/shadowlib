@@ -57,10 +57,10 @@ void onServerReadReady(swSSLServer *server)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady && ret != swSocketReturnReadNotReady && ret!= swSocketReturnWriteNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(server->io.loop);
+    swEdgeLoopBreak(server->io.socketIO.loop);
   }
   else if (serverBytesRead > EXPECT_BYTES && clientBytesRead > EXPECT_BYTES)
-    swEdgeLoopBreak(server->io.loop);
+    swEdgeLoopBreak(server->io.socketIO.loop);
 }
 
 void onServerWriteReady(swSSLServer *server)
@@ -79,7 +79,7 @@ void onServerWriteReady(swSSLServer *server)
   if (ret != swSocketReturnOK && ret != swSocketReturnNotReady && ret != swSocketReturnReadNotReady && ret!= swSocketReturnWriteNotReady)
   {
     ASSERT_FAIL();
-    swEdgeLoopBreak(server->io.loop);
+    swEdgeLoopBreak(server->io.socketIO.loop);
   }
 }
 
@@ -95,9 +95,9 @@ bool onServerWriteTimeout(swSSLServer *server)
   return false;
 }
 
-void onServerError(swSSLServer *server, swSSLSocketIOErrorType errorCode)
+void onServerError(swSSLServer *server, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Server: error \"%s\"\n", swSSLSocketIOErrorTextGet(errorCode));
+  swTestLogLine("Server: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
 void onServerClose(swSSLServer *server)
@@ -120,9 +120,9 @@ void onStop(swSSLServerAcceptor *serverAcceptor)
   // swTestLogLine("Acceptor: stopping\n");
 }
 
-void onError(swSSLServerAcceptor *serverAcceptor, swSSLSocketIOErrorType errorCode)
+void onError(swSSLServerAcceptor *serverAcceptor, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Acceptor: error \"%s\"\n", swSSLSocketIOErrorTextGet(errorCode));
+  swTestLogLine("Acceptor: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
 bool onConnectionSetup(swSSLServerAcceptor *serverAcceptor, swSSLServer *server)
@@ -215,9 +215,9 @@ bool onClientWriteTimeout(swSSLClient *client)
   return false;
 }
 
-void onClientError(swSSLClient *client, swSSLSocketIOErrorType errorCode)
+void onClientError(swSSLClient *client, swSocketIOErrorType errorCode)
 {
-  swTestLogLine("Client: error \"%s\"\n", swSSLSocketIOErrorTextGet(errorCode));
+  swTestLogLine("Client: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
 }
 
 swSSLContext *createServerContext()
