@@ -17,7 +17,7 @@ static void swTCPClientConnectTimerCallback(swEdgeTimer *timer, uint64_t expired
 static inline bool swTCPClientConnectProcess(swTCPClient *client, swSocketReturnType ret, swSocketIOErrorType *errorCode)
 {
   bool rtn = false;
-  if ( ret > swSocketReturnNone)
+  if (ret > swSocketReturnNone)
   {
     if (ret == swSocketReturnOK)
     {
