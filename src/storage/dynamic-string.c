@@ -79,7 +79,6 @@ swDynamicString *swDynamicStringNewFromCString(const char *cStr)
     }
   }
   return rtn;
-
 }
 
 bool swDynamicStringSetFromCString(swDynamicString *dynamicStr, const char *cStr)
@@ -102,7 +101,6 @@ bool swDynamicStringSetFromCString(swDynamicString *dynamicStr, const char *cStr
     }
   }
   return rtn;
-
 }
 
 void swDynamicStringClear(swDynamicString *string)
@@ -110,3 +108,14 @@ void swDynamicStringClear(swDynamicString *string)
   if (string)
     string->len = 0;
 }
+
+void swDynamicStringRelease(swDynamicString *string)
+{
+  if (string)
+  {
+    if (string->data)
+      swMemoryFree(string->data);
+    memset(string, 0, sizeof(swDynamicString));
+  }
+}
+

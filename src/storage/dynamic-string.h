@@ -47,6 +47,7 @@ swDynamicString *swDynamicStringNewFromCString(const char *cStr);
 bool swDynamicStringSetFromCString(swDynamicString *dynamicStr, const char *cStr);
 
 void swDynamicStringClear(swDynamicString *string);
+void swDynamicStringRelease(swDynamicString *string);
 
 // TODO: do the same for buffer with minoor changes
 // TODO: implement to and from hex, to and from base64

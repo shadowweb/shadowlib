@@ -56,7 +56,8 @@ build $builddir/src/collections/array-test:             link $builddir/src/colle
 build $builddir/src/storage/static-string.o:            cc src/storage/static-string.c
 build $builddir/src/storage/dynamic-string.o:           cc src/storage/dynamic-string.c
 build $builddir/src/storage/static-buffer.o:            cc src/storage/static-buffer.c
-build $builddir/src/storage/storage.a:                  ar $builddir/src/storage/static-string.o $builddir/src/storage/dynamic-string.o $builddir/src/storage/static-buffer.o
+build $builddir/src/storage/dynamic-buffer.o:           cc src/storage/dynamic-buffer.c
+build $builddir/src/storage/storage.a:                  ar $builddir/src/storage/static-string.o $builddir/src/storage/dynamic-string.o $builddir/src/storage/static-buffer.o $builddir/src/storage/dynamic-buffer.o
 
 # storage test
 build $builddir/src/storage/static-string-test.o:       cc src/storage/static-string-test.c
