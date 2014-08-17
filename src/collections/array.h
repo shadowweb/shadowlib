@@ -7,6 +7,7 @@
 
 /// This static array implementation is designed to be supper fast,
 /// but provides little safe-guards, be careful using it
+/// Note: this array does not preserve elements order upon removal
 
 typedef struct swStaticArray
 {

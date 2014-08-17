@@ -49,6 +49,10 @@ bool swDynamicBufferSetFromCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf
 void swDynamicBufferClear(swDynamicBuffer *buffer);
 void swDynamicBufferRelease(swDynamicBuffer *buffer);
 
+bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStaticBuffer *staticBuf);
+bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size);
+
+
 // TODO: implement to and from hex, to and from base64
 
 #endif // SW_STORAGE_DYNAMICBUFFER_H

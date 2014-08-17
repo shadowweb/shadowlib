@@ -48,16 +48,19 @@ bool swDynamicBufferSetFromStaticBuffer(swDynamicBuffer *dynamicBuf, const swSta
   bool rtn = false;
   if (dynamicBuf && staticBuf)
   {
+    char *data = dynamicBuf->data;
     if (dynamicBuf->size < staticBuf->len)
     {
-      if ((dynamicBuf->data = swMemoryRealloc(dynamicBuf->data, staticBuf->len)))
+      if ((data = swMemoryRealloc(dynamicBuf->data, staticBuf->len)))
+      {
+        dynamicBuf->data = data;
         dynamicBuf->size = staticBuf->len;
+      }
     }
-    if (dynamicBuf->data)
+    if (data)
     {
-      memcpy(dynamicBuf->data, staticBuf->data, staticBuf->len);
+      memcpy(data, staticBuf->data, staticBuf->len);
       dynamicBuf->len = staticBuf->len;
-      dynamicBuf->data[staticBuf->len] = '\0';
       rtn = true;
     }
   }
@@ -83,14 +86,18 @@ bool swDynamicBufferSetFromCString(swDynamicBuffer *dynamicBuf, const char *cBuf
   bool rtn = false;
   if (dynamicBuf && cBuf && size)
   {
+    char *data = dynamicBuf->data;
     if (dynamicBuf->size < size)
     {
-      if ((dynamicBuf->data = swMemoryRealloc(dynamicBuf->data, size)))
+      if ((data = swMemoryRealloc(dynamicBuf->data, size)))
+      {
+        dynamicBuf->data = data;
         dynamicBuf->size = size;
+      }
     }
-    if (dynamicBuf->data)
+    if (data)
     {
-      memcpy(dynamicBuf->data, cBuf, size);
+      memcpy(data, cBuf, size);
       dynamicBuf->len = size;
       rtn = true;
     }
@@ -113,3 +120,56 @@ void swDynamicBufferRelease(swDynamicBuffer *buffer)
     memset(buffer, 0, sizeof(swDynamicBuffer));
   }
 }
+
+bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStaticBuffer *staticBuf)
+{
+  bool rtn = false;
+  if (dynamicBuf && staticBuf)
+  {
+    size_t newLen = dynamicBuf->len + staticBuf->len;
+    char *data = dynamicBuf->data;
+    if (newLen > dynamicBuf->size)
+    {
+      if ((data = swMemoryRealloc(data, newLen)))
+      {
+        dynamicBuf->data = data;
+        dynamicBuf->size = newLen + 1;
+      }
+      if (data)
+      {
+        memcpy(&(data[dynamicBuf->len]), staticBuf->data, staticBuf->len);
+        dynamicBuf->len = newLen;
+        rtn = true;
+      }
+    }
+  }
+  return rtn;
+
+}
+
+bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size)
+{
+  bool rtn = false;
+  if (dynamicBuf && cBuf && size)
+  {
+    size_t newLen = dynamicBuf->len + size;
+    char *data = dynamicBuf->data;
+    if (newLen > dynamicBuf->size)
+    {
+      if ((data = swMemoryRealloc(data, newLen)))
+      {
+        dynamicBuf->data = data;
+        dynamicBuf->size = newLen;
+      }
+      if (data)
+      {
+        memcpy(&(data[dynamicBuf->len]), cBuf, size);
+        dynamicBuf->len = newLen;
+        rtn = true;
+      }
+    }
+  }
+  return rtn;
+
+}
+

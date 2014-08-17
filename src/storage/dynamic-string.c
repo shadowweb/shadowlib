@@ -49,16 +49,20 @@ bool swDynamicStringSetFromStaticString(swDynamicString *dynamicStr, const swSta
   bool rtn = false;
   if (dynamicStr && staticStr)
   {
+    char *data = dynamicStr->data;
     if (dynamicStr->size < (staticStr->len + 1))
     {
-      if ((dynamicStr->data = swMemoryRealloc(dynamicStr->data, staticStr->len + 1)))
+      if ((data = swMemoryRealloc(dynamicStr->data, staticStr->len + 1)))
+      {
+        dynamicStr->data = data;
         dynamicStr->size = staticStr->len + 1;
+      }
     }
-    if (dynamicStr->data)
+    if (data)
     {
-      memcpy(dynamicStr->data, staticStr->data, staticStr->len);
+      memcpy(data, staticStr->data, staticStr->len);
       dynamicStr->len = staticStr->len;
-      dynamicStr->data[staticStr->len] = '\0';
+      data[staticStr->len] = '\0';
       rtn = true;
     }
   }
@@ -87,16 +91,20 @@ bool swDynamicStringSetFromCString(swDynamicString *dynamicStr, const char *cStr
   if (dynamicStr && cStr)
   {
     size_t len = strlen(cStr);
+    char *data = dynamicStr->data;
     if (dynamicStr->size < (len + 1))
     {
-      if ((dynamicStr->data = swMemoryRealloc(dynamicStr->data, len + 1)))
+      if ((data = swMemoryRealloc(dynamicStr->data, len + 1)))
+      {
+        dynamicStr->data = data;
         dynamicStr->size = len + 1;
+      }
     }
-    if (dynamicStr->data)
+    if (data)
     {
-      memcpy(dynamicStr->data, cStr, len);
+      memcpy(data, cStr, len);
       dynamicStr->len = len;
-      dynamicStr->data[len] = '\0';
+      data[len] = '\0';
       rtn = true;
     }
   }
@@ -119,3 +127,55 @@ void swDynamicStringRelease(swDynamicString *string)
   }
 }
 
+bool swDynamicStringAppendStaticString(swDynamicString *dynamicStr, const swStaticString *staticStr)
+{
+  bool rtn = false;
+  if (dynamicStr && staticStr)
+  {
+    size_t newLen = dynamicStr->len + staticStr->len;
+    char *data = dynamicStr->data;
+    if (newLen >= dynamicStr->size)
+    {
+      if ((data = swMemoryRealloc(data, newLen + 1)))
+      {
+        dynamicStr->data = data;
+        dynamicStr->size = newLen + 1;
+      }
+      if (data)
+      {
+        memcpy(&(data[dynamicStr->len]), staticStr->data, staticStr->len);
+        dynamicStr->len = newLen;
+        data[newLen] = '\0';
+        rtn = true;
+      }
+    }
+  }
+  return rtn;
+}
+
+bool swDynamicStringAppendCString(swDynamicString *dynamicStr, const char *cStr)
+{
+  bool rtn = false;
+  if (dynamicStr && cStr)
+  {
+    size_t len = strlen(cStr);
+    size_t newLen = dynamicStr->len + len;
+    char *data = dynamicStr->data;
+    if (newLen >= dynamicStr->size)
+    {
+      if ((data = swMemoryRealloc(data, newLen + 1)))
+      {
+        dynamicStr->data = data;
+        dynamicStr->size = newLen + 1;
+      }
+      if (data)
+      {
+        memcpy(&(data[dynamicStr->len]), cStr, len);
+        dynamicStr->len = newLen;
+        data[newLen] = '\0';
+        rtn = true;
+      }
+    }
+  }
+  return rtn;
+}
