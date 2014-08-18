@@ -46,5 +46,4 @@ void   *swHashMapLinearIteratorNext(swHashMapLinearIterator *iter, void **value)
 bool    swHashMapLinearIteratorReset(swHashMapLinearIterator *iter);
 void    swHashMapLinearIteratorDelete(swHashMapLinearIterator *iter);
 
-
 #endif // SW_COLLECTIONS_HASHMAPLINEAR_H

@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <limits.h>
 
 size_t swFileRead(const char *fileName, char **data)
 {
@@ -31,6 +33,21 @@ size_t swFileRead(const char *fileName, char **data)
         }
       }
       fclose(fd);
+    }
+  }
+  return rtn;
+}
+
+bool swFileRealPath(const char *fileName, swDynamicString *resolvedFileName)
+{
+  bool rtn = false;
+  if (fileName && resolvedFileName)
+  {
+    char realPathCString[PATH_MAX];
+    if (realpath(fileName, realPathCString))
+    {
+      if (swDynamicStringSetFromCString(resolvedFileName, realPathCString))
+        rtn = true;
     }
   }
   return rtn;

@@ -44,5 +44,4 @@ void   *swHashSetLinearIteratorNext(swHashSetLinearIterator *iter);
 bool    swHashSetLinearIteratorReset(swHashSetLinearIterator *iter);
 void    swHashSetLinearIteratorDelete(swHashSetLinearIterator *iter);
 
-
 #endif // SW_COLLECTIONS_HASHSETLINEAR_H

@@ -44,10 +44,10 @@ build $builddir/src/collections/collections.a:          ar $builddir/src/collect
 
 # collections test
 build $builddir/src/collections/hash-set-linear-test.o: cc src/collections/hash-set-linear-test.c
-build $builddir/src/collections/hash-set-linear-test:   link $builddir/src/collections/hash-set-linear-test.o $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $builddir/src/utils/utils.a
+build $builddir/src/collections/hash-set-linear-test:   link $builddir/src/collections/hash-set-linear-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
 build $builddir/src/collections/hash-map-linear-test.o: cc src/collections/hash-map-linear-test.c
-build $builddir/src/collections/hash-map-linear-test:   link $builddir/src/collections/hash-map-linear-test.o $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $builddir/src/utils/utils.a
+build $builddir/src/collections/hash-map-linear-test:   link $builddir/src/collections/hash-map-linear-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
 build $builddir/src/collections/array-test.o:           cc src/collections/array-test.c
 build $builddir/src/collections/array-test:             link $builddir/src/collections/array-test.o $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
@@ -112,6 +112,6 @@ build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-s
 
 # ssl test
 build $builddir/src/open-ssl/ssl-test.o:                 cc src/open-ssl/ssl-test.c
-build $builddir/src/open-ssl/ssl-test:                   link $builddir/src/open-ssl/ssl-test.o $builddir/src/open-ssl/openssl.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $builddir/src/utils/utils.a $buildthirdpartydir/lib/openssl/libssl.a $buildthirdpartydir/lib/openssl/libcrypto.a
+build $builddir/src/open-ssl/ssl-test:                   link $builddir/src/open-ssl/ssl-test.o $builddir/src/open-ssl/openssl.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $buildthirdpartydir/lib/openssl/libssl.a $buildthirdpartydir/lib/openssl/libcrypto.a
 
 
