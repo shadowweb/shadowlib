@@ -4,6 +4,8 @@
 
 #include <core/memory.h>
 
+#include <string.h>
+
 bool swStaticArrayInit(swStaticArray *array, size_t elementSize, size_t initialSize)
 {
   bool rtn = false;
@@ -15,6 +17,24 @@ bool swStaticArrayInit(swStaticArray *array, size_t elementSize, size_t initialS
       array->size = size;
       array->elementSize = elementSize;
       array->count = 0;
+      rtn = true;
+    }
+  }
+  return rtn;
+}
+
+bool swStaticArrayInitFromArray(swStaticArray *to, swStaticArray *from)
+{
+  bool rtn = false;
+  if (to && from)
+  {
+    uint32_t size = 1 << swHashClosestShiftFind((from->count)? from->count : 8);
+    if ((to->storage = swMemoryMalloc(size * from->elementSize)))
+    {
+      to->size = size;
+      to->elementSize = from->elementSize;
+      to->count = from->count;
+      memcpy(to->storage, from->storage, from->count * from->elementSize);
       rtn = true;
     }
   }

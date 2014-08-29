@@ -18,6 +18,7 @@ typedef struct swStaticArray
 } swStaticArray;
 
 bool swStaticArrayInit(swStaticArray *array, size_t elementSize, size_t initialSize);
+bool swStaticArrayInitFromArray(swStaticArray *to, swStaticArray *from);
 void swStaticArrayClear(swStaticArray *array);
 bool swStaticArrayResize(swStaticArray *array, uint32_t index);
 
@@ -25,12 +26,14 @@ bool swStaticArrayResize(swStaticArray *array, uint32_t index);
 #define swStaticArraySize(a)              (a).size
 #define swStaticArrayData(a)              (a).storage
 
-#define swStaticArrayEnsureCapacity(a, i) ( ((a).size > (i)) ? true : swStaticArrayResize(&(a), i) )
-#define swStaticArrayGet(a, i, d)         ( ((a).size > (i)) ? ((d) = ((typeof(d) *)((a).storage))[i]), true : false )
-#define swStaticArraySet(a, i, d)         ((swStaticArrayEnsureCapacity((a), i)) ? ((typeof(d) *)((a).storage))[i] = (d), true : false )
+#define swStaticArrayEnsureCapacity(a, i)     ( ((a).size > (i)) ? true : swStaticArrayResize(&(a), i) )
+#define swStaticArrayGet(a, i, d)             ( ((a).size > (i)) ? ((d) = ((typeof(d) *)((a).storage))[i]), true : false )
+#define swStaticArrayGetPtr(a, i, t)          ( ((a).size > (i)) ? &((t *)((a).storage))[i] : NULL)
+#define swStaticArrayGetExistingPtr(a, i, t)  ( ((a).count > (i)) ? &((t *)((a).storage))[i] : NULL)
+#define swStaticArraySet(a, i, d)             ((swStaticArrayEnsureCapacity((a), i)) ? ((typeof(d) *)((a).storage))[i] = (d), true : false )
 
-#define swStaticArrayPush(a, d)           ( swStaticArraySet(a, (a).count, d) ? (++(a).count): false )
-#define swStaticArrayPop(a, d)            ( swStaticArrayGet(a, (a).count - 1, d) ? ((a).count--) : false )
-#define swStaticRemove(a, t, i)           ( ((a).count > (i)) ? ( ((t *)((a).storage))[i] = ((t *)((a).storage))[--(a).count] ) : false )
+#define swStaticArrayPush(a, d)               ( swStaticArraySet(a, (a).count, d) ? (++(a).count): false )
+#define swStaticArrayPop(a, d)                ( swStaticArrayGet(a, (a).count - 1, d) ? ((a).count--) : false )
+#define swStaticRemove(a, t, i)               ( ((a).count > (i)) ? ( ((t *)((a).storage))[i] = ((t *)((a).storage))[--(a).count] ), true : false )
 
 #endif // SW_COLLECTIONS_ARRAY_H
