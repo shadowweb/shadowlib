@@ -33,13 +33,13 @@ bool swStaticStringSame(const swStaticString *s1, const swStaticString *s2);
 bool swStaticStringFindChar(const swStaticString *string, char c, size_t *position);
 bool swStaticStringSetSubstring(const swStaticString *string, swStaticString *subString, size_t start, size_t end);
 
-// TODO: may be make bit flags from those flags; implement it
 typedef enum swStaticStringSearchConstraints
 {
   swStaticStringSearchAllowFirst    = 0x01,
   swStaticStringSearchAllowLast     = 0x02,
   swStaticStringSearchAllowAdjacent = 0x04
 } swStaticStringSearchConstraints;
+
 bool swStaticStringSplitChar(const swStaticString *string, char c, swStaticString *slices, uint32_t slicesCount, uint32_t *foundSlicesCount, uint32_t flags);
 bool swStaticStringCountChar(const swStaticString *string, char c, uint32_t *foundCount);
 
