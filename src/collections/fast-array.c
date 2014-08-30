@@ -1,12 +1,11 @@
-#include "array.h"
+#include "fast-array.h"
 
-#include "hash-common.h"
-
-#include <core/memory.h>
+#include "collections/hash-common.h"
+#include "core/memory.h"
 
 #include <string.h>
 
-bool swStaticArrayInit(swStaticArray *array, size_t elementSize, size_t initialSize)
+bool swFastArrayInit(swFastArray *array, size_t elementSize, size_t initialSize)
 {
   bool rtn = false;
   if (array && elementSize)
@@ -23,7 +22,7 @@ bool swStaticArrayInit(swStaticArray *array, size_t elementSize, size_t initialS
   return rtn;
 }
 
-bool swStaticArrayInitFromArray(swStaticArray *to, swStaticArray *from)
+bool swFastArrayInitFromArray(swFastArray *to, swFastArray *from)
 {
   bool rtn = false;
   if (to && from)
@@ -41,7 +40,7 @@ bool swStaticArrayInitFromArray(swStaticArray *to, swStaticArray *from)
   return rtn;
 }
 
-void swStaticArrayClear(swStaticArray *array)
+void swFastArrayClear(swFastArray *array)
 {
   if (array)
   {
@@ -55,7 +54,7 @@ void swStaticArrayClear(swStaticArray *array)
   }
 }
 
-bool swStaticArrayResize(swStaticArray* array, uint32_t index)
+bool swFastArrayResize(swFastArray* array, uint32_t index)
 {
   bool rtn = false;
   if (array)

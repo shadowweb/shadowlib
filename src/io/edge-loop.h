@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <sys/epoll.h>
 
-#include <collections/array.h>
+#include "collections/fast-array.h"
 
 typedef enum swWatcherType
 {
@@ -32,8 +32,8 @@ typedef enum swEdgeEvents
 
 typedef struct swEdgeLoop
 {
-  swStaticArray epollEvents;
-  swStaticArray pendingEvents[2];
+  swFastArray epollEvents;
+  swFastArray pendingEvents[2];
   int fd;
   unsigned int currentPending : 1;
   unsigned int shutdown : 1;
