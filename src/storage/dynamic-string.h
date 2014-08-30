@@ -52,7 +52,8 @@ void swDynamicStringRelease(swDynamicString *string);
 bool swDynamicStringAppendStaticString(swDynamicString *dynamicStr, const swStaticString *staticStr);
 bool swDynamicStringAppendCString(swDynamicString *dynamicStr, const char *cStr);
 
-// TODO: do the same for buffer with minoor changes
+// TODO: do the same for buffer with minor changes
 // TODO: implement to and from hex, to and from base64
+// TODO: implement init fuction
 
 #endif // SW_STORAGE_DYNAMICSTRING_H

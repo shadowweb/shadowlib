@@ -40,7 +40,8 @@ build $builddir/src/collections/hash-set-linear.o:      cc src/collections/hash-
 build $builddir/src/collections/hash-map-linear.o:      cc src/collections/hash-map-linear.c
 build $builddir/src/collections/murmur-hash3.o:         cc src/collections/murmur-hash3.c
 build $builddir/src/collections/fast-array.o:           cc src/collections/fast-array.c
-build $builddir/src/collections/collections.a:          ar $builddir/src/collections/hash-common.o $builddir/src/collections/hash-functions.o $builddir/src/collections/hash-set-linear.o $builddir/src/collections/hash-map-linear.o $builddir/src/collections/murmur-hash3.o $builddir/src/collections/fast-array.o
+build $builddir/src/collections/dynamic-array.o:        cc src/collections/dynamic-array.c
+build $builddir/src/collections/collections.a:          ar $builddir/src/collections/hash-common.o $builddir/src/collections/hash-functions.o $builddir/src/collections/hash-set-linear.o $builddir/src/collections/hash-map-linear.o $builddir/src/collections/murmur-hash3.o $builddir/src/collections/fast-array.o $builddir/src/collections/dynamic-array.o
 
 # collections test
 build $builddir/src/collections/hash-set-linear-test.o: cc src/collections/hash-set-linear-test.c
