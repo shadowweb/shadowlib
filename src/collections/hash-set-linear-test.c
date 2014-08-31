@@ -70,7 +70,9 @@ bool swDictionaryTestDataSlicesSet(swDictionaryTestData *data)
     if ((data->fileSlices = swMemoryMalloc(slicesCount * sizeof(swStaticString))))
     {
       size_t sliceIndex = 0;
-      size_t i = 0, j = 0, len = data->fileData.len;
+      size_t i = 0;
+      size_t j = 0;
+      size_t len = data->fileData.len;
       char *str = data->fileData.data;
       while (i < len)
       {

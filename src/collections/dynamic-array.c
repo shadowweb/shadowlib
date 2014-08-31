@@ -173,16 +173,16 @@ bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element)
   return rtn;
 }
 
-bool swDynamicArrayPop(swDynamicArray *dynamicArray, void **element)
+bool swDynamicArrayPop(swDynamicArray *dynamicArray, void *element)
 {
   bool rtn = false;
-  if (dynamicArray && element)
+  if (dynamicArray && element && dynamicArray->count)
   {
     uint32_t newCount = dynamicArray->count - 1;
     if ((newCount <= dynamicArray->size) || swDynamicArrayResize(dynamicArray, newCount))
     {
       uint8_t *startPtr = swDynamicArrayGetPositionPtr(dynamicArray, newCount);
-      memcpy(*element, startPtr, dynamicArray->elementSize);
+      memcpy(element, startPtr, dynamicArray->elementSize);
       dynamicArray->count = newCount;
       rtn = true;
     }

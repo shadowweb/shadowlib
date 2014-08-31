@@ -19,8 +19,6 @@ typedef struct swDynamicArray
 #define swDynamicArrayCount(a)             (a).count
 #define swDynamicArraySize(a)              (a).size
 
-// TODO: write unit test
-
 swDynamicArray *swDynamicArrayNew(size_t elementSize, uint32_t size);
 void swDynamicArrayDelete(swDynamicArray *array);
 
@@ -34,6 +32,6 @@ void swDynamicArrayRelease(swDynamicArray *array);
 bool swDynamicArrayAppendStaticArray(swDynamicArray *dynamicArray, const swStaticArray *staticArray);
 bool swDynamicArraySet(swDynamicArray *dynamicArray, uint32_t position, void *element);
 bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element);
-bool swDynamicArrayPop(swDynamicArray *dynamicArray, void **element);
+bool swDynamicArrayPop(swDynamicArray *dynamicArray, void *element);
 
 #endif // SW_COLLECTIONS_DYNAMICARRAY_H

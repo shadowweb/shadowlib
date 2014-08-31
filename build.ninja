@@ -53,6 +53,9 @@ build $builddir/src/collections/hash-map-linear-test:   link $builddir/src/colle
 build $builddir/src/collections/fast-array-test.o:      cc src/collections/fast-array-test.c
 build $builddir/src/collections/fast-array-test:        link $builddir/src/collections/fast-array-test.o $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
+build $builddir/src/collections/dynamic-array-test.o:   cc src/collections/dynamic-array-test.c
+build $builddir/src/collections/dynamic-array-test:     link $builddir/src/collections/dynamic-array-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+
 # storage library
 build $builddir/src/storage/static-string.o:            cc src/storage/static-string.c
 build $builddir/src/storage/dynamic-string.o:           cc src/storage/dynamic-string.c
