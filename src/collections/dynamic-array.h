@@ -15,9 +15,11 @@ typedef struct swDynamicArray
   uint32_t size;
 } swDynamicArray;
 
-#define swDynamicArrayData(a)              (a).data
-#define swDynamicArrayCount(a)             (a).count
-#define swDynamicArraySize(a)              (a).size
+#define swDynamicArrayData(a)             (a).data
+#define swDynamicArrayCount(a)            (a).count
+#define swDynamicArraySize(a)             (a).size
+
+#define swDynamicArrayInitEmpty(es)       { .elementSize = (es) }
 
 swDynamicArray *swDynamicArrayNew(size_t elementSize, uint32_t size);
 void swDynamicArrayDelete(swDynamicArray *array);
@@ -31,6 +33,7 @@ void swDynamicArrayRelease(swDynamicArray *array);
 
 bool swDynamicArrayAppendStaticArray(swDynamicArray *dynamicArray, const swStaticArray *staticArray);
 bool swDynamicArraySet(swDynamicArray *dynamicArray, uint32_t position, void *element);
+void *swDynamicArrayGet(swDynamicArray *dynamicArray, uint32_t position);
 bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element);
 bool swDynamicArrayPop(swDynamicArray *dynamicArray, void *element);
 

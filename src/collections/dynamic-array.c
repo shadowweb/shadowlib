@@ -156,6 +156,14 @@ bool swDynamicArraySet(swDynamicArray *dynamicArray, uint32_t position, void *el
   return rtn;
 }
 
+void *swDynamicArrayGet(swDynamicArray *dynamicArray, uint32_t position)
+{
+  if (dynamicArray && (position < dynamicArray->count))
+    return dynamicArray->data + (dynamicArray->elementSize * position);
+  return NULL;
+}
+
+
 bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element)
 {
   bool rtn = false;

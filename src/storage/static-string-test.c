@@ -163,6 +163,11 @@ swTestDeclare(TestSlitChar, NULL, NULL, swTestRun)
   ASSERT_EQUAL(slices[0].len, 17);
   ASSERT_EQUAL(slices[1].len, 0);
   ASSERT_EQUAL(slices[2].len, 17);
+
+  swStaticString s5 = swStaticStringDefine("very long string -- very long string");
+  ASSERT_TRUE(swStaticStringSplitChar(&s5, '=', slices, 5, &slicesCount, 0));
+  ASSERT_EQUAL(slicesCount, 1);
+  ASSERT_TRUE(swStaticStringSame(&s5, &slices[0]));
   return true;
 }
 
