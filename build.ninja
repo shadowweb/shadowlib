@@ -118,4 +118,6 @@ build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-s
 build $builddir/src/open-ssl/ssl-test.o:                 cc src/open-ssl/ssl-test.c
 build $builddir/src/open-ssl/ssl-test:                   link $builddir/src/open-ssl/ssl-test.o $builddir/src/open-ssl/openssl.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $buildthirdpartydir/lib/openssl/libssl.a $buildthirdpartydir/lib/openssl/libcrypto.a
 
-
+# command line
+build $builddir/src/command-line/command-line.o:         cc src/command-line/command-line.c
+build $builddir/src/command-line/command-line.a:         ar $builddir/src/command-line/command-line.o
