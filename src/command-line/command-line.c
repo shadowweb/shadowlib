@@ -20,14 +20,7 @@ typedef struct swOptionValuePair
 static void swOptionValuePairClear(swOptionValuePair *pair)
 {
   if (pair && pair->value.size)
-  {
-    if (pair->option->valueType == swOptionValueTypeString)
-    {
-      for (uint32_t i = 0; i < pair->value.count; i++)
-        swDynamicStringRelease(swDynamicArrayGet(&(pair->value), i));
-    }
     swDynamicArrayRelease(&(pair->value));
-  }
 }
 
 static void swOptionValuePairArrayClear(swFastArray *array)
@@ -85,7 +78,7 @@ typedef struct swCommandLineOptionsState
 } swCommandLineOptionsState;
 
 swOptionCategoryModuleDeclare(optionCategoryGlobal, "CommandLine",
-  swOptionScalarDeclareNormal("help", "Print command line help", NULL, swStaticArrayDefineEmpty, swOptionValueTypeBool, swOptionModifierNone, false)
+  swOptionDeclareScalar("help", "Print command line help", NULL, swOptionValueTypeBool, false)
 );
 
 // static swOptionCategory optionCategoryGlobal __attribute__ ((section(".commandline"))) = { .magic = SW_COMMANDLINE_MAGIC };
@@ -405,9 +398,9 @@ static bool falseValue = false;
 static bool swOptionValueBoolParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
 {
   bool rtn = false;
-  if (swStaticStringCompareCaseless(valueString, &trueString))
+  if (!swStaticStringCompareCaseless(valueString, &trueString))
     rtn = swOptionValuePairValueSet(valueArray, trueValue, isArray);
-  else if (swStaticStringCompareCaseless(valueString, &falseString))
+  else if (!swStaticStringCompareCaseless(valueString, &falseString))
     rtn = swOptionValuePairValueSet(valueArray, falseValue, isArray);
   return rtn;
 }
@@ -802,7 +795,7 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
 static bool _setDefaultsAndCheckArrays(swOptionValuePair *pair)
 {
   bool rtn = false;
-  if (pair->value.count || (pair->option->defaultValue.count && swDynamicArraySetFromStaticArray(&(pair->value), &(pair->option->defaultValue))) )
+  if (!pair->option->defaultValue.count || (!pair->value.count && swDynamicArraySetFromStaticArray(&(pair->value), &(pair->option->defaultValue))))
   {
     if (!pair->value.count || !pair->option->valueCount || pair->value.count == pair->option->valueCount)
       rtn = true;
@@ -887,7 +880,7 @@ static bool swOptionCommandLineSetValues(swCommandLineOptions *commandLineOption
       state.currentArg = 0;
       while (state.currentArg < state.argCount)
       {
-        if (swOptionCommandLineScanArguments(&state))
+        if (!swOptionCommandLineScanArguments(&state))
           break;
       }
       if (state.currentArg == state.argCount)
@@ -901,7 +894,7 @@ static bool swOptionCommandLineSetValues(swCommandLineOptions *commandLineOption
   return rtn;
 }
 
-bool swOptionCommandLineInit(int argc, const char *argv[])
+bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMessage)
 {
   bool rtn = false;
   if (!commandLineOptionsGlobal && (argc > 0) && argv)
@@ -918,7 +911,10 @@ bool swOptionCommandLineInit(int argc, const char *argv[])
         {
           // walk through the arguments, argumentsString, and optionValues
           if ((argc == 1) || swOptionCommandLineSetValues(commandLineOptionsGlobal, argc - 1, &argv[1]))
-            rtn = true;
+          {
+            if (!usageMessage || swDynamicStringSetFromCString(&(commandLineOptionsGlobal->usageMessage), usageMessage))
+              rtn = true;
+          }
         }
       }
       if (!rtn)
@@ -935,12 +931,6 @@ void swOptionCommandLineShutdown()
 {
   if (commandLineOptionsGlobal)
     swCommandLineOptionsDelete(commandLineOptionsGlobal);
-}
-
-// TODO: implement
-bool swOptionCommandLineSetUsage(const char *usageMessage)
-{
-  return false;
 }
 
 void swOptionCommandLinePrintUsage()
