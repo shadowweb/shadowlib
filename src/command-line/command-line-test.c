@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <errno.h>
+#undef _GNU_SOURCE
 
 #include "unittest/unittest.h"
 #include "command-line/command-line.h"
@@ -69,7 +70,19 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
   };
   if (swOptionCommandLineInit(argc, argv, "This is basic test"))
   {
-    rtn = true;
+    swStaticString intName = swStaticStringDefineFromCstr("int-name");
+    int64_t value = 0;
+    if (swOptionValueGetInt(&intName, &value) && (value == 1))
+    {
+      swStaticString intNameArray = swStaticStringDefineFromCstr("int-name-array");
+      swStaticArray valueArray = swStaticArrayDefineEmpty;
+      if (swOptionValueGetIntArray(&intNameArray, &valueArray) && (valueArray.count == 3))
+      {
+        int64_t *values = (int64_t *)valueArray.data;
+        if (values[0] == 1 && values[1] == 2 && values[2] == 3)
+          rtn = true;
+      }
+    }
     swOptionCommandLineShutdown();
   }
   return rtn;
