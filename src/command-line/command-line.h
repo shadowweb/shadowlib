@@ -2,6 +2,7 @@
 #define SW_COMMANDLINE_COMMANDLINE_H
 
 #include "collections/static-array.h"
+#include "storage/dynamic-string.h"
 #include "storage/static-string.h"
 
 #define SW_COMMANDLINE_MAGIC (0xbeefdead)
@@ -145,7 +146,7 @@ typedef struct swOptionCategory
   swOptionCategoryType type : 1;
 } swOptionCategory;
 
-bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMessage);
+bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString);
 void swOptionCommandLineShutdown();
 
 void swOptionCommandLinePrintUsage();

@@ -68,7 +68,8 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     "--string-name-array=bla-bla3",
     "--double-name-array=13.133"
   };
-  if (swOptionCommandLineInit(argc, argv, "This is basic test"))
+  swDynamicString *errorString = NULL;
+  if (swOptionCommandLineInit(argc, argv, "This is basic test", &errorString))
   {
     swStaticString intName = swStaticStringDefineFromCstr("int-name");
     int64_t value = 0;
@@ -85,6 +86,8 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     }
     swOptionCommandLineShutdown();
   }
+  else
+    swDynamicStringDelete(errorString);
   return rtn;
 }
 
