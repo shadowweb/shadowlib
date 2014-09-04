@@ -12,9 +12,6 @@
 #include <errno.h>
 #include <math.h>
 
-// TODO: substitute setting error code by calling
-// swCommandLineErrorDataSet(errorData, option, category, errorCode);
-
 typedef struct swOptionValuePair
 {
   swOption      *option;
@@ -177,7 +174,7 @@ static bool swOptionCommandLineSetCategories(swCommandLineOptions *commandLineOp
           commandLineOptions->mainCategory = category;
         else
         {
-          commandLineOptions->errorData.code = swCommandLineErrorCodeMainCategory;
+          swCommandLineErrorDataSet(&(commandLineOptions->errorData), NULL, category, swCommandLineErrorCodeMainCategory);
           break;
         }
       }
@@ -316,22 +313,22 @@ static bool swOptionCommandLineProcessOption(swCommandLineOptions *commandLineOp
                   rtn = true;
               }
               if (!rtn)
-                commandLineOptions->errorData.code = swCommandLineErrorCodeInternal;
+                swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInternal);
             }
             else
-              commandLineOptions->errorData.code = swCommandLineErrorCodeInvalidDefault;
+              swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInvalidDefault);
           }
           else
-            commandLineOptions->errorData.code = swCommandLineErrorCodeModifierType;
+            swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeModifierType);
         }
         else
-          commandLineOptions->errorData.code = swCommandLineErrorCodeArrayType;
+          swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeArrayType);
       }
       else
-        commandLineOptions->errorData.code = swCommandLineErrorCodeValueType;
+        swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeValueType);
     }
     else
-      commandLineOptions->errorData.code = swCommandLineErrorCodeOptionType;
+      swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeOptionType);
   }
   return rtn;
 }
@@ -506,7 +503,7 @@ static bool swOptionCommandLineScanConsumeAfter(swCommandLineOptionsState *state
       state->currentArg++;
       continue;
     }
-    state->clOptions->errorData.code = swCommandLineErrorCodeParse;
+    swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
     rtn = false;
     break;
   }
@@ -530,10 +527,10 @@ static bool swOptionCommandLineScanPositional(swCommandLineOptionsState *state)
         rtn = true;
       }
       else
-        state->clOptions->errorData.code = swCommandLineErrorCodeParse;
+        swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
     }
     else
-      state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+      swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
   }
   return rtn;
 }
@@ -562,11 +559,11 @@ static bool swOptionCommandLineScanAllPositional(swCommandLineOptionsState *stat
           if (state->clOptions->consumeAfterValue.option)
             rtn = swOptionCommandLineScanConsumeAfter(state);
           else
-            state->clOptions->errorData.code = swCommandLineErrorCodeNoConsumeAfter;
+            swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeNoConsumeAfter);
         }
       }
       else if (!state->clOptions->positionalValues.count)
-        state->clOptions->errorData.code = swCommandLineErrorCodeNoPositional;
+        swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeNoPositional);
     }
     else
       rtn = true;
@@ -587,10 +584,10 @@ static bool swOptionCommandLineScanSink(swCommandLineOptionsState *state)
       rtn = true;
     }
     else
-      state->clOptions->errorData.code = swCommandLineErrorCodeParse;
+      swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
   }
   else
-    state->clOptions->errorData.code = swCommandLineErrorCodeNoSink;
+    swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeNoSink);
   return rtn;
 }
 
@@ -614,7 +611,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
             rtn = true;
           }
           else
-            state->clOptions->errorData.code = swCommandLineErrorCodeParse;
+            swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
         }
         else
         {
@@ -638,7 +635,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
               }
               else
               {
-                state->clOptions->errorData.code = swCommandLineErrorCodeParse;
+                swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
                 rtn = false;
               }
               break;
@@ -653,7 +650,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
               rtn = true;
             }
             else
-              state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+              swCommandLineErrorDataSet(&(state->clOptions->errorData), token->namePair->option, NULL, swCommandLineErrorCodeInternal);
           }
         }
       }
@@ -665,7 +662,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
           rtn = true;
         }
         else
-          state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+          swCommandLineErrorDataSet(&(state->clOptions->errorData), token->noNamePair->option, NULL, swCommandLineErrorCodeInternal);
       }
     }
     else if (token->hasName)
@@ -686,7 +683,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
         // substring failure
         else
         {
-          state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+          swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
           failure = true;
           break;
         }
@@ -788,20 +785,20 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
                 token->hasNoName = true;
               else
               {
-                state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+                swCommandLineErrorDataSet(&(state->clOptions->errorData),NULL, NULL, swCommandLineErrorCodeInternal);
                 break;
               }
             }
           }
           else
           {
-            state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+            swCommandLineErrorDataSet(&(state->clOptions->errorData),NULL, NULL, swCommandLineErrorCodeInternal);
             break;
           }
         }
         else
         {
-          state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+          swCommandLineErrorDataSet(&(state->clOptions->errorData),NULL, NULL, swCommandLineErrorCodeInternal);
           break;
         }
       }
@@ -833,7 +830,7 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
             }
             else
             {
-              state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+              swCommandLineErrorDataSet(&(state->clOptions->errorData),NULL, NULL, swCommandLineErrorCodeInternal);
               break;
             }
             len++;
@@ -859,9 +856,10 @@ static bool _setDefaultsAndCheckArrays(swOptionValuePair *pair, swCommandLineErr
     if (!pair->value.count || !pair->option->valueCount || pair->value.count == pair->option->valueCount)
       rtn = true;
     else
-      errorData->code = swCommandLineErrorCodeArrayValueCount;
+      swCommandLineErrorDataSet(errorData, pair->option, NULL, swCommandLineErrorCodeArrayValueCount);
   }
   else
+    swCommandLineErrorDataSet(errorData, NULL, NULL, swCommandLineErrorCodeInternal);
     errorData->code = swCommandLineErrorCodeInternal;
   return rtn;
 }
@@ -917,7 +915,7 @@ static bool swOptionCommandLineCheckRequired(swCommandLineOptions *commandLineOp
       {
         if (!valuePairs[i]->value.count)
         {
-          commandLineOptions->errorData.code = swCommandLineErrorCodeRequiredValue;
+          swCommandLineErrorDataSet(&(commandLineOptions->errorData), valuePairs[i]->option, NULL, swCommandLineErrorCodeRequiredValue);
           break;
         }
         i++;
@@ -983,7 +981,7 @@ bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMess
           }
         }
         else
-          commandLineOptionsGlobal->errorData.code = swCommandLineErrorCodeRealPath;
+          swCommandLineErrorDataSet(&(commandLineOptionsGlobal->errorData), NULL, NULL, swCommandLineErrorCodeRealPath);
       }
       if (!rtn)
       {
