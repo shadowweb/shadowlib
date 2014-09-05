@@ -135,12 +135,12 @@ bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStat
         dynamicBuf->data = data;
         dynamicBuf->size = newLen + 1;
       }
-      if (data)
-      {
-        memcpy(&(data[dynamicBuf->len]), staticBuf->data, staticBuf->len);
-        dynamicBuf->len = newLen;
-        rtn = true;
-      }
+    }
+    if (data)
+    {
+      memcpy(&(data[dynamicBuf->len]), staticBuf->data, staticBuf->len);
+      dynamicBuf->len = newLen;
+      rtn = true;
     }
   }
   return rtn;
@@ -161,12 +161,12 @@ bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf,
         dynamicBuf->data = data;
         dynamicBuf->size = newLen;
       }
-      if (data)
-      {
-        memcpy(&(data[dynamicBuf->len]), cBuf, size);
-        dynamicBuf->len = newLen;
-        rtn = true;
-      }
+    }
+    if (data)
+    {
+      memcpy(&(data[dynamicBuf->len]), cBuf, size);
+      dynamicBuf->len = newLen;
+      rtn = true;
     }
   }
   return rtn;

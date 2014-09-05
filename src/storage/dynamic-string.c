@@ -141,13 +141,13 @@ bool swDynamicStringAppendStaticString(swDynamicString *dynamicStr, const swStat
         dynamicStr->data = data;
         dynamicStr->size = newLen + 1;
       }
-      if (data)
-      {
-        memcpy(&(data[dynamicStr->len]), staticStr->data, staticStr->len);
-        dynamicStr->len = newLen;
-        data[newLen] = '\0';
-        rtn = true;
-      }
+    }
+    if (data)
+    {
+      memcpy(&(data[dynamicStr->len]), staticStr->data, staticStr->len);
+      dynamicStr->len = newLen;
+      data[newLen] = '\0';
+      rtn = true;
     }
   }
   return rtn;
@@ -168,13 +168,13 @@ bool swDynamicStringAppendCString(swDynamicString *dynamicStr, const char *cStr)
         dynamicStr->data = data;
         dynamicStr->size = newLen + 1;
       }
-      if (data)
-      {
-        memcpy(&(data[dynamicStr->len]), cStr, len);
-        dynamicStr->len = newLen;
-        data[newLen] = '\0';
-        rtn = true;
-      }
+    }
+    if (data)
+    {
+      memcpy(&(data[dynamicStr->len]), cStr, len);
+      dynamicStr->len = newLen;
+      data[newLen] = '\0';
+      rtn = true;
     }
   }
   return rtn;
