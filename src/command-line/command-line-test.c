@@ -187,6 +187,10 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     "--dap13.132",
     "--dap13.133"
   };
+  // TODO: test grouping
+  // TODO: test positional
+  // TODO: test consume after
+  // TODO: test sink
   swDynamicString *errorString = NULL;
   if (swOptionCommandLineInit(argc, argv, "This is basic test", &errorString))
   {
@@ -203,16 +207,16 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     checkDoubleArray("double-name-array", 3, 13.131, 13.132, 13.133);
 
     checkInt("ip", 2);
-    checkIntArray("ipa", 3, 1, 2, 3);
+    checkIntArray("iap", 3, 1, 2, 3);
 
     checkBool("bp", false);
-    // checkBoolArray("bpa", 3, true, false, true);
+    checkBoolArray("bap", 3, true, false, true);
 
     checkString("sp", "xyz");
-    // checkStringArray("spa", 3, "bla-bla1", "bla-bla2", "bla-bla3");
+    checkStringArray("sap", 3, "bla-bla1", "bla-bla2", "bla-bla3");
 
     checkDouble("dp", 1.2);
-    // checkDoubleArray("dpa", 3, 13.131, 13.132, 13.133);
+    checkDoubleArray("dap", 3, 13.131, 13.132, 13.133);
 
     rtn = true;
     swOptionCommandLineShutdown();
