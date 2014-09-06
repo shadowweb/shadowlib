@@ -83,7 +83,6 @@ swOptionCategoryModuleDeclare(optionCategoryGlobal, "CommandLine",
   swOptionDeclareScalar("help", "Print command line help", NULL, swOptionValueTypeBool, false)
 );
 
-// static swOptionCategory optionCategoryGlobal __attribute__ ((section(".commandline"))) = { .magic = SW_COMMANDLINE_MAGIC };
 static swCommandLineOptions *commandLineOptionsGlobal = NULL;
 
 static void swCommandLineOptionsDelete(swCommandLineOptions *commandLineOptions)
@@ -213,7 +212,40 @@ static bool swOptionValidateDefaultValue(swOption *option)
   return rtn;
 }
 
-static bool swOptionCommandLineProcessOption(swCommandLineOptions *commandLineOptions, swOption *option, bool isMainCategory)
+static bool swOptionCommandLineProcessOptions(swCommandLineOptions *commandLineOptions)
+{
+  bool rtn = false;
+  if (commandLineOptions)
+  {
+    swOptionValuePair *valuePairs = (swOptionValuePair *)(commandLineOptions->normalValues.storage);
+    if (valuePairs)
+    {
+      uint32_t i = 0;
+      while (i < commandLineOptions->normalValues.count)
+      {
+        swOption *option = valuePairs[i].option;
+        if (swHashMapLinearInsert(commandLineOptions->namedValues, &(option->name), &(valuePairs[i])))
+        {
+          if (option->modifier != swOptionModifierPrefix || swHashMapLinearInsert(commandLineOptions->prefixedValues, &(option->name), &(valuePairs[i])))
+          {
+            if (option->modifier != swOptionModifierGrouping || swHashMapLinearInsert(commandLineOptions->groupingValues, &(option->name), &(valuePairs[i])))
+            {
+              i++;
+              continue;
+            }
+          }
+        }
+        swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInternal);
+        break;
+      }
+      if (i == commandLineOptions->normalValues.count)
+        rtn = true;
+    }
+  }
+  return rtn;
+}
+
+static bool swOptionCommandLineValidateOption(swCommandLineOptions *commandLineOptions, swOption *option, bool isMainCategory)
 {
   bool rtn = false;
   if (commandLineOptions && option && (option->optionType == swOptionTypeNormal || isMainCategory))
@@ -256,6 +288,7 @@ static bool swOptionCommandLineProcessOption(swCommandLineOptions *commandLineOp
           if (!option->name.len && option->isArray)
           {
             commandLineOptions->consumeAfterValue = swOptionValuePairSet(option);
+            valuePairPtr = &(commandLineOptions->consumeAfterValue);
             typeValid = true;
           }
         }
@@ -267,6 +300,7 @@ static bool swOptionCommandLineProcessOption(swCommandLineOptions *commandLineOp
           if (!option->name.len && option->isArray)
           {
             commandLineOptions->sinkValue = swOptionValuePairSet(option);
+            valuePairPtr = &(commandLineOptions->sinkValue);
             typeValid = true;
           }
         }
@@ -287,19 +321,12 @@ static bool swOptionCommandLineProcessOption(swCommandLineOptions *commandLineOp
               modifierValid = true;
               break;
             case swOptionModifierPrefix:
-              if (option->optionType == swOptionTypeNormal &&
-                  (!option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated)))
-              {
-                if (swHashMapLinearInsert(commandLineOptions->prefixedValues, &(option->name), valuePairPtr))
-                  modifierValid = true;
-              }
+              if (option->optionType == swOptionTypeNormal && (!option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated)))
+                modifierValid = true;
               break;
             case swOptionModifierGrouping:
               if (option->optionType == swOptionTypeNormal && !option->isArray && (option->name.len == 1) && option->valueType == swOptionValueTypeBool)
-              {
-                if (swHashMapLinearInsert(commandLineOptions->groupingValues, &(option->name), valuePairPtr))
-                  modifierValid = true;
-              }
+                modifierValid = true;
               break;
           }
           if (modifierValid)
@@ -307,12 +334,9 @@ static bool swOptionCommandLineProcessOption(swCommandLineOptions *commandLineOp
             // validate default value
             if (swOptionValidateDefaultValue(option))
             {
-              if (!option->name.len || swHashMapLinearInsert(commandLineOptions->namedValues, &(option->name), valuePairPtr))
-              {
-                if (!option->isRequired || swFastArrayPush(commandLineOptions->requiredValues, valuePairPtr))
-                  rtn = true;
-              }
-              if (!rtn)
+              if (!option->isRequired || swFastArrayPush(commandLineOptions->requiredValues, valuePairPtr))
+                rtn = true;
+              else
                 swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInternal);
             }
             else
@@ -347,7 +371,7 @@ static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptio
         swOption *option = category->options;
         while (option->valueType > swOptionValueTypeNone)
         {
-          if (swOptionCommandLineProcessOption(commandLineOptions, option, category->type))
+          if (swOptionCommandLineValidateOption(commandLineOptions, option, category->type))
             option++;
           else
             break;
@@ -362,7 +386,10 @@ static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptio
       }
     }
     if (i == swFastArrayCount(commandLineOptions->categories))
-      rtn = true;
+    {
+      if (swOptionCommandLineProcessOptions(commandLineOptions))
+        rtn = true;
+    }
   }
   return rtn;
 }
@@ -405,10 +432,10 @@ static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptio
 // -option=value
 
 #define swOptionValuePairValueSet(valueArray, value, isArray) \
-  (isArray)? \
+  ((isArray)? \
     swDynamicArrayPush((valueArray), &(value)) \
   : \
-    (swDynamicArraySet((valueArray), 0, &(value)), (valueArray)->count == 1)
+    (swDynamicArraySet((valueArray), 0, &(value)), ((valueArray)->count == 1)))
 
 static const swStaticString trueString = swStaticStringDefine("true");
 static const swStaticString falseString = swStaticStringDefine("false");
@@ -696,7 +723,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
         {
           if (!swOptionValuePairValueSet(&(pairs[position]->value), trueValue, pairs[position]->option->isArray))
           {
-            state->clOptions->errorData.code = swCommandLineErrorCodeInternal;
+            swCommandLineErrorDataSet(&(state->clOptions->errorData), pairs[position]->option, NULL, swCommandLineErrorCodeInternal);
             break;
           }
           position++;
@@ -781,7 +808,7 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
             else if (swStaticStringCharEqual(token->full, startPosition, 'n') && swStaticStringCharEqual(token->full, startPosition + 1, 'o'))
             {
               startPosition += 2;
-              if (swStaticStringSetSubstring(&(token->name), &(token->noName), startPosition, token->name.len))
+              if (swStaticStringSetSubstring(&(token->full), &(token->noName), startPosition, token->full.len))
                 token->hasNoName = true;
               else
               {
@@ -835,7 +862,7 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
             }
             len++;
           }
-          if (i < token->name.len && !token->hasValue)
+          if (len < token->name.len && !token->hasValue)
             break;
         }
       }

@@ -17,6 +17,7 @@ swOptionCategoryMainDeclare(mainArgs, "Command Line Test",
 );
 
 swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
+  swOptionDeclareScalar("bool-special", "bool special name description", "bool", swOptionValueTypeBool, false),
   swOptionDeclareScalar("bool-name",    "bool name description",    "bool",   swOptionValueTypeBool,    false),
   swOptionDeclareScalar("int-name",     "int name description",     "int",    swOptionValueTypeInt,     false),
   swOptionDeclareScalar("double-name",  "double name description",  "double", swOptionValueTypeDouble,  false),
@@ -47,6 +48,7 @@ swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
   swOptionDeclareGrouping("d", "grouping bool", "bool",  false)
 );
 
+static void checkInt(char *name, int64_t value) __attribute__((unused));
 static void checkInt(char *name, int64_t value)
 {
   swStaticString intName = swStaticStringDefineFromCstr(name);
@@ -55,6 +57,7 @@ static void checkInt(char *name, int64_t value)
   ASSERT_EQUAL(intValue, value);
 }
 
+static void checkIntArray(char *name, uint32_t count, ...) __attribute__((unused));
 static void checkIntArray(char *name, uint32_t count, ...)
 {
   swStaticString intNameArray = swStaticStringDefineFromCstr(name);
@@ -65,11 +68,12 @@ static void checkIntArray(char *name, uint32_t count, ...)
 
   va_list argPtr;
   va_start(argPtr, count);
-  for (uint32_t i = 0; i < count; i++)
+  for (uint32_t i = 0; i < valueArray.count; i++)
     ASSERT_EQUAL(intValues[i], va_arg(argPtr, int64_t));
   va_end(argPtr);
 }
 
+static void checkBool(char *name, bool value) __attribute__((unused));
 static void checkBool(char *name, bool value)
 {
   swStaticString boolName = swStaticStringDefineFromCstr(name);
@@ -78,6 +82,7 @@ static void checkBool(char *name, bool value)
   ASSERT_EQUAL(boolValue, value);
 }
 
+static void checkBoolArray(char *name, uint32_t count, ...) __attribute__((unused));
 static void checkBoolArray(char *name, uint32_t count, ...)
 {
   swStaticString boolNameArray = swStaticStringDefineFromCstr(name);
@@ -88,11 +93,12 @@ static void checkBoolArray(char *name, uint32_t count, ...)
 
   va_list argPtr;
   va_start(argPtr, count);
-  for (uint32_t i = 0; i < count; i++)
+  for (uint32_t i = 0; i < valueArray.count; i++)
     ASSERT_EQUAL(boolValues[i], va_arg(argPtr, int));
   va_end(argPtr);
 }
 
+static void checkString(char *name, char *value) __attribute__((unused));
 static void checkString(char *name, char *value)
 {
   swStaticString stringName = swStaticStringDefineFromCstr(name);
@@ -102,6 +108,7 @@ static void checkString(char *name, char *value)
   ASSERT_TRUE(swStaticStringEqual(&stringValue, &stringRealValue));
 }
 
+static void checkStringArray(char *name, uint32_t count, ...) __attribute__((unused));
 static void checkStringArray(char *name, uint32_t count, ...)
 {
   swStaticString stringNameArray = swStaticStringDefineFromCstr(name);
@@ -112,7 +119,7 @@ static void checkStringArray(char *name, uint32_t count, ...)
 
   va_list argPtr;
   va_start(argPtr, count);
-  for (uint32_t i = 0; i < count; i++)
+  for (uint32_t i = 0; i < valueArray.count; i++)
   {
     char *value = va_arg(argPtr, char *);
     swStaticString stringRealValue = swStaticStringDefineFromCstr(value);
@@ -121,6 +128,7 @@ static void checkStringArray(char *name, uint32_t count, ...)
   va_end(argPtr);
 }
 
+static void checkDouble(char *name, double value) __attribute__((unused));
 static void checkDouble(char *name, double value)
 {
   swStaticString doubleName = swStaticStringDefineFromCstr(name);
@@ -129,6 +137,7 @@ static void checkDouble(char *name, double value)
   ASSERT_EQUAL(doubleValue, value);
 }
 
+static void checkDoubleArray(char *name, uint32_t count, ...) __attribute__((unused));
 static void checkDoubleArray(char *name, uint32_t count, ...)
 {
   swStaticString doubleNameArray = swStaticStringDefineFromCstr(name);
@@ -139,7 +148,7 @@ static void checkDoubleArray(char *name, uint32_t count, ...)
 
   va_list argPtr;
   va_start(argPtr, count);
-  for (uint32_t i = 0; i < count; i++)
+  for (uint32_t i = 0; i < valueArray.count; i++)
     ASSERT_EQUAL(doubleValues[i], va_arg(argPtr, double));
   va_end(argPtr);
 }
@@ -147,7 +156,7 @@ static void checkDoubleArray(char *name, uint32_t count, ...)
 swTestDeclare(BasicTest, NULL, NULL, swTestRun)
 {
   bool rtn = false;
-  int argc = 37;
+  int argc = 39;
   const char *argv[] = {
     program_invocation_name,
     "--int-name=1",
@@ -166,6 +175,7 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     "--bool-name-array=false",
     "--string-name-array=bla-bla3",
     "--double-name-array=13.133",
+    "--nobool-special",
     "--bptrue",
     "--bpfalse",
     "--ip1",
@@ -185,9 +195,9 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     "--sapbla-bla3",
     "--dap13.131",
     "--dap13.132",
-    "--dap13.133"
+    "--dap13.133",
+    "-bcd"
   };
-  // TODO: test grouping
   // TODO: test positional
   // TODO: test consume after
   // TODO: test sink
@@ -218,13 +228,22 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     checkDouble("dp", 1.2);
     checkDoubleArray("dap", 3, 13.131, 13.132, 13.133);
 
+    checkBool("b", true);
+    checkBool("c", true);
+    checkBool("d", true);
+
+    checkBool("bool-special", false);
+
     rtn = true;
     swOptionCommandLineShutdown();
   }
   else
   {
-    swTestLogLine("Error processing arguments: '%.*s'\n", (int)(errorString->len), errorString->data);
-    swDynamicStringDelete(errorString);
+    if (errorString)
+    {
+      swTestLogLine("Error processing arguments: '%.*s'\n", (int)(errorString->len), errorString->data);
+      swDynamicStringDelete(errorString);
+    }
   }
   return rtn;
 }
