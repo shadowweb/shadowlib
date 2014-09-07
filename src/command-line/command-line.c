@@ -1,5 +1,6 @@
 #include "command-line/command-line.h"
 #include "command-line/command-line-error.h"
+#include "command-line/option-value-pair.h"
 
 #include "collections/dynamic-array.h"
 #include "collections/fast-array.h"
@@ -11,18 +12,6 @@
 
 #include <errno.h>
 #include <math.h>
-
-typedef struct swOptionValuePair
-{
-  swOption      *option;
-  swDynamicArray value;
-} swOptionValuePair;
-
-static void swOptionValuePairClear(swOptionValuePair *pair)
-{
-  if (pair && pair->value.size)
-    swDynamicArrayRelease(&(pair->value));
-}
 
 static void swOptionValuePairArrayClear(swFastArray *array)
 {
@@ -192,9 +181,6 @@ static size_t valueSizes[] =
   [swOptionValueTypeInt]    = sizeof(int64_t),
   [swOptionValueTypeDouble] = sizeof(double),
 };
-
-#define swOptionValuePairInit(o)  {.option = (o), .value = swDynamicArrayInitEmpty(valueSizes[(o)->valueType])}
-#define swOptionValuePairSet(o)   *(swOptionValuePair[]){swOptionValuePairInit(o)}
 
 static bool swOptionValidateDefaultValue(swOption *option)
 {
@@ -430,12 +416,6 @@ static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptio
 // -option
 // --option=value
 // -option=value
-
-#define swOptionValuePairValueSet(valueArray, value, isArray) \
-  ((isArray)? \
-    swDynamicArrayPush((valueArray), &(value)) \
-  : \
-    (swDynamicArraySet((valueArray), 0, &(value)), ((valueArray)->count == 1)))
 
 static const swStaticString trueString = swStaticStringDefine("true");
 static const swStaticString falseString = swStaticStringDefine("false");
@@ -712,8 +692,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
           if (!swHashMapLinearValueGet(state->clOptions->groupingValues, &nameSubstring, (void **)(&pairs[position])))
             break;
         }
-        // substring failure
-        else
+        else // substring failure
         {
           swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
           failure = true;

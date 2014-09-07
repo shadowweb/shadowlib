@@ -121,7 +121,8 @@ build $builddir/src/open-ssl/ssl-test:                   link $builddir/src/open
 # command line
 build $builddir/src/command-line/command-line.o:         cc src/command-line/command-line.c
 build $builddir/src/command-line/command-line-error.o:   cc src/command-line/command-line-error.c
-build $builddir/src/command-line/command-line.a:         ar $builddir/src/command-line/command-line.o $builddir/src/command-line/command-line-error.o
+build $builddir/src/command-line/option-value-pair.o:    cc src/command-line/option-value-pair.c
+build $builddir/src/command-line/command-line.a:         ar $builddir/src/command-line/command-line.o $builddir/src/command-line/command-line-error.o $builddir/src/command-line/option-value-pair.o
 
 # command line test
 build $builddir/src/command-line/command-line-test.o:    cc src/command-line/command-line-test.c

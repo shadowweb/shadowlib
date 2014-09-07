@@ -1,0 +1,27 @@
+#ifndef SW_COMMANDLINE_OPTIONVALUEPAIR_H
+#define SW_COMMANDLINE_OPTIONVALUEPAIR_H
+
+#include "collections/dynamic-array.h"
+#include "command-line/command-line.h"
+
+typedef struct swOptionValuePair
+{
+  swOption      *option;
+  swDynamicArray value;
+} swOptionValuePair;
+
+#define swOptionValuePairInit(o)  {.option = (o), .value = swDynamicArrayInitEmpty(valueSizes[(o)->valueType])}
+#define swOptionValuePairSet(o)   *(swOptionValuePair[]){swOptionValuePairInit(o)}
+
+#define swOptionValuePairValueSet(valueArray, value, isArray) \
+  ((isArray)? \
+    swDynamicArrayPush((valueArray), &(value)) \
+  : \
+    (swDynamicArraySet((valueArray), 0, &(value)), ((valueArray)->count == 1)))
+
+
+void swOptionValuePairClear(swOptionValuePair *pair);
+
+
+
+#endif // SW_COMMANDLINE_OPTIONVALUEPAIR_H
