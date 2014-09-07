@@ -19,9 +19,6 @@ typedef struct swOptionValuePair
   : \
     (swDynamicArraySet((valueArray), 0, &(value)), ((valueArray)->count == 1)))
 
-
 void swOptionValuePairClear(swOptionValuePair *pair);
-
-
 
 #endif // SW_COMMANDLINE_OPTIONVALUEPAIR_H
