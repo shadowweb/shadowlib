@@ -18,6 +18,7 @@ typedef enum swCommandLineErrorCode
   swCommandLineErrorCodeRealPath,
   swCommandLineErrorCodeRequiredValue,
   swCommandLineErrorCodeArrayValueCount,
+  swCommandLineErrorCodeArrayMultivalue,
   swCommandLineErrorCodeParse,
   swCommandLineErrorCodeNoPositional,
   swCommandLineErrorCodeNoConsumeAfter,

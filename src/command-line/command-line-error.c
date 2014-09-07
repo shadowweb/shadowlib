@@ -16,6 +16,7 @@ static const char *swCommandLineErrorCodeText[] __attribute__((unused)) =
   [swCommandLineErrorCodeRealPath]        = "Failed to find real path for this executable",
   [swCommandLineErrorCodeRequiredValue]   = "Missing required value for option",
   [swCommandLineErrorCodeArrayValueCount] = "Wrong number of values for array value count",
+  [swCommandLineErrorCodeArrayMultivalue] = "Invalid way to specify multivalue array value",
   [swCommandLineErrorCodeParse]           = "Failed to parse option value",
   [swCommandLineErrorCodeNoPositional]    = "No positional arguments expected",
   [swCommandLineErrorCodeNoConsumeAfter]  = "No consume after arguments expected",

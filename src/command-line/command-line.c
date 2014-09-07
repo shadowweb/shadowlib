@@ -505,7 +505,7 @@ static bool swOptionCallParser(swOption *option, swStaticString *valueString, sw
         uint32_t i = 0;
         while (i < slicesCount)
         {
-          if (!parsers[option->valueType](valueString, valueArray, isArray))
+          if (!parsers[option->valueType](&slices[i], valueArray, isArray))
             break;
           i++;
         }
@@ -629,16 +629,22 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
       // process normal (modifier: none || prefix)
       if (token->namePair)
       {
+        bool isMultiValueArray = token->namePair->option->isArray && token->namePair->option->arrayType == swOptionArrayTypeMultiValue;
         if (token->hasValue)
         {
           swOption *option = token->namePair->option;
-          if (swOptionCallParser(option, &(token->value), &(token->namePair->value)))
+          if (!isMultiValueArray)
           {
-            state->currentArg++;
-            rtn = true;
+            if (swOptionCallParser(option, &(token->value), &(token->namePair->value)))
+            {
+              state->currentArg++;
+              rtn = true;
+            }
+            else
+              swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
           }
           else
-            swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
+            swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeArrayMultivalue);
         }
         else
         {
@@ -646,7 +652,6 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
           if (nextToken && !nextToken->hasName && nextToken->hasValue)
           {
             state->currentArg++;
-            bool isMultiValueArray = token->namePair->option->isArray && token->namePair->option->arrayType == swOptionArrayTypeMultiValue;
             do
             {
               swOption *option = token->namePair->option;
@@ -736,16 +741,11 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
       }
       else if (!failure)
       {
-        if (state->currentPositional < state->clOptions->positionalValues.count)
-          rtn = swOptionCommandLineScanPositional(state);
-        else if (state->clOptions->positionalValues.count && state->clOptions->consumeAfterValue.option)
-          rtn = swOptionCommandLineScanConsumeAfter(state);
-        else
+        if (state->clOptions->sinkValue.option)
           rtn = swOptionCommandLineScanSink(state);
       }
     }
-    // does not have name
-    else
+    else // token does not have name
     {
       if (token->hasDashDashOnly)
       {
