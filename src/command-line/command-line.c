@@ -749,9 +749,9 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
 static bool _setDefaultsAndCheckArrays(swOptionValuePair *pair, swCommandLineErrorData *errorData)
 {
   bool rtn = false;
-  if (!pair->option->defaultValue.count || (!pair->value.count && swDynamicArraySetFromStaticArray(&(pair->value), &(pair->option->defaultValue))))
+  if (swOptionValuePairSetDefaults(pair))
   {
-    if (!pair->value.count || !pair->option->valueCount || pair->value.count == pair->option->valueCount)
+    if (swOptionValuePairCheckArrays(pair))
       rtn = true;
     else
       swCommandLineErrorDataSet(errorData, pair->option, NULL, swCommandLineErrorCodeArrayValueCount);
