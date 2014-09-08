@@ -2,7 +2,7 @@
 #define SW_COMMANDLINE_OPTIONVALUEPAIR_H
 
 #include "collections/dynamic-array.h"
-#include "command-line/command-line.h"
+#include "command-line/option.h"
 
 typedef struct swOptionValuePair
 {

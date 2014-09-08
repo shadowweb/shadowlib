@@ -1,10 +1,8 @@
 #ifndef SW_COMMANDLINE_COMMANDLINE_H
 #define SW_COMMANDLINE_COMMANDLINE_H
 
-#include "collections/static-array.h"
 #include "command-line/option.h"
 #include "storage/dynamic-string.h"
-#include "storage/static-string.h"
 
 #define SW_COMMANDLINE_MAGIC (0xbeefdead)
 
