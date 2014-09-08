@@ -1,5 +1,7 @@
 #include "command-line/command-line.h"
 #include "command-line/command-line-error.h"
+#include "command-line/option.h"
+#include "command-line/option-category.h"
 #include "command-line/option-token.h"
 #include "command-line/option-value-pair.h"
 
@@ -748,7 +750,7 @@ static bool swOptionCommandLineSetValues(swCommandLineData *commandLineData, int
   return rtn;
 }
 
-bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString)
+bool swCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString)
 {
   bool rtn = false;
   if (!commandLineDataGlobal && (argc > 0) && argv)
@@ -788,7 +790,7 @@ bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMess
   return rtn;
 }
 
-void swOptionCommandLineShutdown()
+void swCommandLineShutdown()
 {
   if (commandLineDataGlobal)
   {

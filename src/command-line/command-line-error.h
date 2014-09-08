@@ -1,7 +1,8 @@
 #ifndef SW_COMMANDLINE_COMMANDLINEERROR_H
 #define SW_COMMANDLINE_COMMANDLINEERROR_H
 
-#include "command-line/command-line.h"
+#include "command-line/option.h"
+#include "command-line/option-category.h"
 #include "storage/dynamic-string.h"
 
 typedef enum swCommandLineErrorCode

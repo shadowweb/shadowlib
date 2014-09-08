@@ -6,6 +6,8 @@
 
 #include "unittest/unittest.h"
 #include "command-line/command-line.h"
+#include "command-line/option.h"
+#include "command-line/option-category.h"
 
 swOptionCategoryMainDeclare(mainArgs, "Command Line Test",
   swOptionDeclarePositionalScalar("postest1", "pt1", swOptionValueTypeBool, false),
@@ -258,11 +260,11 @@ static bool testFramework(int argc, const char *argv[], void (*checkFunc)())
 {
   bool rtn = false;
   swDynamicString *errorString = NULL;
-  if (swOptionCommandLineInit(argc, argv, "This is basic test", &errorString))
+  if (swCommandLineInit(argc, argv, "This is basic test", &errorString))
   {
     checkFunc();
     rtn = true;
-    swOptionCommandLineShutdown();
+    swCommandLineShutdown();
   }
   else
   {

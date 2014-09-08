@@ -1,50 +1,13 @@
 #ifndef SW_COMMANDLINE_COMMANDLINE_H
 #define SW_COMMANDLINE_COMMANDLINE_H
 
-#include "command-line/option.h"
+#include "collections/static-array.h"
 #include "storage/dynamic-string.h"
 
-#define SW_COMMANDLINE_MAGIC (0xbeefdead)
+bool swCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString);
+void swCommandLineShutdown();
 
-typedef enum swOptionCategoryType
-{
-  swOptionCategoryTypeModule,
-  swOptionCategoryTypeMain,
-} swOptionCategoryType;
-
-typedef struct swOptionCategory
-{
-  char *name;
-  char *file;
-  swOption *options;
-  uint32_t magic;
-  swOptionCategoryType type : 1;
-} swOptionCategory;
-
-bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString);
-void swOptionCommandLineShutdown();
-
-void swOptionCommandLinePrintUsage();
-
-#define swOptionCategoryModuleDeclare(varName, n, ...) \
-static const swOptionCategory varName __attribute__ ((unused, section(".commandline"))) = \
-{ \
-  .name = n, \
-  .file = __FILE__, \
-  .options = (swOption []){ __VA_ARGS__, {.valueType = swOptionValueTypeNone}}, \
-  .magic = SW_COMMANDLINE_MAGIC, \
-  .type = swOptionCategoryTypeModule \
-}
-
-#define swOptionCategoryMainDeclare(varName, n, ...) \
-static const swOptionCategory varName __attribute__ ((unused, section(".commandline"))) = \
-{ \
-  .name = n, \
-  .file = __FILE__, \
-  .options = (swOption []){ __VA_ARGS__, {.valueType = swOptionValueTypeNone}}, \
-  .magic = SW_COMMANDLINE_MAGIC, \
-  .type = swOptionCategoryTypeMain \
-}
+void swCommandLinePrintUsage();
 
 bool swOptionValueGetBool   (swStaticString *name, bool *value);
 bool swOptionValueGetInt    (swStaticString *name, int64_t *value);
