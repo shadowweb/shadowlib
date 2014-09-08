@@ -32,5 +32,6 @@ void swCommandLineDataDelete(swCommandLineData *commandLineData);
 swCommandLineData *swCommandLineDataNew(uint32_t argumentCount);
 bool swCommandLineDataSetCategories(swCommandLineData *commandLineData, swOptionCategory *globalCategory);
 bool swCommandLineDataSetOptions(swCommandLineData *commandLineData);
+bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, const char *argv[]);
 
 #endif // SW_COMMANDLINE_COMMANDLINEDATA_H

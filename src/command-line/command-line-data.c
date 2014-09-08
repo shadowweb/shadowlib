@@ -1,4 +1,5 @@
 #include "command-line/command-line-data.h"
+#include "command-line/command-line-state.h"
 #include "core/memory.h"
 
 static void _fastArrayClear(swFastArray *array)
@@ -292,3 +293,113 @@ bool swCommandLineDataSetOptions(swCommandLineData *commandLineData)
   }
   return rtn;
 }
+
+static bool _setDefaultsAndCheckArrays(swOptionValuePair *pair, swCommandLineErrorData *errorData)
+{
+  bool rtn = false;
+  if (swOptionValuePairSetDefaults(pair))
+  {
+    if (swOptionValuePairCheckArrays(pair))
+      rtn = true;
+    else
+      swCommandLineErrorDataSet(errorData, pair->option, NULL, swCommandLineErrorCodeArrayValueCount);
+  }
+  else
+    swCommandLineErrorDataSet(errorData, pair->option, NULL, swCommandLineErrorCodeInternal);
+  return rtn;
+}
+
+static bool swCommandLineDataWalkPairs(swCommandLineData *commandLineData, bool (*pairFunction)(swOptionValuePair *, swCommandLineErrorData *errorData))
+{
+  bool rtn = false;
+  if (commandLineData && pairFunction)
+  {
+    swFastArray *valuePairsList[] = {&commandLineData->normalValues, &commandLineData->positionalValues, NULL};
+    swFastArray **valuePairsListPtr = valuePairsList;
+    while (*valuePairsListPtr)
+    {
+      swOptionValuePair *valuePairPtr = (swOptionValuePair *)(*valuePairsListPtr)->storage;
+      uint32_t i = 0;
+      for (; i < (*valuePairsListPtr)->count; i++)
+      {
+        if (!pairFunction(valuePairPtr, &(commandLineData->errorData)))
+          break;
+        valuePairPtr++;
+      }
+      if (i < (*valuePairsListPtr)->count)
+        break;
+      valuePairsListPtr++;
+    }
+    if (!(*valuePairsListPtr))
+    {
+      swOptionValuePair *valuePairs[] = {&commandLineData->sinkValue, &commandLineData->consumeAfterValue, NULL};
+      swOptionValuePair **valuePairsPtr = valuePairs;
+      while (*valuePairsPtr)
+      {
+        if (!pairFunction(*valuePairsPtr, &(commandLineData->errorData)))
+          break;
+        valuePairsPtr++;
+      }
+      if (!(*valuePairsPtr))
+        rtn = true;
+    }
+  }
+  return rtn;
+}
+
+static bool swCommandLineDataCheckRequired(swCommandLineData *commandLineData)
+{
+  bool rtn = false;
+  if (commandLineData)
+  {
+    if (commandLineData->requiredValues.count)
+    {
+      swOptionValuePair **valuePairs = (swOptionValuePair **)commandLineData->requiredValues.storage;
+      uint32_t i = 0;
+      while (i < commandLineData->requiredValues.count)
+      {
+        if (!valuePairs[i]->value.count)
+        {
+          swCommandLineErrorDataSet(&(commandLineData->errorData), valuePairs[i]->option, NULL, swCommandLineErrorCodeRequiredValue);
+          break;
+        }
+        i++;
+      }
+      if (i == commandLineData->requiredValues.count)
+        rtn = true;
+    }
+    else
+      rtn = true;
+  }
+  return rtn;
+}
+
+bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, const char *argv[])
+{
+  bool rtn = false;
+  if (commandLineData && argc && argv)
+  {
+    uint32_t argumentCount = (uint32_t)argc;
+    swOptionToken tokens[argumentCount];
+    memset(tokens, 0, sizeof(tokens));
+
+    swCommandLineState state = {.clData = commandLineData, .argv = argv, .tokens = &tokens[0], .argCount = argumentCount};
+    if (swCommandLineStateTokenize(&state))
+    {
+      state.currentArg = 0;
+      while (state.currentArg < state.argCount)
+      {
+        if (!swCommandLineStateScanArguments(&state))
+          break;
+      }
+      if (state.currentArg == state.argCount)
+      {
+        // check all options that are not set and set them to default values
+        if (swCommandLineDataWalkPairs(commandLineData, _setDefaultsAndCheckArrays))
+          rtn = swCommandLineDataCheckRequired(commandLineData);
+      }
+    }
+  }
+  return rtn;
+}
+
