@@ -10,7 +10,7 @@ typedef struct swOptionValuePair
   swDynamicArray value;
 } swOptionValuePair;
 
-#define swOptionValuePairInit(o)  {.option = (o), .value = swDynamicArrayInitEmpty(valueSizes[(o)->valueType])}
+#define swOptionValuePairInit(o)  {.option = (o), .value = swDynamicArrayInitEmpty(swOptionValueTypeSizeGet((o)->valueType))}
 #define swOptionValuePairSet(o)   *(swOptionValuePair[]){swOptionValuePairInit(o)}
 
 #define swOptionValuePairValueSet(valueArray, value, isArray) \

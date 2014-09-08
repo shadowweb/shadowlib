@@ -11,9 +11,6 @@
 #include "storage/dynamic-string.h"
 #include "utils/file.h"
 
-#include <errno.h>
-#include <math.h>
-
 static void swOptionValuePairArrayClear(swFastArray *array)
 {
   if (array && array->size)
@@ -24,7 +21,7 @@ static void swOptionValuePairArrayClear(swFastArray *array)
   }
 }
 
-typedef struct swCommandLineOptions
+typedef struct swCommandLineData
 {
   swFastArray         categories;
   swOptionCategory   *mainCategory;
@@ -42,83 +39,83 @@ typedef struct swCommandLineOptions
   swDynamicString     argumentsString;
   swDynamicString     usageMessage;
   swCommandLineErrorData  errorData;
-} swCommandLineOptions;
+} swCommandLineData;
 
-typedef struct swCommandLineOptionsState
+typedef struct swCommandLineState
 {
-  swCommandLineOptions *clOptions;
+  swCommandLineData    *clData;
   const char          **argv;
   swOptionToken        *tokens;
   uint32_t              argCount;
   uint32_t              currentArg;
   uint32_t              currentPositional;
-} swCommandLineOptionsState;
+} swCommandLineState;
 
 swOptionCategoryModuleDeclare(optionCategoryGlobal, "CommandLine",
   swOptionDeclareScalar("help", "Print command line help", NULL, swOptionValueTypeBool, false)
 );
 
-static swCommandLineOptions *commandLineOptionsGlobal = NULL;
+static swCommandLineData *commandLineDataGlobal = NULL;
 
-static void swCommandLineOptionsDelete(swCommandLineOptions *commandLineOptions)
+static void swCommandLineDataDelete(swCommandLineData *commandLineData)
 {
-  if (commandLineOptions)
+  if (commandLineData)
   {
-    if (commandLineOptions->groupingValues)
-      swHashMapLinearDelete(commandLineOptions->groupingValues);
-    if (commandLineOptions->prefixedValues)
-      swHashMapLinearDelete(commandLineOptions->prefixedValues);
-    if (commandLineOptions->requiredValues.size)
-      swFastArrayClear(&(commandLineOptions->requiredValues));
-    if (commandLineOptions->namedValues)
-      swHashMapLinearDelete(commandLineOptions->namedValues);
+    if (commandLineData->groupingValues)
+      swHashMapLinearDelete(commandLineData->groupingValues);
+    if (commandLineData->prefixedValues)
+      swHashMapLinearDelete(commandLineData->prefixedValues);
+    if (commandLineData->requiredValues.size)
+      swFastArrayClear(&(commandLineData->requiredValues));
+    if (commandLineData->namedValues)
+      swHashMapLinearDelete(commandLineData->namedValues);
 
-    swOptionValuePairClear(&(commandLineOptions->consumeAfterValue));
-    swOptionValuePairClear(&(commandLineOptions->sinkValue));
-    swOptionValuePairArrayClear(&(commandLineOptions->positionalValues));
-    swOptionValuePairArrayClear(&(commandLineOptions->normalValues));
-    if (commandLineOptions->categories.size)
-      swFastArrayClear(&(commandLineOptions->categories));
+    swOptionValuePairClear(&(commandLineData->consumeAfterValue));
+    swOptionValuePairClear(&(commandLineData->sinkValue));
+    swOptionValuePairArrayClear(&(commandLineData->positionalValues));
+    swOptionValuePairArrayClear(&(commandLineData->normalValues));
+    if (commandLineData->categories.size)
+      swFastArrayClear(&(commandLineData->categories));
 
-    swDynamicStringRelease(&(commandLineOptions->programName));
-    swDynamicStringRelease(&(commandLineOptions->argumentsString));
-    swDynamicStringRelease(&(commandLineOptions->usageMessage));
-    swMemoryFree(commandLineOptions);
+    swDynamicStringRelease(&(commandLineData->programName));
+    swDynamicStringRelease(&(commandLineData->argumentsString));
+    swDynamicStringRelease(&(commandLineData->usageMessage));
+    swMemoryFree(commandLineData);
   }
 }
 
-static swCommandLineOptions *swCommandLineOptionsNew(uint32_t argumentCount)
+static swCommandLineData *swCommandLineDataNew(uint32_t argumentCount)
 {
-  swCommandLineOptions *rtn = NULL;
-  swCommandLineOptions *commandLineOptionsNew = swMemoryCalloc(1, sizeof(swCommandLineOptions));
-  if (commandLineOptionsNew)
+  swCommandLineData *rtn = NULL;
+  swCommandLineData *commandLineDataNew = swMemoryCalloc(1, sizeof(swCommandLineData));
+  if (commandLineDataNew)
   {
-    if ((swFastArrayInit(&(commandLineOptionsNew->categories), sizeof(swOptionCategory *), 4)))
+    if ((swFastArrayInit(&(commandLineDataNew->categories), sizeof(swOptionCategory *), 4)))
     {
-      if ((swFastArrayInit(&(commandLineOptionsNew->normalValues), sizeof(swOptionValuePair), argumentCount)) &&
-          (swFastArrayInit(&(commandLineOptionsNew->positionalValues), sizeof(swOptionValuePair), argumentCount)))
+      if ((swFastArrayInit(&(commandLineDataNew->normalValues), sizeof(swOptionValuePair), argumentCount)) &&
+          (swFastArrayInit(&(commandLineDataNew->positionalValues), sizeof(swOptionValuePair), argumentCount)))
       {
-        if ((commandLineOptionsNew->namedValues    = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
-            (commandLineOptionsNew->prefixedValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
-            (commandLineOptionsNew->groupingValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)))
+        if ((commandLineDataNew->namedValues    = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
+            (commandLineDataNew->prefixedValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
+            (commandLineDataNew->groupingValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)))
         {
           // defaults to pointer comparison
-          if (swFastArrayInit(&(commandLineOptionsNew->requiredValues), sizeof(swOptionValuePair), argumentCount))
-            rtn = commandLineOptionsNew;
+          if (swFastArrayInit(&(commandLineDataNew->requiredValues), sizeof(swOptionValuePair), argumentCount))
+            rtn = commandLineDataNew;
         }
       }
     }
     if (!rtn)
-      swCommandLineOptionsDelete(commandLineOptionsNew);
+      swCommandLineDataDelete(commandLineDataNew);
   }
   return rtn;
 }
 
 // main options category is not mandatory
-static bool swOptionCommandLineSetCategories(swCommandLineOptions *commandLineOptions)
+static bool swOptionCommandLineSetCategories(swCommandLineData *commandLineData)
 {
   bool rtn = false;
-  if (commandLineOptions)
+  if (commandLineData)
   {
     swOptionCategory *categoryBegin = (swOptionCategory *)(&optionCategoryGlobal);
     swOptionCategory *categoryEnd = (swOptionCategory *)(&optionCategoryGlobal);
@@ -144,15 +141,15 @@ static bool swOptionCommandLineSetCategories(swCommandLineOptions *commandLineOp
       if (category->type == swOptionCategoryTypeMain)
       {
         // no more than one main category
-        if (!commandLineOptions->mainCategory)
-          commandLineOptions->mainCategory = category;
+        if (!commandLineData->mainCategory)
+          commandLineData->mainCategory = category;
         else
         {
-          swCommandLineErrorDataSet(&(commandLineOptions->errorData), NULL, category, swCommandLineErrorCodeMainCategory);
+          swCommandLineErrorDataSet(&(commandLineData->errorData), NULL, category, swCommandLineErrorCodeMainCategory);
           break;
         }
       }
-      swFastArrayPush(commandLineOptions->categories, category);
+      swFastArrayPush(commandLineData->categories, category);
     }
     if (category == categoryEnd)
       rtn = true;
@@ -160,67 +157,43 @@ static bool swOptionCommandLineSetCategories(swCommandLineOptions *commandLineOp
   return rtn;
 }
 
-static size_t valueSizes[] =
-{
-  [swOptionValueTypeBool]   = sizeof(bool),
-  [swOptionValueTypeString] = sizeof(swStaticString),
-  [swOptionValueTypeInt]    = sizeof(int64_t),
-  [swOptionValueTypeDouble] = sizeof(double),
-};
-
-static bool swOptionValidateDefaultValue(swOption *option)
+static bool swOptionCommandLineProcessOptions(swCommandLineData *commandLineData)
 {
   bool rtn = false;
-  if (option)
+  if (commandLineData)
   {
-    if (option->defaultValue.count)
-    {
-      if ((!option->isArray && (option->defaultValue.count == 1)) || (!option->valueCount || option->defaultValue.count == option->valueCount))
-        rtn = (option->defaultValue.elementSize == valueSizes[option->valueType]);
-    }
-    else
-      rtn = true;
-  }
-  return rtn;
-}
-
-static bool swOptionCommandLineProcessOptions(swCommandLineOptions *commandLineOptions)
-{
-  bool rtn = false;
-  if (commandLineOptions)
-  {
-    swOptionValuePair *valuePairs = (swOptionValuePair *)(commandLineOptions->normalValues.storage);
+    swOptionValuePair *valuePairs = (swOptionValuePair *)(commandLineData->normalValues.storage);
     if (valuePairs)
     {
       uint32_t i = 0;
-      while (i < commandLineOptions->normalValues.count)
+      while (i < commandLineData->normalValues.count)
       {
         swOption *option = valuePairs[i].option;
-        if (swHashMapLinearInsert(commandLineOptions->namedValues, &(option->name), &(valuePairs[i])))
+        if (swHashMapLinearInsert(commandLineData->namedValues, &(option->name), &(valuePairs[i])))
         {
-          if (option->modifier != swOptionModifierPrefix || swHashMapLinearInsert(commandLineOptions->prefixedValues, &(option->name), &(valuePairs[i])))
+          if (option->modifier != swOptionModifierPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(option->name), &(valuePairs[i])))
           {
-            if (option->modifier != swOptionModifierGrouping || swHashMapLinearInsert(commandLineOptions->groupingValues, &(option->name), &(valuePairs[i])))
+            if (option->modifier != swOptionModifierGrouping || swHashMapLinearInsert(commandLineData->groupingValues, &(option->name), &(valuePairs[i])))
             {
               i++;
               continue;
             }
           }
         }
-        swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInternal);
+        swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
         break;
       }
-      if (i == commandLineOptions->normalValues.count)
+      if (i == commandLineData->normalValues.count)
         rtn = true;
     }
   }
   return rtn;
 }
 
-static bool swOptionCommandLineValidateOption(swCommandLineOptions *commandLineOptions, swOption *option, bool isMainCategory)
+static bool swOptionCommandLineValidateOption(swCommandLineData *commandLineData, swOption *option, bool isMainCategory)
 {
   bool rtn = false;
-  if (commandLineOptions && option && (option->optionType == swOptionTypeNormal || isMainCategory))
+  if (commandLineData && option && (option->optionType == swOptionTypeNormal || isMainCategory))
   {
     // validate type
     bool typeValid = false;
@@ -232,9 +205,9 @@ static bool swOptionCommandLineValidateOption(swCommandLineOptions *commandLineO
         if (option->name.len)
         {
           swOptionValuePair valuePair = swOptionValuePairInit(option);
-          if (swFastArrayPush(commandLineOptions->normalValues, valuePair))
+          if (swFastArrayPush(commandLineData->normalValues, valuePair))
           {
-            valuePairPtr = swFastArrayGetExistingPtr(commandLineOptions->normalValues, (commandLineOptions->normalValues.count - 1), swOptionValuePair);
+            valuePairPtr = swFastArrayGetExistingPtr(commandLineData->normalValues, (commandLineData->normalValues.count - 1), swOptionValuePair);
             typeValid = true;
           }
         }
@@ -245,34 +218,34 @@ static bool swOptionCommandLineValidateOption(swCommandLineOptions *commandLineO
         if (!option->name.len && (!option->isArray || option->arrayType == swOptionArrayTypeCommaSeparated))
         {
           swOptionValuePair valuePair = swOptionValuePairInit(option);
-          if (swFastArrayPush(commandLineOptions->positionalValues, valuePair))
+          if (swFastArrayPush(commandLineData->positionalValues, valuePair))
           {
-            valuePairPtr = swFastArrayGetExistingPtr(commandLineOptions->positionalValues, (commandLineOptions->positionalValues.count - 1), swOptionValuePair);
+            valuePairPtr = swFastArrayGetExistingPtr(commandLineData->positionalValues, (commandLineData->positionalValues.count - 1), swOptionValuePair);
             typeValid = true;
           }
         }
         break;
       }
       case swOptionTypeConsumeAfter:
-        if (!commandLineOptions->consumeAfterValue.option)
+        if (!commandLineData->consumeAfterValue.option)
         {
           // TODO: verify that it is array of strings; is it feasible to have anything else?
           if (!option->name.len && option->isArray)
           {
-            commandLineOptions->consumeAfterValue = swOptionValuePairSet(option);
-            valuePairPtr = &(commandLineOptions->consumeAfterValue);
+            commandLineData->consumeAfterValue = swOptionValuePairSet(option);
+            valuePairPtr = &(commandLineData->consumeAfterValue);
             typeValid = true;
           }
         }
         break;
       case swOptionTypeSink:
-        if (!commandLineOptions->sinkValue.option)
+        if (!commandLineData->sinkValue.option)
         {
           // TODO: verify that it is array of strings; is it feasible to have anything else?
           if (!option->name.len && option->isArray)
           {
-            commandLineOptions->sinkValue = swOptionValuePairSet(option);
-            valuePairPtr = &(commandLineOptions->sinkValue);
+            commandLineData->sinkValue = swOptionValuePairSet(option);
+            valuePairPtr = &(commandLineData->sinkValue);
             typeValid = true;
           }
         }
@@ -306,44 +279,44 @@ static bool swOptionCommandLineValidateOption(swCommandLineOptions *commandLineO
             // validate default value
             if (swOptionValidateDefaultValue(option))
             {
-              if (!option->isRequired || swFastArrayPush(commandLineOptions->requiredValues, valuePairPtr))
+              if (!option->isRequired || swFastArrayPush(commandLineData->requiredValues, valuePairPtr))
                 rtn = true;
               else
-                swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInternal);
+                swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
             }
             else
-              swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeInvalidDefault);
+              swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInvalidDefault);
           }
           else
-            swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeModifierType);
+            swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeModifierType);
         }
         else
-          swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeArrayType);
+          swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeArrayType);
       }
       else
-        swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeValueType);
+        swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeValueType);
     }
     else
-      swCommandLineErrorDataSet(&(commandLineOptions->errorData), option, NULL, swCommandLineErrorCodeOptionType);
+      swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeOptionType);
   }
   return rtn;
 }
 
-static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptions)
+static bool swOptionCommandLineSetOptions(swCommandLineData *commandLineData)
 {
   bool rtn = false;
-  if (commandLineOptions && swFastArrayCount(commandLineOptions->categories))
+  if (commandLineData && swFastArrayCount(commandLineData->categories))
   {
     uint32_t i = 0;
-    for (; i < swFastArrayCount(commandLineOptions->categories); i++)
+    for (; i < swFastArrayCount(commandLineData->categories); i++)
     {
       swOptionCategory *category = NULL;
-      if (swFastArrayGet(commandLineOptions->categories, i, category))
+      if (swFastArrayGet(commandLineData->categories, i, category))
       {
         swOption *option = category->options;
         while (option->valueType > swOptionValueTypeNone)
         {
-          if (swOptionCommandLineValidateOption(commandLineOptions, option, category->type))
+          if (swOptionCommandLineValidateOption(commandLineData, option, category->type))
             option++;
           else
             break;
@@ -353,13 +326,13 @@ static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptio
       }
       else
       {
-        commandLineOptions->errorData.code = swCommandLineErrorCodeInternal;
+        commandLineData->errorData.code = swCommandLineErrorCodeInternal;
         break;
       }
     }
-    if (i == swFastArrayCount(commandLineOptions->categories))
+    if (i == swFastArrayCount(commandLineData->categories))
     {
-      if (swOptionCommandLineProcessOptions(commandLineOptions))
+      if (swOptionCommandLineProcessOptions(commandLineData))
         rtn = true;
     }
   }
@@ -403,90 +376,10 @@ static bool swOptionCommandLineSetOptions(swCommandLineOptions *commandLineOptio
 // --option=value
 // -option=value
 
-static const swStaticString trueString = swStaticStringDefine("true");
-static const swStaticString falseString = swStaticStringDefine("false");
-static bool trueValue = true;
-static bool falseValue = false;
-
-static bool swOptionValueBoolParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
-{
-  bool rtn = false;
-  if (!swStaticStringCompareCaseless(valueString, &trueString))
-    rtn = swOptionValuePairValueSet(valueArray, trueValue, isArray);
-  else if (!swStaticStringCompareCaseless(valueString, &falseString))
-    rtn = swOptionValuePairValueSet(valueArray, falseValue, isArray);
-  return rtn;
-}
-
-static bool swOptionValueStringParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
-{
-  return swOptionValuePairValueSet(valueArray, *valueString, isArray);
-}
-
-static bool swOptionValueIntParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
-{
-  char *endPtr = NULL;
-  int64_t value = strtol(valueString->data, &endPtr, 0);
-  if ((errno != ERANGE) && (errno != EINVAL) && (size_t)(endPtr - valueString->data) == valueString->len)
-    return swOptionValuePairValueSet(valueArray, value, isArray);
-  return false;
-}
-
-static bool swOptionValueDoubleParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
-{
-  char *endPtr = NULL;
-  double value = strtod(valueString->data, &endPtr);
-  if ((errno != ERANGE) && (errno != EINVAL) && (value != NAN) && (value != INFINITY) && (size_t)(endPtr - valueString->data) == valueString->len)
-    return swOptionValuePairValueSet(valueArray, value, isArray);
-  return false;
-}
-
-typedef bool (*swOptionValueParser)(swStaticString *valueString, swDynamicArray *valueArray, bool isArray);
-
-static swOptionValueParser parsers[] =
-{
-  [swOptionValueTypeBool]   = swOptionValueBoolParser,
-  [swOptionValueTypeString] = swOptionValueStringParser,
-  [swOptionValueTypeInt]    = swOptionValueIntParser,
-  [swOptionValueTypeDouble] = swOptionValueDoubleParser,
-};
-
-static bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamicArray *valueArray)
-{
-  bool rtn = false;
-  bool isArray = option->isArray;
-  if (!isArray || option->arrayType != swOptionArrayTypeCommaSeparated)
-    rtn = parsers[option->valueType](valueString, valueArray, isArray);
-  else
-  {
-    uint32_t slicesCount = 0;
-    if (swStaticStringCountChar(valueString, ',', &slicesCount))
-    {
-      slicesCount++;
-      swStaticString slices[slicesCount];
-      memset(slices, 0, sizeof(slices));
-      uint32_t foundSlices = 0;
-      if (swStaticStringSplitChar(valueString, ',', slices, slicesCount, &foundSlices, 0) && foundSlices == slicesCount)
-      {
-        uint32_t i = 0;
-        while (i < slicesCount)
-        {
-          if (!parsers[option->valueType](&slices[i], valueArray, isArray))
-            break;
-          i++;
-        }
-        if (i == slicesCount)
-          rtn = true;
-      }
-    }
-  }
-  return rtn;
-}
-
-static bool swOptionCommandLineScanConsumeAfter(swCommandLineOptionsState *state)
+static bool swOptionCommandLineScanConsumeAfter(swCommandLineState *state)
 {
   bool rtn = true;
-  swOptionValuePair *pair = &(state->clOptions->consumeAfterValue);
+  swOptionValuePair *pair = &(state->clData->consumeAfterValue);
   while (state->currentArg < state->argCount)
   {
     swOptionToken *token = &state->tokens[state->currentArg];
@@ -496,19 +389,19 @@ static bool swOptionCommandLineScanConsumeAfter(swCommandLineOptionsState *state
       state->currentArg++;
       continue;
     }
-    swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
+    swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
     rtn = false;
     break;
   }
   return rtn;
 }
 
-static bool swOptionCommandLineScanPositional(swCommandLineOptionsState *state)
+static bool swOptionCommandLineScanPositional(swCommandLineState *state)
 {
   bool rtn = false;
-  if ((state->currentPositional < state->clOptions->positionalValues.count) && (state->currentArg < state->argCount))
+  if ((state->currentPositional < state->clData->positionalValues.count) && (state->currentArg < state->argCount))
   {
-    swOptionValuePair *pair = swFastArrayGetPtr(state->clOptions->positionalValues, state->currentPositional, swOptionValuePair);
+    swOptionValuePair *pair = swFastArrayGetPtr(state->clData->positionalValues, state->currentPositional, swOptionValuePair);
     if (pair)
     {
       swOptionToken *token = &state->tokens[state->currentArg];
@@ -520,15 +413,15 @@ static bool swOptionCommandLineScanPositional(swCommandLineOptionsState *state)
         rtn = true;
       }
       else
-        swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
+        swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
     }
     else
-      swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
+      swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
   }
   return rtn;
 }
 
-static bool swOptionCommandLineScanAllPositional(swCommandLineOptionsState *state)
+static bool swOptionCommandLineScanAllPositional(swCommandLineState *state)
 {
   bool rtn = false;
   if (state)
@@ -536,7 +429,7 @@ static bool swOptionCommandLineScanAllPositional(swCommandLineOptionsState *stat
     if (state->currentArg < state->argCount)
     {
       bool failure = false;
-      while ((state->currentPositional < state->clOptions->positionalValues.count) && (state->currentArg < state->argCount))
+      while ((state->currentPositional < state->clData->positionalValues.count) && (state->currentArg < state->argCount))
       {
         if (swOptionCommandLineScanPositional(state))
           continue;
@@ -547,16 +440,16 @@ static bool swOptionCommandLineScanAllPositional(swCommandLineOptionsState *stat
       {
         if (state->currentArg == state->argCount)
           rtn = true;
-        else if (state->currentPositional == state->clOptions->positionalValues.count)
+        else if (state->currentPositional == state->clData->positionalValues.count)
         {
-          if (state->clOptions->consumeAfterValue.option)
+          if (state->clData->consumeAfterValue.option)
             rtn = swOptionCommandLineScanConsumeAfter(state);
           else
-            swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeNoConsumeAfter);
+            swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeNoConsumeAfter);
         }
       }
-      else if (!state->clOptions->positionalValues.count)
-        swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeNoPositional);
+      else if (!state->clData->positionalValues.count)
+        swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeNoPositional);
     }
     else
       rtn = true;
@@ -564,27 +457,27 @@ static bool swOptionCommandLineScanAllPositional(swCommandLineOptionsState *stat
   return rtn;
 }
 
-static bool swOptionCommandLineScanSink(swCommandLineOptionsState *state)
+static bool swOptionCommandLineScanSink(swCommandLineState *state)
 {
   bool rtn = false;
   swOptionToken *token = &state->tokens[state->currentArg];
-  swOption *option = state->clOptions->sinkValue.option;
+  swOption *option = state->clData->sinkValue.option;
   if (option)
   {
-    if (swOptionCallParser(option, &(token->full), &(state->clOptions->sinkValue.value)))
+    if (swOptionCallParser(option, &(token->full), &(state->clData->sinkValue.value)))
     {
       state->currentArg++;
       rtn = true;
     }
     else
-      swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
+      swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
   }
   else
-    swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeNoSink);
+    swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeNoSink);
   return rtn;
 }
 
-static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
+static bool swOptionCommandLineScanArguments(swCommandLineState *state)
 {
   bool rtn = false;
   if (state)
@@ -607,10 +500,10 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
               rtn = true;
             }
             else
-              swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
+              swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
           }
           else
-            swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeArrayMultivalue);
+            swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeArrayMultivalue);
         }
         else
         {
@@ -633,7 +526,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
               }
               else
               {
-                swCommandLineErrorDataSet(&(state->clOptions->errorData), option, NULL, swCommandLineErrorCodeParse);
+                swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
                 rtn = false;
               }
               break;
@@ -648,7 +541,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
               rtn = true;
             }
             else
-              swCommandLineErrorDataSet(&(state->clOptions->errorData), token->namePair->option, NULL, swCommandLineErrorCodeInternal);
+              swCommandLineErrorDataSet(&(state->clData->errorData), token->namePair->option, NULL, swCommandLineErrorCodeInternal);
           }
         }
       }
@@ -660,7 +553,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
           rtn = true;
         }
         else
-          swCommandLineErrorDataSet(&(state->clOptions->errorData), token->noNamePair->option, NULL, swCommandLineErrorCodeInternal);
+          swCommandLineErrorDataSet(&(state->clData->errorData), token->noNamePair->option, NULL, swCommandLineErrorCodeInternal);
       }
     }
     else if (token->hasName)
@@ -675,12 +568,12 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
       {
         if (swStaticStringSetSubstring(&(token->name), &nameSubstring, position, position + 1))
         {
-          if (!swHashMapLinearValueGet(state->clOptions->groupingValues, &nameSubstring, (void **)(&pairs[position])))
+          if (!swHashMapLinearValueGet(state->clData->groupingValues, &nameSubstring, (void **)(&pairs[position])))
             break;
         }
         else // substring failure
         {
-          swCommandLineErrorDataSet(&(state->clOptions->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
+          swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
           failure = true;
           break;
         }
@@ -693,7 +586,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
         {
           if (!swOptionValuePairValueSet(&(pairs[position]->value), trueValue, pairs[position]->option->isArray))
           {
-            swCommandLineErrorDataSet(&(state->clOptions->errorData), pairs[position]->option, NULL, swCommandLineErrorCodeInternal);
+            swCommandLineErrorDataSet(&(state->clData->errorData), pairs[position]->option, NULL, swCommandLineErrorCodeInternal);
             break;
           }
           position++;
@@ -706,7 +599,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
       }
       else if (!failure)
       {
-        if (state->clOptions->sinkValue.option)
+        if (state->clData->sinkValue.option)
           rtn = swOptionCommandLineScanSink(state);
       }
     }
@@ -718,9 +611,9 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
         // consume positional only
         rtn = swOptionCommandLineScanAllPositional(state);
       }
-      else if (state->currentPositional < state->clOptions->positionalValues.count)
+      else if (state->currentPositional < state->clData->positionalValues.count)
         rtn = swOptionCommandLineScanPositional(state);
-      else if (state->clOptions->positionalValues.count && state->clOptions->consumeAfterValue.option)
+      else if (state->clData->positionalValues.count && state->clData->consumeAfterValue.option)
         rtn = swOptionCommandLineScanConsumeAfter(state);
       else
         rtn = swOptionCommandLineScanSink(state);
@@ -729,7 +622,7 @@ static bool swOptionCommandLineScanArguments(swCommandLineOptionsState *state)
   return rtn;
 }
 
-static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
+static bool swCommandLineOptionsTokenize(swCommandLineState *state)
 {
   bool rtn = false;
   if (state)
@@ -737,7 +630,7 @@ static bool swCommandLineOptionsTokenize(swCommandLineOptionsState *state)
     uint32_t i = 0;
     for (; i < state->argCount; i++)
     {
-      if (!swOptionTokenSet(&(state->tokens[i]), state->argv[i], state->clOptions->namedValues, state->clOptions->prefixedValues, &(state->clOptions->errorData)))
+      if (!swOptionTokenSet(&(state->tokens[i]), state->argv[i], state->clData->namedValues, state->clData->prefixedValues, &(state->clData->errorData)))
         break;
     }
     if (i == state->argCount)
@@ -761,12 +654,12 @@ static bool _setDefaultsAndCheckArrays(swOptionValuePair *pair, swCommandLineErr
   return rtn;
 }
 
-static bool swOptionCommandLineWalkPairs(swCommandLineOptions *commandLineOptions, bool (*pairFunction)(swOptionValuePair *, swCommandLineErrorData *errorData))
+static bool swOptionCommandLineWalkPairs(swCommandLineData *commandLineData, bool (*pairFunction)(swOptionValuePair *, swCommandLineErrorData *errorData))
 {
   bool rtn = false;
-  if (commandLineOptions && pairFunction)
+  if (commandLineData && pairFunction)
   {
-    swFastArray *valuePairsList[] = {&commandLineOptions->normalValues, &commandLineOptions->positionalValues, NULL};
+    swFastArray *valuePairsList[] = {&commandLineData->normalValues, &commandLineData->positionalValues, NULL};
     swFastArray **valuePairsListPtr = valuePairsList;
     while (*valuePairsListPtr)
     {
@@ -774,7 +667,7 @@ static bool swOptionCommandLineWalkPairs(swCommandLineOptions *commandLineOption
       uint32_t i = 0;
       for (; i < (*valuePairsListPtr)->count; i++)
       {
-        if (!pairFunction(valuePairPtr, &(commandLineOptions->errorData)))
+        if (!pairFunction(valuePairPtr, &(commandLineData->errorData)))
           break;
         valuePairPtr++;
       }
@@ -784,11 +677,11 @@ static bool swOptionCommandLineWalkPairs(swCommandLineOptions *commandLineOption
     }
     if (!(*valuePairsListPtr))
     {
-      swOptionValuePair *valuePairs[] = {&commandLineOptions->sinkValue, &commandLineOptions->consumeAfterValue, NULL};
+      swOptionValuePair *valuePairs[] = {&commandLineData->sinkValue, &commandLineData->consumeAfterValue, NULL};
       swOptionValuePair **valuePairsPtr = valuePairs;
       while (*valuePairsPtr)
       {
-        if (!pairFunction(*valuePairsPtr, &(commandLineOptions->errorData)))
+        if (!pairFunction(*valuePairsPtr, &(commandLineData->errorData)))
           break;
         valuePairsPtr++;
       }
@@ -799,25 +692,25 @@ static bool swOptionCommandLineWalkPairs(swCommandLineOptions *commandLineOption
   return rtn;
 }
 
-static bool swOptionCommandLineCheckRequired(swCommandLineOptions *commandLineOptions)
+static bool swOptionCommandLineCheckRequired(swCommandLineData *commandLineData)
 {
   bool rtn = false;
-  if (commandLineOptions)
+  if (commandLineData)
   {
-    if (commandLineOptions->requiredValues.count)
+    if (commandLineData->requiredValues.count)
     {
-      swOptionValuePair **valuePairs = (swOptionValuePair **)commandLineOptions->requiredValues.storage;
+      swOptionValuePair **valuePairs = (swOptionValuePair **)commandLineData->requiredValues.storage;
       uint32_t i = 0;
-      while (i < commandLineOptions->requiredValues.count)
+      while (i < commandLineData->requiredValues.count)
       {
         if (!valuePairs[i]->value.count)
         {
-          swCommandLineErrorDataSet(&(commandLineOptions->errorData), valuePairs[i]->option, NULL, swCommandLineErrorCodeRequiredValue);
+          swCommandLineErrorDataSet(&(commandLineData->errorData), valuePairs[i]->option, NULL, swCommandLineErrorCodeRequiredValue);
           break;
         }
         i++;
       }
-      if (i == commandLineOptions->requiredValues.count)
+      if (i == commandLineData->requiredValues.count)
         rtn = true;
     }
     else
@@ -826,16 +719,16 @@ static bool swOptionCommandLineCheckRequired(swCommandLineOptions *commandLineOp
   return rtn;
 }
 
-static bool swOptionCommandLineSetValues(swCommandLineOptions *commandLineOptions, int argc, const char *argv[])
+static bool swOptionCommandLineSetValues(swCommandLineData *commandLineData, int argc, const char *argv[])
 {
   bool rtn = false;
-  if (commandLineOptions && argc && argv)
+  if (commandLineData && argc && argv)
   {
     uint32_t argumentCount = (uint32_t)argc;
     swOptionToken tokens[argumentCount];
     memset(tokens, 0, sizeof(tokens));
 
-    swCommandLineOptionsState state = {.clOptions = commandLineOptions, .argv = argv, .tokens = &tokens[0], .argCount = argumentCount};
+    swCommandLineState state = {.clData = commandLineData, .argv = argv, .tokens = &tokens[0], .argCount = argumentCount};
     if (swCommandLineOptionsTokenize(&state))
     {
       state.currentArg = 0;
@@ -847,8 +740,8 @@ static bool swOptionCommandLineSetValues(swCommandLineOptions *commandLineOption
       if (state.currentArg == state.argCount)
       {
         // check all options that are not set and set them to default values
-        if (swOptionCommandLineWalkPairs(commandLineOptions, _setDefaultsAndCheckArrays))
-          rtn = swOptionCommandLineCheckRequired(commandLineOptions);
+        if (swOptionCommandLineWalkPairs(commandLineData, _setDefaultsAndCheckArrays))
+          rtn = swOptionCommandLineCheckRequired(commandLineData);
       }
     }
   }
@@ -858,33 +751,33 @@ static bool swOptionCommandLineSetValues(swCommandLineOptions *commandLineOption
 bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString)
 {
   bool rtn = false;
-  if (!commandLineOptionsGlobal && (argc > 0) && argv)
+  if (!commandLineDataGlobal && (argc > 0) && argv)
   {
     // init command line options global
-    if ((commandLineOptionsGlobal = swCommandLineOptionsNew(argc - 1)))
+    if ((commandLineDataGlobal = swCommandLineDataNew(argc - 1)))
     {
       // collect all command lines option categories
       // walk through all categories and collect all command line options and required options
-      if (swOptionCommandLineSetCategories(commandLineOptionsGlobal) && swOptionCommandLineSetOptions(commandLineOptionsGlobal))
+      if (swOptionCommandLineSetCategories(commandLineDataGlobal) && swOptionCommandLineSetOptions(commandLineDataGlobal))
       {
         // set programName
-        if (swFileRealPath(argv[0], &(commandLineOptionsGlobal->programName)))
+        if (swFileRealPath(argv[0], &(commandLineDataGlobal->programName)))
         {
           // walk through the arguments, argumentsString, and optionValues
-          if ((argc == 1) || swOptionCommandLineSetValues(commandLineOptionsGlobal, argc - 1, &argv[1]))
+          if ((argc == 1) || swOptionCommandLineSetValues(commandLineDataGlobal, argc - 1, &argv[1]))
           {
-            if (!usageMessage || swDynamicStringSetFromCString(&(commandLineOptionsGlobal->usageMessage), usageMessage))
+            if (!usageMessage || swDynamicStringSetFromCString(&(commandLineDataGlobal->usageMessage), usageMessage))
               rtn = true;
           }
         }
         else
-          swCommandLineErrorDataSet(&(commandLineOptionsGlobal->errorData), NULL, NULL, swCommandLineErrorCodeRealPath);
+          swCommandLineErrorDataSet(&(commandLineDataGlobal->errorData), NULL, NULL, swCommandLineErrorCodeRealPath);
       }
       if (!rtn)
       {
-        swCommandLineErrorSet(&(commandLineOptionsGlobal->errorData), swCommandLineErrorCodeNone, errorString);
-        swCommandLineOptionsDelete(commandLineOptionsGlobal);
-        commandLineOptionsGlobal = NULL;
+        swCommandLineErrorSet(&(commandLineDataGlobal->errorData), swCommandLineErrorCodeNone, errorString);
+        swCommandLineDataDelete(commandLineDataGlobal);
+        commandLineDataGlobal = NULL;
       }
     }
     else
@@ -897,10 +790,10 @@ bool swOptionCommandLineInit(int argc, const char *argv[], const char *usageMess
 
 void swOptionCommandLineShutdown()
 {
-  if (commandLineOptionsGlobal)
+  if (commandLineDataGlobal)
   {
-    swCommandLineOptionsDelete(commandLineOptionsGlobal);
-    commandLineOptionsGlobal = NULL;
+    swCommandLineDataDelete(commandLineDataGlobal);
+    commandLineDataGlobal = NULL;
   }
 }
 
@@ -910,10 +803,10 @@ void swOptionCommandLinePrintUsage()
 
 static void *swOptionValueGetInternal(swStaticString *name, swOptionValueType type)
 {
-  if (commandLineOptionsGlobal && name)
+  if (commandLineDataGlobal && name)
   {
     swOptionValuePair *pair = NULL;
-    if (swHashMapLinearValueGet(commandLineOptionsGlobal->namedValues, name, (void **)&pair))
+    if (swHashMapLinearValueGet(commandLineDataGlobal->namedValues, name, (void **)&pair))
     {
       if (pair->option->valueType == type && !pair->option->isArray && pair->value.count)
         return pair->value.data;
@@ -959,10 +852,10 @@ bool swOptionValueGetString(swStaticString *name, swStaticString *value)
 
 static swStaticArray *swOptionValueGetArrayInternal(swStaticString *name, swOptionValueType type)
 {
-  if (commandLineOptionsGlobal && name)
+  if (commandLineDataGlobal && name)
   {
     swOptionValuePair *pair = NULL;
-    if (swHashMapLinearValueGet(commandLineOptionsGlobal->namedValues, name, (void **)&pair))
+    if (swHashMapLinearValueGet(commandLineDataGlobal->namedValues, name, (void **)&pair))
     {
       if (pair->option->valueType == type && pair->option->isArray)
         return (swStaticArray *)(&(pair->value));
@@ -1008,9 +901,9 @@ bool swOptionValueGetStringArray(swStaticString *name, swStaticArray *value)
 
 static void *swPositionalOptionValueGetInternal(uint32_t position, swOptionValueType type)
 {
-  if (commandLineOptionsGlobal)
+  if (commandLineDataGlobal)
   {
-    swOptionValuePair *pair = swFastArrayGetExistingPtr(commandLineOptionsGlobal->positionalValues, position, swOptionValuePair);
+    swOptionValuePair *pair = swFastArrayGetExistingPtr(commandLineDataGlobal->positionalValues, position, swOptionValuePair);
     if (pair)
     {
       if (pair->option->valueType == type && !pair->option->isArray && pair->value.count)
@@ -1057,9 +950,9 @@ bool swPositionalOptionValueGetString (uint32_t position, swStaticString *value)
 
 static swStaticArray *swPositionalOptionValueGetArrayInternal(uint32_t position, swOptionValueType type)
 {
-  if (commandLineOptionsGlobal)
+  if (commandLineDataGlobal)
   {
-    swOptionValuePair *pair = swFastArrayGetExistingPtr(commandLineOptionsGlobal->positionalValues, position, swOptionValuePair);
+    swOptionValuePair *pair = swFastArrayGetExistingPtr(commandLineDataGlobal->positionalValues, position, swOptionValuePair);
     if (pair)
     {
       if (pair->option->valueType == type && pair->option->isArray)
@@ -1106,10 +999,10 @@ bool swPositionalOptionValueGetStringArray(uint32_t position, swStaticArray *val
 
 static swStaticArray *swSinkOptionValueGetArrayInternal(swOptionValueType type)
 {
-  if (commandLineOptionsGlobal && commandLineOptionsGlobal->sinkValue.option)
+  if (commandLineDataGlobal && commandLineDataGlobal->sinkValue.option)
   {
-    if (commandLineOptionsGlobal->sinkValue.option->valueType == type)
-      return (swStaticArray *)(&(commandLineOptionsGlobal->sinkValue.value));
+    if (commandLineDataGlobal->sinkValue.option->valueType == type)
+      return (swStaticArray *)(&(commandLineDataGlobal->sinkValue.value));
   }
   return NULL;
 }
@@ -1151,10 +1044,10 @@ bool swSinkOptionValueGetStringArray(swStaticArray *value)
 
 static swStaticArray *swConsumeAfterOptionValueGetArrayInternal(swOptionValueType type)
 {
-  if (commandLineOptionsGlobal && commandLineOptionsGlobal->consumeAfterValue.option)
+  if (commandLineDataGlobal && commandLineDataGlobal->consumeAfterValue.option)
   {
-    if (commandLineOptionsGlobal->consumeAfterValue.option->valueType == type)
-      return (swStaticArray *)(&(commandLineOptionsGlobal->consumeAfterValue.value));
+    if (commandLineDataGlobal->consumeAfterValue.option->valueType == type)
+      return (swStaticArray *)(&(commandLineDataGlobal->consumeAfterValue.value));
   }
   return NULL;
 }
