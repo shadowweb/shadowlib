@@ -15,6 +15,11 @@ typedef enum swOptionValueType
   swOptionValueTypeMax,
 } swOptionValueType;
 
+// TODO: this whole thing can be get rid of
+// all we need here is bool flag to indicate that the option is positional
+// use default sink and consume after (use consume after only if we have positional arguments)
+// basically, no need to explicitly specify those, no need to worry about them not being present,
+// less error checking
 typedef enum swOptionType
 {
   swOptionTypeNormal,
@@ -30,6 +35,9 @@ typedef enum swOptionArrayType
   swOptionArrayTypeCommaSeparated
 } swOptionArrayType;
 
+// TODO: this whole thing can be get rid of
+// this whole modifier thing is probably not needed, all bool short options can group by default
+// and all short options can prefix by default, as well as long ones
 typedef enum swOptionModifier
 {
   swOptionModifierNone,
@@ -40,20 +48,28 @@ typedef enum swOptionModifier
 // typedef struct swOption swOption;
 // typedef bool (*swOptionValidatorFunction)(swOption *option);
 
+// TODO: need a new array type to collect everything between two options
 // TODO: need a way of specifying external storage
 // TODO: need a way to specify aliases
-// TODO: provide access functions to option values
+
+
 // TODO: consider spliting the names into -short (one letter) and --long names
 //       (bool short options can do grouping automatically,
 //        without specifying it explicitly)
+
+
 // TODO: add custom validator
 // TODO: add custom parser
+
+
 // TODO: add enums
 // TODO: add bit vectors
 
 typedef struct swOption
 {
   swStaticString name;
+  // TODO: aliases can be done by using '|'-character in the name, would need to dynamicaly allocate slices
+  // for alias names and have them associated with the option
   char *description;
   char *valueDescription;
   swStaticArray defaultValue;

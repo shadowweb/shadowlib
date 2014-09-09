@@ -402,4 +402,3 @@ bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, co
   }
   return rtn;
 }
-
