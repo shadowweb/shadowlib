@@ -48,10 +48,11 @@ swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
   swOptionDeclarePrefixArray("iap", "prefix int array",     "int",    0, swOptionValueTypeInt,     false),
   swOptionDeclarePrefixArray("dap", "prefix double array",  "bool",   0, swOptionValueTypeDouble,  false),
   swOptionDeclarePrefixArray("sap", "prefix string array",  "string", 0, swOptionValueTypeString,  false),
-  swOptionDeclareGrouping("a", "grouping bool", "bool",  false),
-  swOptionDeclareGrouping("b", "grouping bool", "bool",  false),
-  swOptionDeclareGrouping("c", "grouping bool", "bool",  false),
-  swOptionDeclareGrouping("d", "grouping bool", "bool",  false)
+  swOptionDeclareScalar("a", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("b", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("c", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("d", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("n", "grouping number", "NUMBER", swOptionValueTypeInt, false)
 );
 
 static void checkInt(char *name, int64_t value) __attribute__((unused));
@@ -566,15 +567,6 @@ swTestDeclare(CommaSeparatedValueTest2, NULL, NULL, swTestRun)
 
   return testFramework(argc, argv, commaSeparatedValueTestCheck);
 }
-
-/*
-  swOptionDeclarePositionalArray("posarraytest1", "pat1", 0, swOptionValueTypeBool, false),
-  swOptionDeclarePositionalArray("posarraytest2", "pat2", 0, swOptionValueTypeInt, false),
-  swOptionDeclarePositionalArray("posarraytest3", "pat3", 0, swOptionValueTypeDouble, false),
-  swOptionDeclarePositionalArray("posarraytest4", "pat4", 0, swOptionValueTypeString, false),
-  swOptionDeclareConsumeAfter("consume after", "...", 0, swOptionValueTypeString, false),
-  swOptionDeclareSink("sink", NULL, 0, swOptionValueTypeString, false)
-*/
 
 static void positionalValueTestCheck()
 {

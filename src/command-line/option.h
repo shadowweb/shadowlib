@@ -42,7 +42,6 @@ typedef enum swOptionModifier
 {
   swOptionModifierNone,
   swOptionModifierPrefix,
-  swOptionModifierGrouping,
 } swOptionModifier;
 
 // typedef struct swOption swOption;
@@ -129,9 +128,6 @@ typedef struct swOption
 
 #define swOptionDeclarePrefixArray(n, d, vd, vc, vt, r)                   swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypeNormal, swOptionArrayTypeSimple, swOptionModifierPrefix, true, r)
 #define swOptionDeclarePrefixArrayWithDefault(n, d, vd, def, vc, vt, r)   swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, vc, vt, swOptionTypeNormal, swOptionArrayTypeSimple, swOptionModifierPrefix, true, r)
-
-#define swOptionDeclareGrouping(n, d, vd, r)                              swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, 0, swOptionValueTypeBool, swOptionTypeNormal, swOptionArrayTypeSimple, swOptionModifierGrouping, false, r)
-#define swOptionDeclareGroupingWithDefault(n, d, vd, def, r)              swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, 0, swOptionValueTypeBool, swOptionTypeNormal, swOptionArrayTypeSimple, swOptionModifierGrouping, false, r)
 
 #define swOptionDeclarePositionalScalar(d, vd, vt, r)                     swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionTypePositional, swOptionArrayTypeSimple, swOptionModifierNone, false, r)
 #define swOptionDeclarePositionalScalarWithDefault(d, vd, def, vt, r)     swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, 0, vt, swOptionTypePositional, swOptionArrayTypeSimple, swOptionModifierNone, false, r)

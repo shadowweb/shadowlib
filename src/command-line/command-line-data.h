@@ -21,7 +21,6 @@ typedef struct swCommandLineData
   swHashMapLinear    *namedValues;        // hash of swOption:name => swOptionValuePair
   swFastArray         requiredValues;     // array of pointers to required swOptionValuePair
   swHashMapLinear    *prefixedValues;     // set of prefixed swOptionValuePair
-  swHashMapLinear    *groupingValues;     // set of grouping swOption
   swDynamicString     programName;
   swDynamicString     argumentsString;
   swDynamicString     usageMessage;

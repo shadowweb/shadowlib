@@ -16,8 +16,6 @@ void swCommandLineDataDelete(swCommandLineData *commandLineData)
 {
   if (commandLineData)
   {
-    if (commandLineData->groupingValues)
-      swHashMapLinearDelete(commandLineData->groupingValues);
     if (commandLineData->prefixedValues)
       swHashMapLinearDelete(commandLineData->prefixedValues);
     if (commandLineData->requiredValues.size)
@@ -51,8 +49,7 @@ swCommandLineData *swCommandLineDataNew(uint32_t argumentCount)
           (swFastArrayInit(&(commandLineDataNew->positionalValues), sizeof(swOptionValuePair), argumentCount)))
       {
         if ((commandLineDataNew->namedValues    = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
-            (commandLineDataNew->prefixedValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
-            (commandLineDataNew->groupingValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)))
+            (commandLineDataNew->prefixedValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)))
         {
           // defaults to pointer comparison
           if (swFastArrayInit(&(commandLineDataNew->requiredValues), sizeof(swOptionValuePair), argumentCount))
@@ -128,11 +125,8 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
         {
           if (option->modifier != swOptionModifierPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(option->name), &(valuePairs[i])))
           {
-            if (option->modifier != swOptionModifierGrouping || swHashMapLinearInsert(commandLineData->groupingValues, &(option->name), &(valuePairs[i])))
-            {
-              i++;
-              continue;
-            }
+            i++;
+            continue;
           }
         }
         swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
@@ -222,10 +216,6 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
               break;
             case swOptionModifierPrefix:
               if (option->optionType == swOptionTypeNormal && (!option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated)))
-                modifierValid = true;
-              break;
-            case swOptionModifierGrouping:
-              if (option->optionType == swOptionTypeNormal && !option->isArray && (option->name.len == 1) && option->valueType == swOptionValueTypeBool)
                 modifierValid = true;
               break;
           }

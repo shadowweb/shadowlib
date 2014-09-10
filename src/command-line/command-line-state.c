@@ -205,11 +205,18 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
       swStaticString nameSubstring = swStaticStringDefineEmpty;
       size_t position = 0;
       bool failure = false;
+      // TODO: check that this token starts with single '-', it should be a part of info stored in the option
       while (position < token->name.len)
       {
         if (swStaticStringSetSubstring(&(token->name), &nameSubstring, position, position + 1))
         {
-          if (!swHashMapLinearValueGet(state->clData->groupingValues, &nameSubstring, (void **)(&pairs[position])))
+          if (swHashMapLinearValueGet(state->clData->namedValues, &nameSubstring, (void **)(&pairs[position])))
+          {
+            swOption *option = pairs[position]->option;
+            if (option->isArray || option->valueType != swOptionValueTypeBool)
+              break;
+          }
+          else
             break;
         }
         else // substring failure
