@@ -123,7 +123,7 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
         swOption *option = valuePairs[i].option;
         if (swHashMapLinearInsert(commandLineData->namedValues, &(option->name), &(valuePairs[i])))
         {
-          if (option->modifier != swOptionModifierPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(option->name), &(valuePairs[i])))
+          if (!option->isPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(option->name), &(valuePairs[i])))
           {
             i++;
             continue;
@@ -208,18 +208,7 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
         if (option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated))
         {
           // validate modifier
-          bool modifierValid = false;
-          switch (option->modifier)
-          {
-            case swOptionModifierNone:
-              modifierValid = true;
-              break;
-            case swOptionModifierPrefix:
-              if (option->optionType == swOptionTypeNormal && (!option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated)))
-                modifierValid = true;
-              break;
-          }
-          if (modifierValid)
+          if (!option->isPrefix || (option->optionType == swOptionTypeNormal && (!option->isArray || option->arrayType == swOptionArrayTypeSimple)))
           {
             // validate default value
             if (swOptionValidateDefaultValue(option))
@@ -233,7 +222,7 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
               swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInvalidDefault);
           }
           else
-            swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeModifierType);
+            swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodePrefixOption);
         }
         else
           swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeArrayType);

@@ -14,7 +14,7 @@ typedef enum swCommandLineErrorCode
   swCommandLineErrorCodeOptionType,
   swCommandLineErrorCodeValueType,
   swCommandLineErrorCodeArrayType,
-  swCommandLineErrorCodeModifierType,
+  swCommandLineErrorCodePrefixOption,
   swCommandLineErrorCodeInvalidDefault,
   swCommandLineErrorCodeRealPath,
   swCommandLineErrorCodeRequiredValue,

@@ -126,7 +126,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
     swOptionToken *token = &state->tokens[state->currentArg];
     if (token->namePair || token->noNamePair)
     {
-      // process normal (modifier: none || prefix)
+      // pricess normal (with or without prefix)
       if (token->namePair)
       {
         bool isMultiValueArray = token->namePair->option->isArray && token->namePair->option->arrayType == swOptionArrayTypeMultiValue;
@@ -199,7 +199,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
     }
     else if (token->hasName)
     {
-      // process normal (modifier: grouping)
+      // process normal options that allow grouping
       swOptionValuePair *pairs[token->name.len];
       memset(pairs, 0, sizeof(pairs));
       swStaticString nameSubstring = swStaticStringDefineEmpty;
