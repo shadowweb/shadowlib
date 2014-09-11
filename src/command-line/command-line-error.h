@@ -22,8 +22,6 @@ typedef enum swCommandLineErrorCode
   swCommandLineErrorCodeArrayMultivalue,
   swCommandLineErrorCodeParse,
   swCommandLineErrorCodeNoPositional,
-  swCommandLineErrorCodeNoConsumeAfter,
-  swCommandLineErrorCodeNoSink,
   swCommandLineErrorCodeMax
 } swCommandLineErrorCode;
 

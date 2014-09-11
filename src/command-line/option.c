@@ -40,7 +40,7 @@ static const swStaticString falseString = swStaticStringDefine("false");
 bool trueValue = true;
 bool falseValue = false;
 
-static bool swOptionValueBoolParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
+static inline bool swOptionValueBoolParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
 {
   bool rtn = false;
   if (!swStaticStringCompareCaseless(valueString, &trueString))
@@ -50,12 +50,12 @@ static bool swOptionValueBoolParser(swStaticString *valueString, swDynamicArray 
   return rtn;
 }
 
-static bool swOptionValueStringParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
+static inline bool swOptionValueStringParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
 {
   return swOptionValuePairValueSet(valueArray, *valueString, isArray);
 }
 
-static bool swOptionValueIntParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
+static inline bool swOptionValueIntParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
 {
   char *endPtr = NULL;
   int64_t value = strtol(valueString->data, &endPtr, 0);
@@ -64,7 +64,7 @@ static bool swOptionValueIntParser(swStaticString *valueString, swDynamicArray *
   return false;
 }
 
-static bool swOptionValueDoubleParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
+static inline bool swOptionValueDoubleParser(swStaticString *valueString, swDynamicArray *valueArray, bool isArray)
 {
   char *endPtr = NULL;
   double value = strtod(valueString->data, &endPtr);

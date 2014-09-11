@@ -296,92 +296,24 @@ bool swPositionalOptionValueGetStringArray(uint32_t position, swStaticArray *val
   swPositionalOptionValueGetArrayImplement(position, value, swOptionValueTypeString);
 }
 
-static swStaticArray *swSinkOptionValueGetArrayInternal(swOptionValueType type)
+bool swSinkOptionValueGet(swStaticArray *value)
 {
-  if (commandLineDataGlobal && commandLineDataGlobal->sinkValue.option)
+  bool rtn = false;
+  if (value && commandLineDataGlobal)
   {
-    if (commandLineDataGlobal->sinkValue.option->valueType == type)
-      return (swStaticArray *)(&(commandLineDataGlobal->sinkValue.value));
+    *(value) = *(swStaticArray *)(&(commandLineDataGlobal->sinkValue));
+    rtn = true;
   }
-  return NULL;
+  return rtn;
 }
 
-#define swSinkOptionValueGetArrayImplement(v, vt) \
-{ \
-  bool rtn = false; \
-  if (v) \
-  { \
-    swStaticArray *sv = swSinkOptionValueGetArrayInternal(vt); \
-    if (sv) \
-    { \
-      *(v) = *sv; \
-      rtn = true; \
-    } \
-  } \
-  return rtn; \
-}
-
-bool swSinkOptionValueGetBoolArray(swStaticArray *value)
+bool swConsumeAfterOptionValueGet(swStaticArray *value)
 {
-  swSinkOptionValueGetArrayImplement(value, swOptionValueTypeBool);
-}
-
-bool swSinkOptionValueGetIntArray(swStaticArray *value)
-{
-  swSinkOptionValueGetArrayImplement(value, swOptionValueTypeInt);
-}
-
-bool swSinkOptionValueGetDoubleArray(swStaticArray *value)
-{
-  swSinkOptionValueGetArrayImplement(value, swOptionValueTypeDouble);
-}
-
-bool swSinkOptionValueGetStringArray(swStaticArray *value)
-{
-  swSinkOptionValueGetArrayImplement(value, swOptionValueTypeString);
-}
-
-static swStaticArray *swConsumeAfterOptionValueGetArrayInternal(swOptionValueType type)
-{
-  if (commandLineDataGlobal && commandLineDataGlobal->consumeAfterValue.option)
+  bool rtn = false;
+  if (value && commandLineDataGlobal)
   {
-    if (commandLineDataGlobal->consumeAfterValue.option->valueType == type)
-      return (swStaticArray *)(&(commandLineDataGlobal->consumeAfterValue.value));
+    *(value) = *(swStaticArray *)(&(commandLineDataGlobal->consumeAfterValue));
+    rtn = true;
   }
-  return NULL;
-}
-
-#define swConsumeAfterOptionValueGetArrayImplement(v, vt) \
-{ \
-  bool rtn = false; \
-  if (v) \
-  { \
-    swStaticArray *sv = swConsumeAfterOptionValueGetArrayInternal(vt); \
-    if (sv) \
-    { \
-      *(v) = *sv; \
-      rtn = true; \
-    } \
-  } \
-  return rtn; \
-}
-
-bool swConsumeAfterOptionValueGetBoolArray(swStaticArray *value)
-{
-  swConsumeAfterOptionValueGetArrayImplement(value, swOptionValueTypeBool);
-}
-
-bool swConsumeAfterOptionValueGetIntArray(swStaticArray *value)
-{
-  swConsumeAfterOptionValueGetArrayImplement(value, swOptionValueTypeInt);
-}
-
-bool swConsumeAfterOptionValueGetDoubleArray(swStaticArray *value)
-{
-  swConsumeAfterOptionValueGetArrayImplement(value, swOptionValueTypeDouble);
-}
-
-bool swConsumeAfterOptionValueGetStringArray(swStaticArray *value)
-{
-  swConsumeAfterOptionValueGetArrayImplement(value, swOptionValueTypeString);
+  return rtn;
 }

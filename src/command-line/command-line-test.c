@@ -17,9 +17,7 @@ swOptionCategoryMainDeclare(mainArgs, "Command Line Test",
   swOptionDeclarePositionalArray("posarraytest1", "pat1", 0, swOptionValueTypeBool, false),
   swOptionDeclarePositionalArray("posarraytest2", "pat2", 0, swOptionValueTypeInt, false),
   swOptionDeclarePositionalArray("posarraytest3", "pat3", 0, swOptionValueTypeDouble, false),
-  swOptionDeclarePositionalArray("posarraytest4", "pat4", 0, swOptionValueTypeString, false),
-  swOptionDeclareConsumeAfter("consume after", "...", 0, swOptionValueTypeString, false),
-  swOptionDeclareSink("sink", NULL, 0, swOptionValueTypeString, false)
+  swOptionDeclarePositionalArray("posarraytest4", "pat4", 0, swOptionValueTypeString, false)
 );
 
 static void checkInt(char *name, int64_t value) __attribute__((unused));
@@ -249,7 +247,7 @@ static void checkConsumeAfterStringArray(uint32_t count, ...) __attribute__((unu
 static void checkConsumeAfterStringArray(uint32_t count, ...)
 {
   swStaticArray valueArray = swStaticArrayDefineEmpty;
-  ASSERT_TRUE(swConsumeAfterOptionValueGetStringArray(&valueArray));
+  ASSERT_TRUE(swConsumeAfterOptionValueGet(&valueArray));
   ASSERT_EQUAL(valueArray.count, count);
   swStaticString *stringValues = (swStaticString *)valueArray.data;
 
@@ -268,7 +266,7 @@ static void checkSinkStringArray(uint32_t count, ...) __attribute__((unused));
 static void checkSinkStringArray(uint32_t count, ...)
 {
   swStaticArray valueArray = swStaticArrayDefineEmpty;
-  ASSERT_TRUE(swSinkOptionValueGetStringArray(&valueArray));
+  ASSERT_TRUE(swSinkOptionValueGet(&valueArray));
   ASSERT_EQUAL(valueArray.count, count);
   swStaticString *stringValues = (swStaticString *)valueArray.data;
 

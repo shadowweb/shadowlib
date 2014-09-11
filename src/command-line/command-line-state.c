@@ -20,17 +20,15 @@ bool swCommandLineStateTokenize(swCommandLineState *state)
 static bool swCommandLineStateScanConsumeAfter(swCommandLineState *state)
 {
   bool rtn = true;
-  swOptionValuePair *pair = &(state->clData->consumeAfterValue);
   while (state->currentArg < state->argCount)
   {
     swOptionToken *token = &state->tokens[state->currentArg];
-    swOption *option = pair->option;
-    if (swOptionCallParser(option, &(token->full), &(pair->value)))
+    if (swDynamicArrayPush(&(state->clData->consumeAfterValue), &(token->full)))
     {
       state->currentArg++;
       continue;
     }
-    swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
+    swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
     rtn = false;
     break;
   }
@@ -82,12 +80,7 @@ static bool swCommandLineStateScanAllPositional(swCommandLineState *state)
         if (state->currentArg == state->argCount)
           rtn = true;
         else if (state->currentPositional == state->clData->positionalValues.count)
-        {
-          if (state->clData->consumeAfterValue.option)
-            rtn = swCommandLineStateScanConsumeAfter(state);
-          else
-            swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeNoConsumeAfter);
-        }
+          rtn = swCommandLineStateScanConsumeAfter(state);
       }
       else if (!state->clData->positionalValues.count)
         swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeNoPositional);
@@ -102,19 +95,13 @@ static bool swCommandLineStateScanSink(swCommandLineState *state)
 {
   bool rtn = false;
   swOptionToken *token = &state->tokens[state->currentArg];
-  swOption *option = state->clData->sinkValue.option;
-  if (option)
+  if (swDynamicArrayPush(&(state->clData->sinkValue), &(token->full)))
   {
-    if (swOptionCallParser(option, &(token->full), &(state->clData->sinkValue.value)))
-    {
-      state->currentArg++;
-      rtn = true;
-    }
-    else
-      swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
+    state->currentArg++;
+    rtn = true;
   }
   else
-    swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeNoSink);
+    swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
   return rtn;
 }
 
@@ -246,10 +233,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
         }
       }
       else if (!failure)
-      {
-        if (state->clData->sinkValue.option)
-          rtn = swCommandLineStateScanSink(state);
-      }
+        rtn = swCommandLineStateScanSink(state);
     }
     else // token does not have name
     {
@@ -261,7 +245,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
       }
       else if (state->currentPositional < state->clData->positionalValues.count)
         rtn = swCommandLineStateScanPositional(state);
-      else if (state->clData->positionalValues.count && state->clData->consumeAfterValue.option)
+      else if (state->clData->positionalValues.count)
         rtn = swCommandLineStateScanConsumeAfter(state);
       else
         rtn = swCommandLineStateScanSink(state);

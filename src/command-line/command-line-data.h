@@ -15,8 +15,8 @@ typedef struct swCommandLineData
 
   swFastArray         normalValues;       // normal options
   swFastArray         positionalValues;   // positional options
-  swOptionValuePair   sinkValue;          // sink option
-  swOptionValuePair   consumeAfterValue;  // consume after
+  swDynamicArray      sinkValue;
+  swDynamicArray      consumeAfterValue;
 
   swHashMapLinear    *namedValues;        // hash of swOption:name => swOptionValuePair
   swFastArray         requiredValues;     // array of pointers to required swOptionValuePair

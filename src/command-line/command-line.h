@@ -29,15 +29,8 @@ bool swPositionalOptionValueGetIntArray    (uint32_t position, swStaticArray *va
 bool swPositionalOptionValueGetDoubleArray (uint32_t position, swStaticArray *value);
 bool swPositionalOptionValueGetStringArray (uint32_t position, swStaticArray *value);
 
-bool swSinkOptionValueGetBoolArray   (swStaticArray *value);
-bool swSinkOptionValueGetIntArray    (swStaticArray *value);
-bool swSinkOptionValueGetDoubleArray (swStaticArray *value);
-bool swSinkOptionValueGetStringArray (swStaticArray *value);
-
-bool swConsumeAfterOptionValueGetBoolArray   (swStaticArray *value);
-bool swConsumeAfterOptionValueGetIntArray    (swStaticArray *value);
-bool swConsumeAfterOptionValueGetDoubleArray (swStaticArray *value);
-bool swConsumeAfterOptionValueGetStringArray (swStaticArray *value);
+bool swSinkOptionValueGet (swStaticArray *value);
+bool swConsumeAfterOptionValueGet (swStaticArray *value);
 
 #endif // SW_COMMANDLINE_COMMANDLINE_H
 

@@ -19,8 +19,6 @@ static const char *swCommandLineErrorCodeText[] __attribute__((unused)) =
   [swCommandLineErrorCodeArrayMultivalue] = "Invalid way to specify multivalue array value",
   [swCommandLineErrorCodeParse]           = "Failed to parse option value",
   [swCommandLineErrorCodeNoPositional]    = "No positional arguments expected",
-  [swCommandLineErrorCodeNoConsumeAfter]  = "No consume after arguments expected",
-  [swCommandLineErrorCodeNoSink]          = "No sink arguments expected",
 };
 
 void swCommandLineErrorSet(swCommandLineErrorData *errorData, swCommandLineErrorCode errorCode, swDynamicString **errorString)
@@ -51,10 +49,6 @@ void swCommandLineErrorSet(swCommandLineErrorData *errorData, swCommandLineError
             swDynamicStringAppendStaticString(*errorString, &(errorData->option->name));
           else if (errorData->option->optionType == swOptionTypePositional)
             swDynamicStringAppendCString(*errorString, "Positional");
-          else if (errorData->option->optionType == swOptionTypeConsumeAfter)
-            swDynamicStringAppendCString(*errorString, "ConsumeAfter");
-          else if (errorData->option->optionType == swOptionTypeSink)
-            swDynamicStringAppendCString(*errorString, "Sink");
           swDynamicStringAppendCString(*errorString, "; ");
         }
       }

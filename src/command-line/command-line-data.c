@@ -23,8 +23,9 @@ void swCommandLineDataDelete(swCommandLineData *commandLineData)
     if (commandLineData->namedValues)
       swHashMapLinearDelete(commandLineData->namedValues);
 
-    swOptionValuePairClear(&(commandLineData->consumeAfterValue));
-    swOptionValuePairClear(&(commandLineData->sinkValue));
+    swDynamicArrayRelease(&(commandLineData->consumeAfterValue));
+    swDynamicArrayRelease(&(commandLineData->sinkValue));
+
     _fastArrayClear(&(commandLineData->positionalValues));
     _fastArrayClear(&(commandLineData->normalValues));
     if (commandLineData->categories.size)
@@ -53,7 +54,11 @@ swCommandLineData *swCommandLineDataNew(uint32_t argumentCount)
         {
           // defaults to pointer comparison
           if (swFastArrayInit(&(commandLineDataNew->requiredValues), sizeof(swOptionValuePair), argumentCount))
+          {
+            commandLineDataNew->consumeAfterValue = swDynamicArraySetEmpty(swOptionValueTypeSizeGet(swOptionValueTypeString));
+            commandLineDataNew->sinkValue = swDynamicArraySetEmpty(swOptionValueTypeSizeGet(swOptionValueTypeString));
             rtn = commandLineDataNew;
+          }
         }
       }
     }
@@ -175,30 +180,6 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
         }
         break;
       }
-      case swOptionTypeConsumeAfter:
-        if (!commandLineData->consumeAfterValue.option)
-        {
-          // TODO: verify that it is array of strings; is it feasible to have anything else?
-          if (!option->name.len && option->isArray)
-          {
-            commandLineData->consumeAfterValue = swOptionValuePairSet(option);
-            valuePairPtr = &(commandLineData->consumeAfterValue);
-            typeValid = true;
-          }
-        }
-        break;
-      case swOptionTypeSink:
-        if (!commandLineData->sinkValue.option)
-        {
-          // TODO: verify that it is array of strings; is it feasible to have anything else?
-          if (!option->name.len && option->isArray)
-          {
-            commandLineData->sinkValue = swOptionValuePairSet(option);
-            valuePairPtr = &(commandLineData->sinkValue);
-            typeValid = true;
-          }
-        }
-        break;
     }
     if (typeValid)
     {
@@ -310,18 +291,7 @@ static bool swCommandLineDataWalkPairs(swCommandLineData *commandLineData, bool 
       valuePairsListPtr++;
     }
     if (!(*valuePairsListPtr))
-    {
-      swOptionValuePair *valuePairs[] = {&commandLineData->sinkValue, &commandLineData->consumeAfterValue, NULL};
-      swOptionValuePair **valuePairsPtr = valuePairs;
-      while (*valuePairsPtr)
-      {
-        if (!pairFunction(*valuePairsPtr, &(commandLineData->errorData)))
-          break;
-        valuePairsPtr++;
-      }
-      if (!(*valuePairsPtr))
-        rtn = true;
-    }
+      rtn = true;
   }
   return rtn;
 }

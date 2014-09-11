@@ -20,6 +20,7 @@ typedef struct swDynamicArray
 #define swDynamicArraySize(a)             (a).size
 
 #define swDynamicArrayInitEmpty(es)       { .elementSize = (es) }
+#define swDynamicArraySetEmpty(es)        *(swDynamicArray[]){swDynamicArrayInitEmpty(es)}
 
 swDynamicArray *swDynamicArrayNew(size_t elementSize, uint32_t size);
 void swDynamicArrayDelete(swDynamicArray *array);

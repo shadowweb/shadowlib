@@ -23,9 +23,7 @@ typedef enum swOptionValueType
 typedef enum swOptionType
 {
   swOptionTypeNormal,
-  swOptionTypePositional,
-  swOptionTypeConsumeAfter,
-  swOptionTypeSink
+  swOptionTypePositional
 } swOptionType;
 
 typedef enum swOptionArrayType
@@ -124,12 +122,6 @@ typedef struct swOption
 
 #define swOptionDeclarePositionalArray(d, vd, vc, vt, r)                  swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypePositional, swOptionArrayTypeCommaSeparated, true, r, false)
 #define swOptionDeclarePositionalArrayWithDefault(d, vd, def, vc, vt, r)  swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, vc, vt, swOptionTypePositional, swOptionArrayTypeCommaSeparated, true, r, false)
-
-#define swOptionDeclareConsumeAfter(d, vd, vc, vt, r)                     swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypeConsumeAfter, swOptionArrayTypeSimple, true, r, false)
-#define swOptionDeclareConsumeAfterWithDefault(d, vd, def, vc, vt, r)     swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, vc, vt, swOptionTypeConsumeAfter, swOptionArrayTypeSimple, true, r, false)
-
-#define swOptionDeclareSink(d, vd, vc, vt, r)                             swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypeSink, swOptionArrayTypeSimple, true, r, false)
-#define swOptionDeclareSinkWithDefault(d, vd, def, vc, vt, r)             swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, vc, vt, swOptionTypeSink, swOptionArrayTypeSimple, true, r, false)
 
 bool swOptionValidateDefaultValue(swOption *option);
 bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamicArray *valueArray);
