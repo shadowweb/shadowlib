@@ -22,39 +22,6 @@ swOptionCategoryMainDeclare(mainArgs, "Command Line Test",
   swOptionDeclareSink("sink", NULL, 0, swOptionValueTypeString, false)
 );
 
-swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
-  swOptionDeclareScalar("bool-special", "bool special name description", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("bool-name",    "bool name description",    "bool",   swOptionValueTypeBool,    false),
-  swOptionDeclareScalar("int-name",     "int name description",     "int",    swOptionValueTypeInt,     false),
-  swOptionDeclareScalar("double-name",  "double name description",  "double", swOptionValueTypeDouble,  false),
-  swOptionDeclareScalar("string-name",  "string name description",  "string", swOptionValueTypeString,  false),
-  swOptionDeclareArray("bool-name-array",   "bool name array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("int-name-array",    "int name array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("double-name-array", "double name array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("string-name-array", "string name array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("bool-name-array-mv",   "bool name multivalue array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("int-name-array-mv",    "int name multivalue array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("double-name-array-mv", "double name multivalue array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("string-name-array-mv", "string name multivalue array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("bool-name-array-cs",   "bool name comma separated array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclareArray("int-name-array-cs",    "int name comma separated array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclareArray("double-name-array-cs", "double name comma separated array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclareArray("string-name-array-cs", "string name comma separated array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclarePrefixScalar("bp", "prefix bool",    "bool",   swOptionValueTypeBool,    false),
-  swOptionDeclarePrefixScalar("ip", "prefix int",     "int",    swOptionValueTypeInt,     false),
-  swOptionDeclarePrefixScalar("dp", "prefix double",  "bool",   swOptionValueTypeDouble,  false),
-  swOptionDeclarePrefixScalar("sp", "prefix string",  "string", swOptionValueTypeString,  false),
-  swOptionDeclarePrefixArray("bap", "prefix bool array",    "bool",   0, swOptionValueTypeBool,    false),
-  swOptionDeclarePrefixArray("iap", "prefix int array",     "int",    0, swOptionValueTypeInt,     false),
-  swOptionDeclarePrefixArray("dap", "prefix double array",  "bool",   0, swOptionValueTypeDouble,  false),
-  swOptionDeclarePrefixArray("sap", "prefix string array",  "string", 0, swOptionValueTypeString,  false),
-  swOptionDeclareScalar("a", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("b", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("c", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("d", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("n", "grouping number", "NUMBER", swOptionValueTypeInt, false)
-);
-
 static void checkInt(char *name, int64_t value) __attribute__((unused));
 static void checkInt(char *name, int64_t value)
 {
@@ -316,6 +283,40 @@ static void checkSinkStringArray(uint32_t count, ...)
   va_end(argPtr);
 }
 
+
+swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
+  swOptionDeclareScalar("bool-special", "bool special name description", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("bool-name",    "bool name description",    "bool",   swOptionValueTypeBool,    false),
+  swOptionDeclareScalar("int-name",     "int name description",     "int",    swOptionValueTypeInt,     false),
+  swOptionDeclareScalar("double-name",  "double name description",  "double", swOptionValueTypeDouble,  false),
+  swOptionDeclareScalar("string-name",  "string name description",  "string", swOptionValueTypeString,  false),
+  swOptionDeclareArray("bool-name-array",   "bool name array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("int-name-array",    "int name array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("double-name-array", "double name array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("string-name-array", "string name array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("bool-name-array-mv",   "bool name multivalue array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("int-name-array-mv",    "int name multivalue array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("double-name-array-mv", "double name multivalue array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("string-name-array-mv", "string name multivalue array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("bool-name-array-cs",   "bool name comma separated array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArray("int-name-array-cs",    "int name comma separated array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArray("double-name-array-cs", "double name comma separated array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArray("string-name-array-cs", "string name comma separated array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclarePrefixScalar("bp", "prefix bool",    "bool",   swOptionValueTypeBool,    false),
+  swOptionDeclarePrefixScalar("ip", "prefix int",     "int",    swOptionValueTypeInt,     false),
+  swOptionDeclarePrefixScalar("dp", "prefix double",  "bool",   swOptionValueTypeDouble,  false),
+  swOptionDeclarePrefixScalar("sp", "prefix string",  "string", swOptionValueTypeString,  false),
+  swOptionDeclarePrefixArray("bap", "prefix bool array",    "bool",   0, swOptionValueTypeBool,    false),
+  swOptionDeclarePrefixArray("iap", "prefix int array",     "int",    0, swOptionValueTypeInt,     false),
+  swOptionDeclarePrefixArray("dap", "prefix double array",  "bool",   0, swOptionValueTypeDouble,  false),
+  swOptionDeclarePrefixArray("sap", "prefix string array",  "string", 0, swOptionValueTypeString,  false),
+  swOptionDeclareScalar("a", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("b", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("c", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("d", "grouping bool", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("n", "grouping number", "NUMBER", swOptionValueTypeInt, false)
+);
+
 static void basicTestCheck()
 {
   checkInt("int-name", 1);
@@ -395,6 +396,52 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
   };
 
   return testFramework(argc, argv, basicTestCheck);
+}
+
+static void groupingTestCheck()
+{
+  checkBool("a", true);
+  checkBool("b", true);
+  checkBool("c", true);
+  checkBool("d", true);
+}
+
+swTestDeclare(GroupingTest1, NULL, NULL, swTestRun)
+{
+  int argc = 2;
+  const char *argv[] = {
+    program_invocation_name,
+    "-abcd"
+  };
+
+  return testFramework(argc, argv, groupingTestCheck);
+}
+
+swTestDeclare(GroupingTest2, NULL, NULL, swTestRun)
+{
+  int argc = 2;
+  const char *argv[] = {
+    program_invocation_name,
+    "--abcd"
+  };
+
+  return testFramework(argc, argv, groupingTestCheck);
+}
+
+static void groupingTestCheck1()
+{
+  checkSinkStringArray(1, "-abcde");
+}
+
+swTestDeclare(GroupingTest3, NULL, NULL, swTestRun)
+{
+  int argc = 2;
+  const char *argv[] = {
+    program_invocation_name,
+    "-abcde"
+  };
+
+  return testFramework(argc, argv, groupingTestCheck1);
 }
 
 static void boolValueTest1Check()
@@ -900,6 +947,7 @@ swTestDeclare(SinkValueTest, NULL, NULL, swTestRun)
 
 swTestSuiteStructDeclare(CommandLineSimpleTest, NULL, NULL, swTestRun,
                          &BasicTest,
+                         &GroupingTest1, &GroupingTest2, &GroupingTest3,
                          &BoolValueTest1, &BoolValueTest2, &BoolValueTest3, &BoolValueTest4, &BoolValueTest5, &BoolValueTest6,
                          &MultiValueTest, &CommaSeparatedValueTest1, &CommaSeparatedValueTest2,
                          &PositionalValueTest1, &PositionalValueTest2, &PositionalValueTest3, &PositionalValueTest4, &PositionalValueTest5, &PositionalValueTest6,
