@@ -47,7 +47,7 @@ void swCommandLineErrorSet(swCommandLineErrorData *errorData, swCommandLineError
           swDynamicStringAppendCString(*errorString, "Option: ");
           if (errorData->option->name.len)
             swDynamicStringAppendStaticString(*errorString, &(errorData->option->name));
-          else if (errorData->option->optionType == swOptionTypePositional)
+          else if (errorData->option->isPositional)
             swDynamicStringAppendCString(*errorString, "Positional");
           swDynamicStringAppendCString(*errorString, "; ");
         }

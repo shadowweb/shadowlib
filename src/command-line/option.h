@@ -20,11 +20,6 @@ typedef enum swOptionValueType
 // use default sink and consume after (use consume after only if we have positional arguments)
 // basically, no need to explicitly specify those, no need to worry about them not being present,
 // less error checking
-typedef enum swOptionType
-{
-  swOptionTypeNormal,
-  swOptionTypePositional
-} swOptionType;
 
 typedef enum swOptionArrayType
 {
@@ -69,7 +64,7 @@ typedef struct swOption
   // positional: does not start with '-' or '--', processed in defined order
   // sink: should be array, no more than one
   // consume after: should be array, collected after positional, no more than one
-  swOptionType      optionType  : 2;
+
   // array option input:
   //    normal, multi value, comma separated
   swOptionArrayType arrayType   : 2;
@@ -87,10 +82,11 @@ typedef struct swOption
   unsigned isRequired : 1;
   // prefix: if array, can't be multi value or comma separated; normal option type only
   unsigned isPrefix : 1;
-
+  // positional: does not start with '-' or '--', processed in defined order
+  unsigned isPositional : 1;
 } swOption;
 
-#define swOptionDeclare(n, d, vd, def, vc, vt, ot, at, a, r, p) \
+#define swOptionDeclare(n, d, vd, def, vc, vt, at, a, r, p, pos)  \
 {                                                                 \
   .name = n,                                                      \
   .description = d,                                               \
@@ -98,30 +94,30 @@ typedef struct swOption
   .defaultValue = def,                                            \
   .valueCount = (vc),                                             \
   .valueType = (vt),                                              \
-  .optionType = (ot),                                             \
   .arrayType = (at),                                              \
   .isArray = (a),                                                 \
   .isRequired = (r),                                              \
-  .isPrefix = (p)                                                 \
+  .isPrefix = (p),                                                \
+  .isPositional = (pos)                                           \
 }
 
-#define swOptionDeclareScalar(n, d, vd, vt, r)                            swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionTypeNormal, swOptionArrayTypeSimple, false, r, false)
-#define swOptionDeclareScalarWithDefault(n, d, vd, def, vt, r)            swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, 0, vt, swOptionTypeNormal, swOptionArrayTypeSimple, false, r, false)
+#define swOptionDeclareScalar(n, d, vd, vt, r)                            swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionArrayTypeSimple, false, r, false, false)
+#define swOptionDeclareScalarWithDefault(n, d, vd, def, vt, r)            swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, 0, vt, swOptionArrayTypeSimple, false, r, false, false)
 
-#define swOptionDeclareArray(n, d, vd, vc, vt, at, r)                     swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypeNormal, at, true, r, false)
-#define swOptionDeclareArrayWithDefault(n, d, vd, def, vc, vt, at, r)     swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, vc, vt, swOptionTypeNormal, at, true, r, false)
+#define swOptionDeclareArray(n, d, vd, vc, vt, at, r)                     swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, vc, vt, at, true, r, false, false)
+#define swOptionDeclareArrayWithDefault(n, d, vd, def, vc, vt, at, r)     swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, vc, vt, at, true, r, false, false)
 
-#define swOptionDeclarePrefixScalar(n, d, vd, vt, r)                      swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionTypeNormal, swOptionArrayTypeSimple, false, r, true)
-#define swOptionDeclarePrefixScalarWithDefault(n, d, vd, def, vt, r)      swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, 0, vt, swOptionTypeNormal, swOptionArrayTypeSimple, false, r, true)
+#define swOptionDeclarePrefixScalar(n, d, vd, vt, r)                      swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionArrayTypeSimple, false, r, true, false)
+#define swOptionDeclarePrefixScalarWithDefault(n, d, vd, def, vt, r)      swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, 0, vt, swOptionArrayTypeSimple, false, r, true, false)
 
-#define swOptionDeclarePrefixArray(n, d, vd, vc, vt, r)                   swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypeNormal, swOptionArrayTypeSimple, true, r, true)
-#define swOptionDeclarePrefixArrayWithDefault(n, d, vd, def, vc, vt, r)   swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, vc, vt, swOptionTypeNormal, swOptionArrayTypeSimple, true, r, true)
+#define swOptionDeclarePrefixArray(n, d, vd, vc, vt, r)                   swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionArrayTypeSimple, true, r, true, false)
+#define swOptionDeclarePrefixArrayWithDefault(n, d, vd, def, vc, vt, r)   swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, vc, vt, swOptionArrayTypeSimple, true, r, true, false)
 
-#define swOptionDeclarePositionalScalar(d, vd, vt, r)                     swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionTypePositional, swOptionArrayTypeSimple, false, r, false)
-#define swOptionDeclarePositionalScalarWithDefault(d, vd, def, vt, r)     swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, 0, vt, swOptionTypePositional, swOptionArrayTypeSimple, false, r, false)
+#define swOptionDeclarePositionalScalar(d, vd, vt, r)                     swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, 0, vt, swOptionArrayTypeSimple, false, r, false, true)
+#define swOptionDeclarePositionalScalarWithDefault(d, vd, def, vt, r)     swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, 0, vt, swOptionArrayTypeSimple, false, r, false, true)
 
-#define swOptionDeclarePositionalArray(d, vd, vc, vt, r)                  swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionTypePositional, swOptionArrayTypeCommaSeparated, true, r, false)
-#define swOptionDeclarePositionalArrayWithDefault(d, vd, def, vc, vt, r)  swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, vc, vt, swOptionTypePositional, swOptionArrayTypeCommaSeparated, true, r, false)
+#define swOptionDeclarePositionalArray(d, vd, vc, vt, r)                  swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, vc, vt, swOptionArrayTypeCommaSeparated, true, r, false, true)
+#define swOptionDeclarePositionalArrayWithDefault(d, vd, def, vc, vt, r)  swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, vc, vt, swOptionArrayTypeCommaSeparated, true, r, false, true)
 
 bool swOptionValidateDefaultValue(swOption *option);
 bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamicArray *valueArray);

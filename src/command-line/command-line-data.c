@@ -147,38 +147,33 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
 static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, swOption *option, bool isMainCategory)
 {
   bool rtn = false;
-  if (commandLineData && option && (option->optionType == swOptionTypeNormal || isMainCategory))
+  if (commandLineData && option && (!option->isPositional || isMainCategory))
   {
     // validate type
     bool typeValid = false;
     swOptionValuePair *valuePairPtr = NULL;
-    switch (option->optionType)
+    if (option->isPositional)
     {
-      case swOptionTypeNormal:
+      if (!option->name.len && (!option->isArray || option->arrayType == swOptionArrayTypeCommaSeparated))
       {
-        if (option->name.len)
+        swOptionValuePair valuePair = swOptionValuePairInit(option);
+        if (swFastArrayPush(commandLineData->positionalValues, valuePair))
         {
-          swOptionValuePair valuePair = swOptionValuePairInit(option);
-          if (swFastArrayPush(commandLineData->normalValues, valuePair))
-          {
-            valuePairPtr = swFastArrayGetExistingPtr(commandLineData->normalValues, (commandLineData->normalValues.count - 1), swOptionValuePair);
-            typeValid = true;
-          }
+          valuePairPtr = swFastArrayGetExistingPtr(commandLineData->positionalValues, (commandLineData->positionalValues.count - 1), swOptionValuePair);
+          typeValid = true;
         }
-        break;
       }
-      case swOptionTypePositional:
+    }
+    else
+    {
+      if (option->name.len)
       {
-        if (!option->name.len && (!option->isArray || option->arrayType == swOptionArrayTypeCommaSeparated))
+        swOptionValuePair valuePair = swOptionValuePairInit(option);
+        if (swFastArrayPush(commandLineData->normalValues, valuePair))
         {
-          swOptionValuePair valuePair = swOptionValuePairInit(option);
-          if (swFastArrayPush(commandLineData->positionalValues, valuePair))
-          {
-            valuePairPtr = swFastArrayGetExistingPtr(commandLineData->positionalValues, (commandLineData->positionalValues.count - 1), swOptionValuePair);
-            typeValid = true;
-          }
+          valuePairPtr = swFastArrayGetExistingPtr(commandLineData->normalValues, (commandLineData->normalValues.count - 1), swOptionValuePair);
+          typeValid = true;
         }
-        break;
       }
     }
     if (typeValid)
@@ -186,10 +181,11 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
       if (option->valueType > swOptionValueTypeNone && option->valueType < swOptionValueTypeMax)
       {
         // validate array type
-        if (option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated))
+        if ((!option->valueCount || option->isArray) &&
+          (option->isArray || (option->arrayType != swOptionArrayTypeMultiValue && option->arrayType != swOptionArrayTypeCommaSeparated)))
         {
           // validate modifier
-          if (!option->isPrefix || (option->optionType == swOptionTypeNormal && (!option->isArray || option->arrayType == swOptionArrayTypeSimple)))
+          if (!option->isPrefix || (!option->isPositional && (!option->isArray || option->arrayType == swOptionArrayTypeSimple)))
           {
             // validate default value
             if (swOptionValidateDefaultValue(option))
