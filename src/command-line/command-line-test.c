@@ -283,7 +283,7 @@ static void checkSinkStringArray(uint32_t count, ...)
 
 
 swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
-  swOptionDeclareScalar("bool-special", "bool special name description", "bool", swOptionValueTypeBool, false),
+  swOptionDeclareScalar("bool-special|bs|bsalias", "bool special name description", "bool", swOptionValueTypeBool, false),
   swOptionDeclareScalar("bool-name",    "bool name description",    "bool",   swOptionValueTypeBool,    false),
   swOptionDeclareScalar("int-name",     "int name description",     "int",    swOptionValueTypeInt,     false),
   swOptionDeclareScalar("double-name",  "double name description",  "double", swOptionValueTypeDouble,  false),
@@ -346,11 +346,15 @@ static void basicTestCheck()
   checkBool("d", true);
 
   checkBool("bool-special", false);
+  checkBool("bs", false);
+  checkBool("bsalias", false);
+
+  checkSinkStringArray(0);
 }
 
 swTestDeclare(BasicTest, NULL, NULL, swTestRun)
 {
-  int argc = 39;
+  int argc = 41;
   const char *argv[] = {
     program_invocation_name,
     "--int-name=1",
@@ -370,6 +374,8 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
     "--string-name-array=bla-bla3",
     "--double-name-array=13.133",
     "--nobool-special",
+    "--nobs",
+    "--nobsalias",
     "--bptrue",
     "--bpfalse",
     "--ip1",

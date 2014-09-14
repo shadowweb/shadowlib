@@ -15,12 +15,6 @@ typedef enum swOptionValueType
   swOptionValueTypeMax,
 } swOptionValueType;
 
-// TODO: this whole thing can be get rid of
-// all we need here is bool flag to indicate that the option is positional
-// use default sink and consume after (use consume after only if we have positional arguments)
-// basically, no need to explicitly specify those, no need to worry about them not being present,
-// less error checking
-
 typedef enum swOptionArrayType
 {
   swOptionArrayTypeSimple,
@@ -33,37 +27,23 @@ typedef enum swOptionArrayType
 
 // TODO: need a new array type to collect everything between two options
 // TODO: need a way of specifying external storage
-// TODO: need a way to specify aliases
-
-
-// TODO: consider spliting the names into -short (one letter) and --long names
-//       (bool short options can do grouping automatically,
-//        without specifying it explicitly)
-
 
 // TODO: add custom validator
 // TODO: add custom parser
-
 
 // TODO: add enums
 // TODO: add bit vectors
 
 typedef struct swOption
 {
+  // separate aliases in the name by using '|'-character
   swStaticString name;
-  // TODO: aliases can be done by using '|'-character in the name, would need to dynamicaly allocate slices
-  // for alias names and have them associated with the option
+  swDynamicArray aliases;
   char *description;
   char *valueDescription;
   swStaticArray defaultValue;
   uint16_t valueCount;  // for Array, 0 unlimited count
   swOptionValueType valueType   : 3;
-  // option type:
-  //    normal -- define in any module
-  //    positional, sink, consume after -- define in main module (once per program)
-  // positional: does not start with '-' or '--', processed in defined order
-  // sink: should be array, no more than one
-  // consume after: should be array, collected after positional, no more than one
 
   // array option input:
   //    normal, multi value, comma separated
@@ -72,13 +52,11 @@ typedef struct swOption
   // grouping: can't be array; single letter option, normal option type, boolean value type
   //          that can be grouped with other option with a single '-'
 
-  // option size:
-  //    single value, array (valueCount=0 -- any)
-  //                        (valueCount>0 -- expect so many values for this option)
-  // if required, should have at least one element
+  //  if array, can have more than one element
+  //    (valueCount=0 -- any number of elements)
+  //    (valueCount>0 -- expect so many values for this option)
   unsigned isArray    : 1;
-  // option mandatory:
-  //    optional, required
+  // if required, should have at least one element
   unsigned isRequired : 1;
   // prefix: if array, can't be multi value or comma separated; normal option type only
   unsigned isPrefix : 1;
@@ -125,6 +103,5 @@ size_t swOptionValueTypeSizeGet(swOptionValueType type);
 
 extern bool trueValue;
 extern bool falseValue;
-
 
 #endif // SW_COMMANDLINE_OPTION_H

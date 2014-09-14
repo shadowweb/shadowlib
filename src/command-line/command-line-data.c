@@ -12,6 +12,27 @@ static void _fastArrayClear(swFastArray *array)
   }
 }
 
+static void _clearOptionAliases(swCommandLineData *commandLineData)
+{
+  if (commandLineData)
+  {
+    for (uint32_t i = 0; i < swFastArrayCount(commandLineData->categories); i++)
+    {
+      swOptionCategory *category = NULL;
+      if (swFastArrayGet(commandLineData->categories, i, category))
+      {
+        swOption *option = category->options;
+        while (option->valueType > swOptionValueTypeNone)
+        {
+          if (option->aliases.size)
+            swDynamicArrayRelease(&(option->aliases));
+          option++;
+        }
+      }
+    }
+  }
+}
+
 void swCommandLineDataDelete(swCommandLineData *commandLineData)
 {
   if (commandLineData)
@@ -28,6 +49,7 @@ void swCommandLineDataDelete(swCommandLineData *commandLineData)
 
     _fastArrayClear(&(commandLineData->positionalValues));
     _fastArrayClear(&(commandLineData->normalValues));
+    _clearOptionAliases(commandLineData);
     if (commandLineData->categories.size)
       swFastArrayClear(&(commandLineData->categories));
 
@@ -114,6 +136,36 @@ bool swCommandLineDataSetCategories(swCommandLineData *commandLineData, swOption
   return rtn;
 }
 
+static bool swCommandLineDataSetOptionAliases(swCommandLineData *commandLineData, swOption *option)
+{
+  bool rtn = false;
+  if (commandLineData && option)
+  {
+    uint32_t foundCount = 0;
+    if (swStaticStringCountChar(&(option->name), '|', &foundCount))
+    {
+      if (foundCount)
+      {
+        if (swDynamicArrayInit(&(option->aliases), sizeof(swStaticString), (foundCount + 1)))
+        {
+          swStaticString *aliases = (swStaticString *)option->aliases.data;
+          foundCount = 0;
+          if (swStaticStringSplitChar(&(option->name), '|', aliases, option->aliases.size, &foundCount, 0) && (foundCount == option->aliases.size))
+          {
+            option->aliases.count = foundCount;
+            rtn = true;
+          }
+        }
+      }
+      else
+        rtn = true;
+    }
+    if (!rtn)
+      swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
+  }
+  return rtn;
+}
+
 static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
 {
   bool rtn = false;
@@ -126,13 +178,31 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
       while (i < commandLineData->normalValues.count)
       {
         swOption *option = valuePairs[i].option;
-        if (swHashMapLinearInsert(commandLineData->namedValues, &(option->name), &(valuePairs[i])))
+
+        uint32_t optionNamesCount = 1;
+        swStaticString *optionNames = &(option->name);
+        if (option->aliases.count)
         {
-          if (!option->isPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(option->name), &(valuePairs[i])))
+          optionNamesCount = option->aliases.count;
+          optionNames = (swStaticString *)(option->aliases.data);
+        }
+        uint32_t j = 0;
+        while (j < optionNamesCount)
+        {
+          if (swHashMapLinearInsert(commandLineData->namedValues, &(optionNames[j]), &(valuePairs[i])))
           {
-            i++;
-            continue;
+            if (!option->isPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(optionNames[j]), &(valuePairs[i])))
+            {
+              j++;
+              continue;
+            }
           }
+          break;
+        }
+        if (j == optionNamesCount)
+        {
+          i++;
+          continue;
         }
         swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
         break;
@@ -227,7 +297,7 @@ bool swCommandLineDataSetOptions(swCommandLineData *commandLineData)
         swOption *option = category->options;
         while (option->valueType > swOptionValueTypeNone)
         {
-          if (swCommandLineDataValidateOption(commandLineData, option, category->type))
+          if ((option->isPositional || swCommandLineDataSetOptionAliases(commandLineData, option)) && swCommandLineDataValidateOption(commandLineData, option, category->type))
             option++;
           else
             break;
