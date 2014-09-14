@@ -22,5 +22,6 @@ typedef struct swOptionValuePair
 void swOptionValuePairClear(swOptionValuePair *pair);
 bool swOptionValuePairSetDefaults(swOptionValuePair *pair);
 bool swOptionValuePairCheckArrays(swOptionValuePair *pair);
+bool swOptionValuePairSetExternal(swOptionValuePair *pair);
 
 #endif // SW_COMMANDLINE_OPTIONVALUEPAIR_H

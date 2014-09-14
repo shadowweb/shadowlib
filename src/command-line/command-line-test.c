@@ -9,16 +9,28 @@
 #include "command-line/option.h"
 #include "command-line/option-category.h"
 
+bool            posBool       = false;
+int64_t         posInt        = 0;
+double          posDouble     = 0.0;
+swStaticString  posString     = swStaticStringDefineEmpty;
+
+swStaticArray posBoolArray    = swStaticArrayDefineEmpty;
+swStaticArray posIntArray     = swStaticArrayDefineEmpty;
+swStaticArray posDoubleArray  = swStaticArrayDefineEmpty;
+swStaticArray posStringArray  = swStaticArrayDefineEmpty;
+
 swOptionCategoryMainDeclare(mainArgs, "Command Line Test",
-  swOptionDeclarePositionalScalar("postest1", "pt1", swOptionValueTypeBool, false),
-  swOptionDeclarePositionalScalar("postest2", "pt2", swOptionValueTypeInt, false),
-  swOptionDeclarePositionalScalar("postest3", "pt3", swOptionValueTypeDouble, false),
-  swOptionDeclarePositionalScalar("postest4", "pt4", swOptionValueTypeString, false),
-  swOptionDeclarePositionalArray("posarraytest1", "pat1", 0, swOptionValueTypeBool, false),
-  swOptionDeclarePositionalArray("posarraytest2", "pat2", 0, swOptionValueTypeInt, false),
-  swOptionDeclarePositionalArray("posarraytest3", "pat3", 0, swOptionValueTypeDouble, false),
-  swOptionDeclarePositionalArray("posarraytest4", "pat4", 0, swOptionValueTypeString, false)
+  swOptionDeclarePositionalScalar("postest1", "pt1", &posBool,    swOptionValueTypeBool,    false),
+  swOptionDeclarePositionalScalar("postest2", "pt2", &posInt,     swOptionValueTypeInt,     false),
+  swOptionDeclarePositionalScalar("postest3", "pt3", &posDouble,  swOptionValueTypeDouble,  false),
+  swOptionDeclarePositionalScalar("postest4", "pt4", &posString,  swOptionValueTypeString,  false),
+  swOptionDeclarePositionalArray("posarraytest1", "pat1", &posBoolArray,    0, swOptionValueTypeBool,   false),
+  swOptionDeclarePositionalArray("posarraytest2", "pat2", &posIntArray,     0, swOptionValueTypeInt,    false),
+  swOptionDeclarePositionalArray("posarraytest3", "pat3", &posDoubleArray,  0, swOptionValueTypeDouble, false),
+  swOptionDeclarePositionalArray("posarraytest4", "pat4", &posStringArray,  0, swOptionValueTypeString, false)
 );
+
+// -------------- Named ---------------
 
 static void checkInt(char *name, int64_t value) __attribute__((unused));
 static void checkInt(char *name, int64_t value)
@@ -125,6 +137,8 @@ static void checkDoubleArray(char *name, uint32_t count, ...)
   va_end(argPtr);
 }
 
+// -------------- Positional ---------------
+
 static void checkPositionalInt(uint32_t position, int64_t value) __attribute__((unused));
 static void checkPositionalInt(uint32_t position, int64_t value)
 {
@@ -222,26 +236,90 @@ static void checkPositionalDoubleArray(uint32_t position, uint32_t count, ...)
   va_end(argPtr);
 }
 
-static bool testFramework(int argc, const char *argv[], void (*checkFunc)())
+// -------------- External ---------------
+
+static void checkExternalInt(int64_t *externalValue, int64_t value) __attribute__((unused));
+static void checkExternalInt(int64_t *externalValue, int64_t value)
 {
-  bool rtn = false;
-  swDynamicString *errorString = NULL;
-  if (swCommandLineInit(argc, argv, "This is basic test", &errorString))
-  {
-    checkFunc();
-    rtn = true;
-    swCommandLineShutdown();
-  }
-  else
-  {
-    if (errorString)
-    {
-      swTestLogLine("Error processing arguments: '%.*s'\n", (int)(errorString->len), errorString->data);
-      swDynamicStringDelete(errorString);
-    }
-  }
-  return rtn;
+  ASSERT_EQUAL(*externalValue, value);
 }
+
+static void checkExternalIntArray(swStaticArray *externalValue, uint32_t count, ...) __attribute__((unused));
+static void checkExternalIntArray(swStaticArray *externalValue, uint32_t count, ...)
+{
+  ASSERT_EQUAL(externalValue->count, count);
+  int64_t *intValues = (int64_t *)externalValue->data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < externalValue->count; i++)
+    ASSERT_EQUAL(intValues[i], va_arg(argPtr, int64_t));
+  va_end(argPtr);
+}
+
+static void checkExternalBool(bool *externalValue, bool value) __attribute__((unused));
+static void checkExternalBool(bool *externalValue, bool value)
+{
+  ASSERT_EQUAL(*externalValue, value);
+}
+
+static void checkExternalBoolArray(swStaticArray *externalValue, uint32_t count, ...) __attribute__((unused));
+static void checkExternalBoolArray(swStaticArray *externalValue, uint32_t count, ...)
+{
+  ASSERT_EQUAL(externalValue->count, count);
+  bool *boolValues = (bool *)externalValue->data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < externalValue->count; i++)
+    ASSERT_EQUAL(boolValues[i], va_arg(argPtr, int));
+  va_end(argPtr);
+}
+
+static void checkExternalString(swStaticString *externalValue, char *value) __attribute__((unused));
+static void checkExternalString(swStaticString *externalValue, char *value)
+{
+  swStaticString stringRealValue = swStaticStringDefineFromCstr(value);
+  ASSERT_TRUE(swStaticStringEqual(externalValue, &stringRealValue));
+}
+
+static void checkExternalStringArray(swStaticArray *externalValue, uint32_t count, ...) __attribute__((unused));
+static void checkExternalStringArray(swStaticArray *externalValue, uint32_t count, ...)
+{
+  ASSERT_EQUAL(externalValue->count, count);
+  swStaticString *stringValues = (swStaticString *)externalValue->data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < externalValue->count; i++)
+  {
+    char *value = va_arg(argPtr, char *);
+    swStaticString stringRealValue = swStaticStringDefineFromCstr(value);
+    ASSERT_TRUE(swStaticStringEqual(&stringValues[i], &stringRealValue));
+  }
+  va_end(argPtr);
+}
+
+static void checkExternalDouble(double *externalValue, double value) __attribute__((unused));
+static void checkExternalDouble(double *externalValue, double value)
+{
+  ASSERT_EQUAL(*externalValue, value);
+}
+
+static void checkExternalDoubleArray(swStaticArray *externalValue, uint32_t count, ...) __attribute__((unused));
+static void checkExternalDoubleArray(swStaticArray *externalValue, uint32_t count, ...)
+{
+  ASSERT_EQUAL(externalValue->count, count);
+  double *doubleValues = (double *)externalValue->data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < externalValue->count; i++)
+    ASSERT_EQUAL(doubleValues[i], va_arg(argPtr, double));
+  va_end(argPtr);
+}
+
+// -------------- ConsumeAfter and Sink ---------------
 
 static void checkConsumeAfterStringArray(uint32_t count, ...) __attribute__((unused));
 static void checkConsumeAfterStringArray(uint32_t count, ...)
@@ -281,53 +359,94 @@ static void checkSinkStringArray(uint32_t count, ...)
   va_end(argPtr);
 }
 
+// -------------- Framework ---------------
+
+static bool testFramework(int argc, const char *argv[], void (*checkFunc)())
+{
+  bool rtn = false;
+  swDynamicString *errorString = NULL;
+  if (swCommandLineInit(argc, argv, "This is basic test", &errorString))
+  {
+    checkFunc();
+    rtn = true;
+    swCommandLineShutdown();
+  }
+  else
+  {
+    if (errorString)
+    {
+      swTestLogLine("Error processing arguments: '%.*s'\n", (int)(errorString->len), errorString->data);
+      swDynamicStringDelete(errorString);
+    }
+  }
+  return rtn;
+}
+
+
+bool            namedBool       = false;
+int64_t         namedInt        = 0;
+double          namedDouble     = 0.0;
+swStaticString  namedString     = swStaticStringDefineEmpty;
+
+swStaticArray namedBoolArray    = swStaticArrayDefineEmpty;
+swStaticArray namedIntArray     = swStaticArrayDefineEmpty;
+swStaticArray namedDoubleArray  = swStaticArrayDefineEmpty;
+swStaticArray namedStringArray  = swStaticArrayDefineEmpty;
 
 swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
-  swOptionDeclareScalar("bool-special|bs|bsalias", "bool special name description", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("bool-name",    "bool name description",    "bool",   swOptionValueTypeBool,    false),
-  swOptionDeclareScalar("int-name",     "int name description",     "int",    swOptionValueTypeInt,     false),
-  swOptionDeclareScalar("double-name",  "double name description",  "double", swOptionValueTypeDouble,  false),
-  swOptionDeclareScalar("string-name",  "string name description",  "string", swOptionValueTypeString,  false),
-  swOptionDeclareArray("bool-name-array",   "bool name array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("int-name-array",    "int name array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("double-name-array", "double name array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("string-name-array", "string name array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("bool-name-array-mv",   "bool name multivalue array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("int-name-array-mv",    "int name multivalue array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("double-name-array-mv", "double name multivalue array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("string-name-array-mv", "string name multivalue array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeMultiValue, false),
-  swOptionDeclareArray("bool-name-array-cs",   "bool name comma separated array description",    "bool",   0, swOptionValueTypeBool,   swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclareArray("int-name-array-cs",    "int name comma separated array description",     "int",    0, swOptionValueTypeInt,    swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclareArray("double-name-array-cs", "double name comma separated array description",  "double", 0, swOptionValueTypeDouble, swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclareArray("string-name-array-cs", "string name comma separated array description",  "string", 0, swOptionValueTypeString, swOptionArrayTypeCommaSeparated, false),
-  swOptionDeclarePrefixScalar("bp", "prefix bool",    "bool",   swOptionValueTypeBool,    false),
-  swOptionDeclarePrefixScalar("ip", "prefix int",     "int",    swOptionValueTypeInt,     false),
-  swOptionDeclarePrefixScalar("dp", "prefix double",  "bool",   swOptionValueTypeDouble,  false),
-  swOptionDeclarePrefixScalar("sp", "prefix string",  "string", swOptionValueTypeString,  false),
-  swOptionDeclarePrefixArray("bap", "prefix bool array",    "bool",   0, swOptionValueTypeBool,    false),
-  swOptionDeclarePrefixArray("iap", "prefix int array",     "int",    0, swOptionValueTypeInt,     false),
-  swOptionDeclarePrefixArray("dap", "prefix double array",  "bool",   0, swOptionValueTypeDouble,  false),
-  swOptionDeclarePrefixArray("sap", "prefix string array",  "string", 0, swOptionValueTypeString,  false),
-  swOptionDeclareScalar("a", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("b", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("c", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("d", "grouping bool", "bool", swOptionValueTypeBool, false),
-  swOptionDeclareScalar("n", "grouping number", "NUMBER", swOptionValueTypeInt, false)
+  swOptionDeclareScalar("bool-special|bs|bsalias", "bool special name description", "bool", NULL, swOptionValueTypeBool, false),
+  swOptionDeclareScalar("bool-name",    "bool name description",    "bool",   &namedBool,   swOptionValueTypeBool,    false),
+  swOptionDeclareScalar("int-name",     "int name description",     "int",    &namedInt,    swOptionValueTypeInt,     false),
+  swOptionDeclareScalar("double-name",  "double name description",  "double", &namedDouble, swOptionValueTypeDouble,  false),
+  swOptionDeclareScalar("string-name",  "string name description",  "string", &namedString, swOptionValueTypeString,  false),
+  swOptionDeclareArray("bool-name-array",   "bool name array description",    "bool",   &namedBoolArray,    0, swOptionValueTypeBool,   swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("int-name-array",    "int name array description",     "int",    &namedIntArray,     0, swOptionValueTypeInt,    swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("double-name-array", "double name array description",  "double", &namedDoubleArray,  0, swOptionValueTypeDouble, swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("string-name-array", "string name array description",  "string", &namedStringArray,  0, swOptionValueTypeString, swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("bool-name-array-mv",   "bool name multivalue array description",    "bool",   NULL, 0, swOptionValueTypeBool,   swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("int-name-array-mv",    "int name multivalue array description",     "int",    NULL, 0, swOptionValueTypeInt,    swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("double-name-array-mv", "double name multivalue array description",  "double", NULL, 0, swOptionValueTypeDouble, swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("string-name-array-mv", "string name multivalue array description",  "string", NULL, 0, swOptionValueTypeString, swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArray("bool-name-array-cs",   "bool name comma separated array description",    "bool",   NULL, 0, swOptionValueTypeBool,   swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArray("int-name-array-cs",    "int name comma separated array description",     "int",    NULL, 0, swOptionValueTypeInt,    swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArray("double-name-array-cs", "double name comma separated array description",  "double", NULL, 0, swOptionValueTypeDouble, swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArray("string-name-array-cs", "string name comma separated array description",  "string", NULL, 0, swOptionValueTypeString, swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclarePrefixScalar("bp", "prefix bool",    "bool",   NULL, swOptionValueTypeBool,    false),
+  swOptionDeclarePrefixScalar("ip", "prefix int",     "int",    NULL, swOptionValueTypeInt,     false),
+  swOptionDeclarePrefixScalar("dp", "prefix double",  "bool",   NULL, swOptionValueTypeDouble,  false),
+  swOptionDeclarePrefixScalar("sp", "prefix string",  "string", NULL, swOptionValueTypeString,  false),
+  swOptionDeclarePrefixArray("bap", "prefix bool array",    "bool",   NULL, 0, swOptionValueTypeBool,    false),
+  swOptionDeclarePrefixArray("iap", "prefix int array",     "int",    NULL, 0, swOptionValueTypeInt,     false),
+  swOptionDeclarePrefixArray("dap", "prefix double array",  "bool",   NULL, 0, swOptionValueTypeDouble,  false),
+  swOptionDeclarePrefixArray("sap", "prefix string array",  "string", NULL, 0, swOptionValueTypeString,  false),
+  swOptionDeclareScalar("a", "grouping bool", "bool", NULL, swOptionValueTypeBool, false),
+  swOptionDeclareScalar("b", "grouping bool", "bool", NULL, swOptionValueTypeBool, false),
+  swOptionDeclareScalar("c", "grouping bool", "bool", NULL, swOptionValueTypeBool, false),
+  swOptionDeclareScalar("d", "grouping bool", "bool", NULL, swOptionValueTypeBool, false),
+  swOptionDeclareScalar("n", "grouping number", "NUMBER", NULL, swOptionValueTypeInt, false)
 );
 
 static void basicTestCheck()
 {
   checkInt("int-name", 1);
   checkIntArray("int-name-array", 3, 1L, 2L, 3L);
+  checkExternalInt(&namedInt, 1);
+  checkExternalIntArray(&namedIntArray, 3, 1L, 2L, 3L);
 
   checkBool("bool-name", false);
   checkBoolArray("bool-name-array", 3, false, true, false);
+  checkExternalBool(&namedBool, false);
+  checkExternalBoolArray(&namedBoolArray, 3, false, true, false);
 
   checkString("string-name", "bla-bla");
   checkStringArray("string-name-array", 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkExternalString(&namedString, "bla-bla");
+  checkExternalStringArray(&namedStringArray, 3, "bla-bla1", "bla-bla2", "bla-bla3");
 
   checkDouble("double-name", 13.13);
   checkDoubleArray("double-name-array", 3, 13.131, 13.132, 13.133);
+  checkExternalDouble(&namedDouble, 13.13);
+  checkExternalDoubleArray(&namedDoubleArray, 3, 13.131, 13.132, 13.133);
 
   checkInt("ip", 2);
   checkIntArray("iap", 3, 1, 2, 3);
@@ -631,10 +750,15 @@ static void positionalValueTestCheck()
   checkIntArray("int-name-array-cs", 3, 1, 2, 3);
   checkDoubleArray("double-name-array-cs", 3, 13.131, 13.132, 13.133);
   checkStringArray("string-name-array-cs", 3, "bla-bla1", "bla-bla2", "bla-bla3");
+
   checkPositionalBool(0, false);
+  checkExternalBool(&posBool, false);
   checkPositionalInt(1, 13);
+  checkExternalInt(&posInt, 13);
   checkPositionalDouble(2, 13.13);
+  checkExternalDouble(&posDouble, 13.13);
   checkPositionalString(3, "bla-bla");
+  checkExternalString(&posString, "bla-bla");
 }
 
 swTestDeclare(PositionalValueTest1, NULL, NULL, swTestRun)
@@ -710,14 +834,25 @@ static void positionalArrayValueTestCheck()
   checkIntArray("int-name-array-cs", 3, 1, 2, 3);
   checkDoubleArray("double-name-array-cs", 3, 13.131, 13.132, 13.133);
   checkStringArray("string-name-array-cs", 3, "bla-bla1", "bla-bla2", "bla-bla3");
+
   checkPositionalBool(0, false);
+  checkExternalBool(&posBool, false);
   checkPositionalInt(1, 13);
+  checkExternalInt(&posInt, 13);
   checkPositionalDouble(2, 13.13);
+  checkExternalDouble(&posDouble, 13.13);
   checkPositionalString(3, "bla-bla");
+  checkExternalString(&posString, "bla-bla");
+
   checkPositionalBoolArray(4, 3, true, false, true);
+  checkExternalBoolArray(&posBoolArray, 3, true, false, true);
   checkPositionalIntArray(5, 3, 1, 2, 3);
+  checkExternalIntArray(&posIntArray, 3, 1, 2, 3);
   checkPositionalDoubleArray(6, 3, 13.131, 13.132, 13.133);
+  checkExternalDoubleArray(&posDoubleArray, 3, 13.131, 13.132, 13.133);
   checkPositionalStringArray(7, 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkExternalStringArray(&posStringArray, 3, "bla-bla1", "bla-bla2", "bla-bla3");
+
 }
 
 swTestDeclare(PositionalValueTest4, NULL, NULL, swTestRun)

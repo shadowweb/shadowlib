@@ -335,6 +335,11 @@ static bool _setDefaultsAndCheckArrays(swOptionValuePair *pair, swCommandLineErr
   return rtn;
 }
 
+static bool _setExternalValue(swOptionValuePair *pair, swCommandLineErrorData *errorData)
+{
+  return swOptionValuePairSetExternal(pair);
+}
+
 static bool swCommandLineDataWalkPairs(swCommandLineData *commandLineData, bool (*pairFunction)(swOptionValuePair *, swCommandLineErrorData *errorData))
 {
   bool rtn = false;
@@ -410,8 +415,8 @@ bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, co
       if (state.currentArg == state.argCount)
       {
         // check all options that are not set and set them to default values
-        if (swCommandLineDataWalkPairs(commandLineData, _setDefaultsAndCheckArrays))
-          rtn = swCommandLineDataCheckRequired(commandLineData);
+        if (swCommandLineDataWalkPairs(commandLineData, _setDefaultsAndCheckArrays) && swCommandLineDataCheckRequired(commandLineData))
+          rtn = swCommandLineDataWalkPairs(commandLineData, _setExternalValue);
       }
     }
   }

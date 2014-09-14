@@ -31,3 +31,37 @@ bool swOptionValuePairCheckArrays(swOptionValuePair *pair)
   }
   return rtn;
 }
+
+bool swOptionValuePairSetExternal(swOptionValuePair *pair)
+{
+  bool rtn = false;
+  if (pair)
+  {
+    swOption *option = pair->option;
+    if (option->external && pair->value.count)
+    {
+      if (option->isArray)
+        *(swStaticArray *)(option->external) = *(swStaticArray *)&(pair->value);
+      else
+      {
+        switch (option->valueType)
+        {
+          case swOptionValueTypeBool:
+            *(bool *)(option->external) = *(bool *)(pair->value.data);
+            break;
+          case swOptionValueTypeInt:
+            *(int64_t *)(option->external) = *(int64_t *)(pair->value.data);
+            break;
+          case swOptionValueTypeDouble:
+            *(double *)(option->external) = *(double *)(pair->value.data);
+            break;
+          case swOptionValueTypeString:
+            *(swStaticString *)(option->external) = *(swStaticString *)(pair->value.data);
+            break;
+        }
+      }
+    }
+    rtn = true;
+  }
+  return rtn;
+}
