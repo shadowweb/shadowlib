@@ -9,6 +9,7 @@ bool swOptionTokenSet(swOptionToken *token, const char *argv, swHashMapLinear *n
     token->full = swStaticStringSetFromCstr((char *)(token->argv));
 
     // check for '-' or '--'
+    bool hasNoName = false;
     size_t startPosition = 0;
     if (swStaticStringCharEqual(token->full, startPosition, '-'))
     {
@@ -21,6 +22,7 @@ bool swOptionTokenSet(swOptionToken *token, const char *argv, swHashMapLinear *n
           token->hasDashDashOnly = true;
           rtn = true;
         }
+        token->hasDoubleDash = true;
       }
 
       if (!rtn)
@@ -45,7 +47,7 @@ bool swOptionTokenSet(swOptionToken *token, const char *argv, swHashMapLinear *n
               startPosition += 2;
               if (swStaticStringSetSubstring(&(token->full), &(token->noName), startPosition, token->full.len))
               {
-                token->hasNoName = true;
+                hasNoName = true;
                 rtn = true;
               }
               else
@@ -67,39 +69,43 @@ bool swOptionTokenSet(swOptionToken *token, const char *argv, swHashMapLinear *n
       token->hasValue = true;
       rtn = true;
     }
-    if (rtn && token->hasName)
+
+    if (rtn)
     {
-      if (!swHashMapLinearValueGet(namedValues, &(token->name), (void **)(&(token->namePair))) && !token->hasValue)
+      if (token->hasName)
       {
-        // find prefix name/value
-        swStaticString nameSubstring = swStaticStringDefineEmpty;
-        swStaticString argumentValue = swStaticStringDefineEmpty;
-        size_t len = 1;
-        while (len < token->name.len)
+        if (!swHashMapLinearValueGet(namedValues, &(token->name), (void **)(&(token->namePair))) && !(token->hasValue))
         {
-          if (swStaticStringSetSubstring(&(token->name), &nameSubstring, 0, len) &&
-              swStaticStringSetSubstring(&(token->name), &argumentValue, len, token->name.len))
+          // find prefix name/value
+          swStaticString nameSubstring = swStaticStringDefineEmpty;
+          swStaticString argumentValue = swStaticStringDefineEmpty;
+          size_t len = 1;
+          while (len < token->name.len)
           {
-            if (swHashMapLinearValueGet(prefixedValues, &nameSubstring, (void **)(&(token->namePair))))
+            if (swStaticStringSetSubstring(&(token->name), &nameSubstring, 0, len) &&
+                swStaticStringSetSubstring(&(token->name), &argumentValue, len, token->name.len))
             {
-              token->name = nameSubstring;
-              token->value = argumentValue;
-              token->hasValue = true;
+              if (swHashMapLinearValueGet(prefixedValues, &nameSubstring, (void **)(&(token->namePair))))
+              {
+                token->name = nameSubstring;
+                token->value = argumentValue;
+                token->hasValue = true;
+                break;
+              }
+            }
+            else
+            {
+              swCommandLineErrorDataSet(errorData, NULL, NULL, swCommandLineErrorCodeInternal);
+              rtn = false;
               break;
             }
+            len++;
           }
-          else
-          {
-            swCommandLineErrorDataSet(errorData, NULL, NULL, swCommandLineErrorCodeInternal);
-            rtn = false;
-            break;
-          }
-          len++;
         }
       }
+      if (hasNoName)
+        swHashMapLinearValueGet(namedValues, &(token->noName), (void **)(&(token->noNamePair)));
     }
-    if (token->hasNoName)
-      swHashMapLinearValueGet(namedValues, &(token->noName), (void **)(&(token->noNamePair)));
   }
   return rtn;
 }

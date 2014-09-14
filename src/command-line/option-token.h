@@ -16,9 +16,9 @@ typedef struct swOptionToken
   swStaticString value;
   swStaticString full;
   unsigned hasName : 1;
-  unsigned hasNoName : 1;
   unsigned hasValue : 1;
   unsigned hasDashDashOnly : 1;
+  unsigned hasDoubleDash : 1;
 } swOptionToken;
 
 bool swOptionTokenSet(swOptionToken *token, const char *argv, swHashMapLinear *namedValues, swHashMapLinear *prefixedValues, swCommandLineErrorData *errorData);

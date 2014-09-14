@@ -396,7 +396,7 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
   return testFramework(argc, argv, basicTestCheck);
 }
 
-static void groupingTestCheck()
+static void groupingTest1Check()
 {
   checkBool("a", true);
   checkBool("b", true);
@@ -412,7 +412,12 @@ swTestDeclare(GroupingTest1, NULL, NULL, swTestRun)
     "-abcd"
   };
 
-  return testFramework(argc, argv, groupingTestCheck);
+  return testFramework(argc, argv, groupingTest1Check);
+}
+
+static void groupingTest2Check()
+{
+  checkSinkStringArray(1, "--abcd");
 }
 
 swTestDeclare(GroupingTest2, NULL, NULL, swTestRun)
@@ -423,10 +428,10 @@ swTestDeclare(GroupingTest2, NULL, NULL, swTestRun)
     "--abcd"
   };
 
-  return testFramework(argc, argv, groupingTestCheck);
+  return testFramework(argc, argv, groupingTest2Check);
 }
 
-static void groupingTestCheck1()
+static void groupingTest3Check()
 {
   checkSinkStringArray(1, "-abcde");
 }
@@ -439,7 +444,7 @@ swTestDeclare(GroupingTest3, NULL, NULL, swTestRun)
     "-abcde"
   };
 
-  return testFramework(argc, argv, groupingTestCheck1);
+  return testFramework(argc, argv, groupingTest3Check);
 }
 
 static void boolValueTest1Check()
@@ -549,7 +554,7 @@ static void multiValueTestCheck()
 
 swTestDeclare(MultiValueTest, NULL, NULL, swTestRun)
 {
-  int argc = 17;
+  int argc = 18;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-mv",
@@ -568,6 +573,7 @@ swTestDeclare(MultiValueTest, NULL, NULL, swTestRun)
     "bla-bla1",
     "bla-bla2",
     "bla-bla3",
+    "--"
   };
 
   return testFramework(argc, argv, multiValueTestCheck);

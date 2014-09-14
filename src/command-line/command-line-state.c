@@ -111,9 +111,9 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
   if (state)
   {
     swOptionToken *token = &state->tokens[state->currentArg];
-    if (token->namePair || token->noNamePair)
+    if (token->hasName)
     {
-      // pricess normal (with or without prefix)
+      // process named option (with or without prefix)
       if (token->namePair)
       {
         bool isMultiValueArray = token->namePair->option->isArray && token->namePair->option->arrayType == swOptionArrayTypeMultiValue;
@@ -136,7 +136,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
         else
         {
           swOptionToken *nextToken = ((state->currentArg + 1) < state->argCount)? &state->tokens[state->currentArg + 1] : NULL;
-          if (nextToken && !nextToken->hasName && nextToken->hasValue)
+          if (nextToken && !nextToken->hasName && !nextToken->hasDashDashOnly)
           {
             state->currentArg++;
             do
@@ -159,7 +159,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
               }
               break;
             }
-            while(nextToken && !nextToken->hasName && nextToken->hasValue);
+            while (nextToken && !nextToken->hasName && !nextToken->hasDashDashOnly);
           }
           else if (token->namePair->option->valueType == swOptionValueTypeBool && token->namePair->option->arrayType == swOptionArrayTypeSimple)
           {
@@ -173,7 +173,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
           }
         }
       }
-      else if (token->noNamePair->option->valueType == swOptionValueTypeBool && token->noNamePair->option->arrayType == swOptionArrayTypeSimple)
+      else if (token->noNamePair && token->noNamePair->option->valueType == swOptionValueTypeBool && token->noNamePair->option->arrayType == swOptionArrayTypeSimple)
       {
         if (swOptionValuePairValueSet(&(token->noNamePair->value), falseValue, token->noNamePair->option->isArray))
         {
@@ -183,57 +183,59 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
         else
           swCommandLineErrorDataSet(&(state->clData->errorData), token->noNamePair->option, NULL, swCommandLineErrorCodeInternal);
       }
-    }
-    else if (token->hasName)
-    {
-      // process normal options that allow grouping
-      swOptionValuePair *pairs[token->name.len];
-      memset(pairs, 0, sizeof(pairs));
-      swStaticString nameSubstring = swStaticStringDefineEmpty;
-      size_t position = 0;
-      bool failure = false;
-      // TODO: check that this token starts with single '-', it should be a part of info stored in the option
-      while (position < token->name.len)
+      else
       {
-        if (swStaticStringSetSubstring(&(token->name), &nameSubstring, position, position + 1))
+        // process named options that allow grouping
+        swOptionValuePair *pairs[token->name.len];
+        memset(pairs, 0, sizeof(pairs));
+        swStaticString nameSubstring = swStaticStringDefineEmpty;
+        size_t position = 0;
+        bool failure = false;
+        if (!token->hasDoubleDash)
         {
-          if (swHashMapLinearValueGet(state->clData->namedValues, &nameSubstring, (void **)(&pairs[position])))
+          while (position < token->name.len)
           {
-            swOption *option = pairs[position]->option;
-            if (option->isArray || option->valueType != swOptionValueTypeBool)
+            if (swStaticStringSetSubstring(&(token->name), &nameSubstring, position, position + 1))
+            {
+              if (swHashMapLinearValueGet(state->clData->namedValues, &nameSubstring, (void **)(&pairs[position])))
+              {
+                swOption *option = pairs[position]->option;
+                if (option->isArray || option->valueType != swOptionValueTypeBool)
+                  break;
+              }
+              else
+                break;
+            }
+            else // substring failure
+            {
+              swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
+              failure = true;
               break;
+            }
+            position++;
           }
-          else
-            break;
-        }
-        else // substring failure
-        {
-          swCommandLineErrorDataSet(&(state->clData->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
-          failure = true;
-          break;
-        }
-        position++;
-      }
-      if (position == token->name.len)
-      {
-        position = 0;
-        while (position < token->name.len)
-        {
-          if (!swOptionValuePairValueSet(&(pairs[position]->value), trueValue, pairs[position]->option->isArray))
-          {
-            swCommandLineErrorDataSet(&(state->clData->errorData), pairs[position]->option, NULL, swCommandLineErrorCodeInternal);
-            break;
-          }
-          position++;
         }
         if (position == token->name.len)
         {
-          state->currentArg++;
-          rtn = true;
+          position = 0;
+          while (position < token->name.len)
+          {
+            if (!swOptionValuePairValueSet(&(pairs[position]->value), trueValue, pairs[position]->option->isArray))
+            {
+              swCommandLineErrorDataSet(&(state->clData->errorData), pairs[position]->option, NULL, swCommandLineErrorCodeInternal);
+              break;
+            }
+            position++;
+          }
+          if (position == token->name.len)
+          {
+            state->currentArg++;
+            rtn = true;
+          }
         }
+        else if (!failure)
+          rtn = swCommandLineStateScanSink(state);
       }
-      else if (!failure)
-        rtn = swCommandLineStateScanSink(state);
     }
     else // token does not have name
     {
