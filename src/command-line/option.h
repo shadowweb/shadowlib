@@ -104,6 +104,8 @@ typedef struct swOption
 bool swOptionValidateDefaultValue(swOption *option);
 bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamicArray *valueArray);
 size_t swOptionValueTypeSizeGet(swOptionValueType type);
+char *swOptionValueTypeNameGet(swOptionValueType type);
+void swOptionPrint(swOption *option);
 
 extern bool trueValue;
 extern bool falseValue;

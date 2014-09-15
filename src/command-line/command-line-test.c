@@ -365,9 +365,10 @@ static bool testFramework(int argc, const char *argv[], void (*checkFunc)())
 {
   bool rtn = false;
   swDynamicString *errorString = NULL;
-  if (swCommandLineInit(argc, argv, "This is basic test", &errorString))
+  if (swCommandLineInit(argc, argv, "This is basic test", NULL, &errorString))
   {
-    checkFunc();
+    if (checkFunc)
+      checkFunc();
     rtn = true;
     swCommandLineShutdown();
   }
@@ -1090,6 +1091,34 @@ swTestDeclare(SinkValueTest, NULL, NULL, swTestRun)
   return testFramework(argc, argv, sinkArrayValueTestCheck);
 }
 
+swTestDeclare(NoOptionsTest, NULL, NULL, swTestRun)
+{
+  int argc = 1;
+  const char *argv[] = {
+    program_invocation_name,
+  };
+
+  return testFramework(argc, argv, NULL);
+}
+
+swTestDeclare(PrintHelpTest, NULL, NULL, swTestRun)
+{
+  int argc = 2;
+  const char *argv[] = {
+    program_invocation_name,
+    "--help"
+  };
+
+  bool rtn = false;
+  swDynamicString *errorString = NULL;
+  if (swCommandLineInit(argc, argv, "This is basic test", NULL, &errorString))
+    swCommandLineShutdown();
+  else
+    rtn = true;
+
+  return rtn;
+}
+
 swTestSuiteStructDeclare(CommandLineSimpleTest, NULL, NULL, swTestRun,
                          &BasicTest,
                          &GroupingTest1, &GroupingTest2, &GroupingTest3,
@@ -1097,4 +1126,4 @@ swTestSuiteStructDeclare(CommandLineSimpleTest, NULL, NULL, swTestRun,
                          &MultiValueTest, &CommaSeparatedValueTest1, &CommaSeparatedValueTest2,
                          &PositionalValueTest1, &PositionalValueTest2, &PositionalValueTest3, &PositionalValueTest4, &PositionalValueTest5, &PositionalValueTest6,
                          &ConsumeAfterValueTest1, &ConsumeAfterValueTest2, &ConsumeAfterValueTest3,
-                         &SinkValueTest);
+                         &SinkValueTest, &NoOptionsTest, &PrintHelpTest);

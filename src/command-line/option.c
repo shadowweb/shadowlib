@@ -3,6 +3,7 @@
 
 #include <errno.h>
 #include <math.h>
+#include <stdio.h>
 
 static size_t valueSizes[] =
 {
@@ -113,4 +114,63 @@ bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamic
     }
   }
   return rtn;
+}
+
+static char *swOptionValueTypeName[] =
+{
+  [swOptionValueTypeBool]   = "BOOL",
+  [swOptionValueTypeString] = "STRING",
+  [swOptionValueTypeInt]    = "INT",
+  [swOptionValueTypeDouble] = "DOUBLE",
+};
+
+char *swOptionValueTypeNameGet(swOptionValueType type)
+{
+  if (type > swOptionValueTypeNone && type < swOptionValueTypeMax)
+    return swOptionValueTypeName[type];
+  return NULL;
+}
+
+void swOptionPrint(swOption *option)
+{
+  if (option)
+  {
+    char *valueName = (option->valueDescription)? option->valueDescription : swOptionValueTypeNameGet(option->valueType);
+    if (option->aliases.count)
+    {
+      uint32_t oneLetterCount = 0;
+      printf ("  ");
+      swStaticString *aliases = (swStaticString *)(option->aliases.data);
+      for (uint32_t i = 0; i < option->aliases.count; i++)
+      {
+        if (aliases[i].len == 1)
+        {
+          printf ("%s%s%.*s%s%s", ((oneLetterCount)? ", ": ""), "-", (int)(aliases[i].len), aliases[i].data,
+                  ((option->valueType != swOptionValueTypeBool)? " " : ""),
+                  ((option->valueType != swOptionValueTypeBool)? valueName : ""));
+          oneLetterCount++;
+        }
+      }
+      if (oneLetterCount)
+        printf("\n  ");
+      uint32_t otherCount = 0;
+      for (uint32_t i = 0; i < option->aliases.count; i++)
+      {
+        if (aliases[i].len > 1)
+        {
+          printf ("%s%s%.*s=%s", ((otherCount)? ", ": ""), "--", (int)(aliases[i].len), aliases[i].data, valueName);
+          otherCount++;
+        }
+      }
+      if (otherCount)
+        printf("\n");
+    }
+    else
+    {
+      bool isOneLetter = (option->name.len == 1);
+      printf ("  %s%.*s%s%s\n", ((isOneLetter)? "-" : "--"), (int)(option->name.len), option->name.data, ((isOneLetter)? " " : "="),
+              ((isOneLetter && option->valueType == swOptionValueTypeBool)? "" : valueName));
+    }
+    printf ("\t%s\n", (option->description)? option->description : "NO DESCRIPTION");
+  }
 }

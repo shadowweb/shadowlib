@@ -4,7 +4,7 @@
 #include "collections/static-array.h"
 #include "storage/dynamic-string.h"
 
-bool swCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString);
+bool swCommandLineInit(int argc, const char *argv[], const char *title, const char *usageMessage, swDynamicString **errorString);
 void swCommandLineShutdown();
 
 void swCommandLinePrintUsage();

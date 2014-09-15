@@ -21,8 +21,10 @@ typedef struct swCommandLineData
   swHashMapLinear    *namedValues;        // hash of swOption:name => swOptionValuePair
   swFastArray         requiredValues;     // array of pointers to required swOptionValuePair
   swHashMapLinear    *prefixedValues;     // set of prefixed swOptionValuePair
-  swDynamicString     programName;
+  swDynamicString     programNameShort;
+  swDynamicString     programNameLong;
   swDynamicString     argumentsString;
+  swDynamicString     title;
   swDynamicString     usageMessage;
   swCommandLineErrorData  errorData;
 } swCommandLineData;
@@ -32,5 +34,6 @@ swCommandLineData *swCommandLineDataNew(uint32_t argumentCount);
 bool swCommandLineDataSetCategories(swCommandLineData *commandLineData, swOptionCategory *globalCategory);
 bool swCommandLineDataSetOptions(swCommandLineData *commandLineData);
 bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, const char *argv[]);
+void swCommandLineDataPrintOptions(swCommandLineData *commandLineData);
 
 #endif // SW_COMMANDLINE_COMMANDLINEDATA_H

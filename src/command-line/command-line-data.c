@@ -53,8 +53,10 @@ void swCommandLineDataDelete(swCommandLineData *commandLineData)
     if (commandLineData->categories.size)
       swFastArrayClear(&(commandLineData->categories));
 
-    swDynamicStringRelease(&(commandLineData->programName));
+    swDynamicStringRelease(&(commandLineData->programNameShort));
+    swDynamicStringRelease(&(commandLineData->programNameLong));
     swDynamicStringRelease(&(commandLineData->argumentsString));
+    swDynamicStringRelease(&(commandLineData->title));
     swDynamicStringRelease(&(commandLineData->usageMessage));
     swMemoryFree(commandLineData);
   }
@@ -397,7 +399,7 @@ static bool swCommandLineDataCheckRequired(swCommandLineData *commandLineData)
 bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, const char *argv[])
 {
   bool rtn = false;
-  if (commandLineData && argc && argv)
+  if (commandLineData)
   {
     uint32_t argumentCount = (uint32_t)argc;
     swOptionToken tokens[argumentCount];
@@ -421,4 +423,56 @@ bool swCommandLineDataSetValues(swCommandLineData *commandLineData, int argc, co
     }
   }
   return rtn;
+}
+
+static void swCommandLineDataPrintDefaultUsage(swCommandLineData *commandLineData)
+{
+  if (commandLineData)
+  {
+    printf ("%.*s [OPTION]... ", (int)(commandLineData->programNameShort.len), commandLineData->programNameShort.data);
+    swOptionValuePair *pairs = (swOptionValuePair *)(commandLineData->positionalValues.storage);
+    for (uint32_t i = 0; i < commandLineData->positionalValues.count; i++)
+    {
+      bool isRequired = pairs[i].option->isRequired;
+      char *valueName = (pairs[i].option->valueDescription)? pairs[i].option->valueDescription : swOptionValueTypeNameGet(pairs[i].option->valueType);
+      printf ("%s%s%s ", ((isRequired)? "": "["), valueName, ((isRequired)? "": "]"));
+    }
+    printf("...\n\n");
+  }
+}
+
+static void swCommandLineDataPrintCategory(swOptionCategory *category)
+{
+  if (category)
+  {
+    printf ("%s: %s\n", category->name, category->file);
+    swOption *option = category->options;
+    while (option->valueType > swOptionValueTypeNone)
+    {
+      if (!option->isPositional)
+        swOptionPrint(option);
+      option++;
+    }
+    printf("\n");
+  }
+}
+
+void swCommandLineDataPrintOptions(swCommandLineData *commandLineData)
+{
+  if (commandLineData && swFastArrayCount(commandLineData->categories))
+  {
+    if (commandLineData->title.len)
+      printf ("%.*s\n\n", (int)(commandLineData->title.len), commandLineData->title.data);
+    if (commandLineData->usageMessage.len)
+      printf ("%.*s\n\n", (int)(commandLineData->usageMessage.len), commandLineData->usageMessage.data);
+    else
+      swCommandLineDataPrintDefaultUsage(commandLineData);
+    printf ("OPTIONS:\n\n");
+    for (uint32_t i = 0; i < swFastArrayCount(commandLineData->categories); i++)
+    {
+      swOptionCategory *category = NULL;
+      if (swFastArrayGet(commandLineData->categories, i, category))
+        swCommandLineDataPrintCategory(category);
+    }
+  }
 }

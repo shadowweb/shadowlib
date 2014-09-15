@@ -7,7 +7,7 @@
 static swCommandLineData *commandLineDataGlobal = NULL;
 
 swOptionCategoryModuleDeclare(optionCategoryGlobal, "CommandLine",
-  swOptionDeclareScalar("help", "Print command line help", NULL, NULL, swOptionValueTypeBool, false)
+  swOptionDeclareScalar("h|help", "Print command line help", NULL, NULL, swOptionValueTypeBool, false)
 );
 
 // Possible formats:
@@ -47,7 +47,7 @@ swOptionCategoryModuleDeclare(optionCategoryGlobal, "CommandLine",
 // --option=value
 // -option=value
 
-bool swCommandLineInit(int argc, const char *argv[], const char *usageMessage, swDynamicString **errorString)
+bool swCommandLineInit(int argc, const char *argv[], const char *title, const char *usageMessage, swDynamicString **errorString)
 {
   bool rtn = false;
   if (!commandLineDataGlobal && (argc > 0) && argv)
@@ -60,14 +60,36 @@ bool swCommandLineInit(int argc, const char *argv[], const char *usageMessage, s
       if (swCommandLineDataSetCategories(commandLineDataGlobal, (swOptionCategory *)(&optionCategoryGlobal)) && swCommandLineDataSetOptions(commandLineDataGlobal))
       {
         // set programName
-        if (swFileRealPath(argv[0], &(commandLineDataGlobal->programName)))
+        if (swFileRealPath(argv[0], &(commandLineDataGlobal->programNameLong)))
         {
-          // walk through the arguments, argumentsString, and optionValues
-          if ((argc == 1) || swCommandLineDataSetValues(commandLineDataGlobal, argc - 1, &argv[1]))
+          if (swDynamicStringSetFromCString(&(commandLineDataGlobal->programNameShort), argv[0]))
           {
-            if (!usageMessage || swDynamicStringSetFromCString(&(commandLineDataGlobal->usageMessage), usageMessage))
-              rtn = true;
+            if (!title || swDynamicStringSetFromCString(&(commandLineDataGlobal->title), title))
+            {
+              if (!usageMessage || swDynamicStringSetFromCString(&(commandLineDataGlobal->usageMessage), usageMessage))
+              {
+                // walk through the arguments, argumentsString, and optionValues
+                rtn = swCommandLineDataSetValues(commandLineDataGlobal, argc - 1, &argv[1]);
+                if (rtn)
+                {
+                  bool printUsage = false;
+                  if (swOptionValueGetBool(&(swStaticStringSetFromCstr("help")), &printUsage) && printUsage)
+                  {
+                    swCommandLinePrintUsage();
+                    rtn = false;
+                  }
+                }
+                else
+                  swCommandLinePrintUsage();
+              }
+              else
+                swCommandLineErrorDataSet(&(commandLineDataGlobal->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
+            }
+            else
+              swCommandLineErrorDataSet(&(commandLineDataGlobal->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
           }
+          else
+            swCommandLineErrorDataSet(&(commandLineDataGlobal->errorData), NULL, NULL, swCommandLineErrorCodeInternal);
         }
         else
           swCommandLineErrorDataSet(&(commandLineDataGlobal->errorData), NULL, NULL, swCommandLineErrorCodeRealPath);
@@ -96,8 +118,10 @@ void swCommandLineShutdown()
   }
 }
 
-void swOptionCommandLinePrintUsage()
+void swCommandLinePrintUsage()
 {
+  if (commandLineDataGlobal)
+    swCommandLineDataPrintOptions(commandLineDataGlobal);
 }
 
 static void *swOptionValueGetInternal(swStaticString *name, swOptionValueType type)
