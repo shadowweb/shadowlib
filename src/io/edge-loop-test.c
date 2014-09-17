@@ -1,8 +1,8 @@
-#include "edge-loop.h"
-#include "edge-timer.h"
-#include "edge-signal.h"
-#include "edge-async.h"
-#include "edge-io.h"
+#include "io/edge-loop.h"
+#include "io/edge-timer.h"
+#include "io/edge-signal.h"
+#include "io/edge-async.h"
+#include "io/edge-io.h"
 
 #include "unittest/unittest.h"
 

@@ -372,17 +372,13 @@ static bool testFramework(int argc, const char *argv[], void (*checkFunc)())
     rtn = true;
     swCommandLineShutdown();
   }
-  else
+  else if (errorString)
   {
-    if (errorString)
-    {
-      swTestLogLine("Error processing arguments: '%.*s'\n", (int)(errorString->len), errorString->data);
-      swDynamicStringDelete(errorString);
-    }
+    swTestLogLine("Error processing arguments: '%.*s'\n", (int)(errorString->len), errorString->data);
+    swDynamicStringDelete(errorString);
   }
   return rtn;
 }
-
 
 bool            namedBool       = false;
 int64_t         namedInt        = 0;
