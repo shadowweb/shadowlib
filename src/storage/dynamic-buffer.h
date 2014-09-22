@@ -39,6 +39,7 @@ static inline bool swDynamicBufferSame(const swDynamicBuffer *b1, const swDynami
 }
 
 swDynamicBuffer *swDynamicBufferNew(size_t size);
+bool swDynamicBufferInit(swDynamicBuffer *buffer, size_t size);
 void swDynamicBufferDelete(swDynamicBuffer *buffer);
 
 swDynamicBuffer *swDynamicBufferNewFromStaticBuffer(const swStaticBuffer *staticBuf);

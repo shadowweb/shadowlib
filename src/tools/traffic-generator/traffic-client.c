@@ -1,0 +1,358 @@
+#include "command-line/option-category.h"
+#include "io/tcp-client.h"
+#include "tools/traffic-generator/traffic-client.h"
+#include "tools/traffic-generator/traffic-connection.h"
+
+#include <limits.h>
+#include <stdlib.h>
+
+static swStaticArray ipAddresses          = swStaticArrayDefineEmpty;
+static swStaticArray ports                = swStaticArrayDefineEmpty;
+static swStaticArray connectionsPerPorts  = swStaticArrayDefineEmpty;
+static swStaticArray sendIntervals        = swStaticArrayDefineEmpty;
+
+static int64_t readTimeout       = 0;
+static int64_t writeTimeout      = 0;
+static int64_t connectTimeout    = 0;
+static int64_t reconnectInterval = 0;
+
+swOptionCategoryModuleDeclare(swTrafficClientOptions, "Traffic Generator Client Options",
+  swOptionDeclareArray("connect-ips",           "List of IP addresses that client should connect to",
+    "IP",   &ipAddresses,         0, swOptionValueTypeString,  swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("connect-ports",         "List of ports that client should connect to for each IP",
+    "port", &ports,               0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("connections-per-ports", "Number of client connections for each port",
+    NULL,   &connectionsPerPorts, 0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
+  swOptionDeclareArray("clien-send-interval",   "Send interval in milli seconds for each port",
+    NULL,   &sendIntervals,       0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
+
+  swOptionDeclareScalar("client-read-timeout",        "Client connection read timeout",
+    NULL,   &readTimeout,       swOptionValueTypeInt, false),
+  swOptionDeclareScalar("client-write-timeout",       "Client connection write timeout",
+    NULL,   &writeTimeout,      swOptionValueTypeInt, false),
+  swOptionDeclareScalar("client-connect-timeout",     "Client connection connect timeout",
+    NULL,   &connectTimeout,    swOptionValueTypeInt, false),
+  swOptionDeclareScalar("client-reconnect-interval",  "Client connection write timeout",
+    NULL,   &reconnectInterval, swOptionValueTypeInt, false)
+);
+
+static swDynamicArray *clientConnectionsData = NULL;
+static uint32_t minMessageSize = 0;
+static uint32_t maxMessageSize = 0;
+
+static bool swTrafficClientValidate()
+{
+  bool rtn = false;
+  if (ipAddresses.count == ports.count && ports.count == connectionsPerPorts.count && connectionsPerPorts.count == sendIntervals.count &&
+      ipAddresses.count <= UINT_MAX &&
+      readTimeout >= 0 && writeTimeout >= 0 && connectTimeout >= 0 && reconnectInterval >= 0)
+  {
+    uint32_t i = 0;
+    swStaticString *verifyIpAddresses = (swStaticString *)ipAddresses.data;
+    int64_t *verifyPorts = (int64_t *)ports.data;
+    int64_t *verifyConnectionsPerPort = (int64_t *)connectionsPerPorts.data;
+    int64_t *verifySendIntervals = (int64_t *)sendIntervals.data;
+
+    while (i < ipAddresses.count)
+    {
+      if (verifyIpAddresses[1].len && verifyPorts[i] > 0 && verifyPorts[i] <= USHRT_MAX &&
+          verifyConnectionsPerPort[i] > 0 && verifyConnectionsPerPort[i] <= UINT_MAX &&
+          verifySendIntervals[i] > 0)
+        i++;
+      else
+        break;
+    }
+    if (i == ipAddresses.count)
+      rtn = true;
+  }
+  return rtn;
+}
+
+static void onClientConnected(swTCPClient *client)
+{
+  printf("Client: connected\n");
+  swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
+  if (swEdgeTimerStart(&(clientData->sendTimer), client->loop, clientData->sendInterval, clientData->sendInterval, false))
+    clientData->retrySend = true;
+  else
+    swTCPClientClose(client);
+}
+
+static void swTrafficClientStorageDelete(swDynamicArray *connStorage)
+{
+  if (connStorage)
+  {
+    swDynamicArray *connStorageData = (swDynamicArray *)(connStorage->data);
+    swDynamicArray *connStorageDataLast = connStorageData + connStorage->size;
+    while (connStorageData < connStorageDataLast)
+    {
+      // TODO: per array element cleanup might be needed here
+      swDynamicArrayRelease(connStorageData);
+      connStorageData++;
+    }
+    swDynamicArrayDelete(connStorage);
+  }
+}
+
+static swDynamicArray *swTrafficClietStorageNew(uint32_t portCount, int64_t *connPerPort)
+{
+  swDynamicArray *rtn = NULL;
+  if (portCount && connPerPort)
+  {
+    swDynamicArray *connStorage = swDynamicArrayNew(sizeof(swDynamicArray), portCount);
+    if (connStorage)
+    {
+      swDynamicArray *connStorageData = (swDynamicArray *)(connStorage->data);
+      swDynamicArray *connStorageDataLast = connStorageData + portCount;
+      int64_t *connPerPortPtr = connPerPort;
+      while (connStorageData < connStorageDataLast)
+      {
+        if (swDynamicArrayInit(connStorageData, sizeof(swTrafficConnectionData), (uint32_t)(*connPerPortPtr++)))
+          connStorageData++;
+        else
+          break;
+      }
+      if (connStorageData == connStorageDataLast)
+      {
+        connStorage->count = portCount;
+        rtn = connStorage;
+      }
+      else
+                swTrafficClientStorageDelete(connStorage);
+    }
+  }
+  return rtn;
+}
+
+static swDynamicArray *swTrafficClientStorageGet(swDynamicArray *connStorage, uint32_t portPosition)
+{
+  swDynamicArray *rtn = NULL;
+  if (connStorage && (portPosition < connStorage->count))
+    rtn = (swDynamicArray *)(connStorage->data) + portPosition;
+  return rtn;
+}
+
+
+static void onClientClose(swTCPClient *client)
+{
+  printf("Client: close\n");
+  swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
+  swEdgeTimerStop(&(clientData->sendTimer));
+}
+
+static void onClientStop(swTCPClient *client)
+{
+  printf("Client: stop\n");
+}
+
+static void onClientReadReady(swTCPClient *client)
+{
+  swSocketReturnType ret = swSocketReturnNone;
+  swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
+  swStaticBuffer *buffer = (swStaticBuffer *)&(clientData->sendBuffer);
+  ssize_t bytesRead = 0;
+  for (uint32_t i = 0; i < 10; i++)
+  {
+    ret = swTCPClientRead(client, buffer, &bytesRead);
+    if (ret != swSocketReturnOK)
+      break;
+    clientData->bytesReceived += bytesRead;
+  }
+  // TODO: not sure if need to initiate connection teardown on failed read
+  // so, test it
+  if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
+    printf ("'%s': write failed\n", __func__);
+}
+
+static void onClientWriteReady(swTCPClient *client)
+{
+  swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
+  if (clientData->retrySend)
+  {
+    swSocketReturnType ret = swSocketReturnNone;
+    swStaticBuffer *buffer = (swStaticBuffer *)&(clientData->sendBuffer);
+    buffer->len = minMessageSize + rand()%(maxMessageSize - minMessageSize + 1);
+    ssize_t bytesWritten = 0;
+    ret = swTCPClientWrite(client, buffer, &bytesWritten);
+    if (ret == swSocketReturnOK)
+    {
+      clientData->bytesSent += bytesWritten;
+      clientData->retrySend = false;
+    }
+    // TODO: not sure if need to initiate connection teardown on failed write
+    // so, test it
+    if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
+      printf ("'%s': write failed\n", __func__);
+  }
+}
+
+static bool onClientReadTimeout(swTCPClient *client)
+{
+  printf ("'%s': read timeout\n", __func__);
+  return false;
+}
+
+static bool onClientWriteTimeout(swTCPClient *client)
+{
+  printf ("'%s': write timeout\n", __func__);
+  return false;
+}
+
+static void onClientError(swTCPClient *client, swSocketIOErrorType errorCode)
+{
+  printf("Client: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
+}
+
+static void onSendTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
+{
+  if (timer)
+  {
+    swTrafficConnectionData *clientData = swEdgeWatcherDataGet(timer);
+    swTCPClient *client = (swTCPClient *)(clientData->connection);
+    swStaticBuffer *buffer = (swStaticBuffer *)&(clientData->sendBuffer);
+    buffer->len = minMessageSize + rand()%(maxMessageSize - minMessageSize + 1);
+    ssize_t bytesWritten = 0;
+    swSocketReturnType ret = swSocketReturnNone;
+    ret = swTCPClientWrite(client, buffer, &bytesWritten);
+    if (ret == swSocketReturnOK)
+      clientData->bytesSent += bytesWritten;
+    else if (ret == swSocketReturnNotReady)
+      clientData->retrySend = true;
+    // TODO: not sure if need to initiate connection teardown on failed write
+    // so, test it
+    else
+      printf ("'%s': write failed\n", __func__);
+  }
+}
+
+static bool swTrafficClientCreate(swEdgeLoop *loop, swTrafficConnectionData *connectionData, swStaticString *ip, uint16_t port, uint64_t sendInterval)
+{
+  bool rtn = false;
+  if (loop && connectionData && ip && port)
+  {
+    swSocketAddress address = { 0 };
+    if (swSocketAddressInitInet(&address, ip->data, port))
+    {
+      swTCPClient *client = swTCPClientNew();
+      if (client)
+      {
+        // set callbacks and timeouts
+        swTCPClientConnectTimeoutSet(client, connectTimeout);
+        swTCPClientReconnectTimeoutSet(client, reconnectInterval);
+        swTCPClientConnectedFuncSet(client, onClientConnected);
+        swTCPClientCloseFuncSet(client, onClientClose);
+        swTCPClientStopFuncSet(client, onClientStop);
+
+        swTCPClientReadTimeoutSet(client, readTimeout);
+        swTCPClientWriteTimeoutSet(client, writeTimeout);
+        swTCPClientReadReadyFuncSet(client, onClientReadReady);
+        swTCPClientWriteReadyFuncSet(client, onClientWriteReady);
+        swTCPClientReadTimeoutFuncSet(client, onClientReadTimeout);
+        swTCPClientWriteTimeoutFuncSet(client, onClientWriteTimeout);
+        swTCPClientErrorFuncSet(client, onClientError);
+
+        if (swTCPClientStart(client, &address, loop, NULL))
+        {
+          if (swTrafficConnectionDataInit(connectionData, (swSocketIO *)client, onSendTimerCallback, sendInterval, maxMessageSize))
+          {
+            swTCPClientDataSet(client, connectionData);
+            rtn = true;
+          }
+        }
+        else
+          swTCPClientDelete(client);
+      }
+    }
+  }
+  return rtn;
+}
+
+static void swTrafficClientDestroy(swTCPClient *client)
+{
+  if (client)
+  {
+    swTCPClientStop(client);
+    swTCPClientDelete(client);
+  }
+}
+
+static void *trafficClientArrayData[3] = {NULL};
+
+static void swTrafficClientStop()
+{
+  if (clientConnectionsData)
+  {
+    uint32_t portCount = clientConnectionsData->count;
+    for (uint32_t i = 0; i < portCount; i++)
+    {
+      swDynamicArray *connDataArray = swTrafficClientStorageGet(clientConnectionsData, i);
+      if (connDataArray)
+      {
+        swTrafficConnectionData *connData = (swTrafficConnectionData *)connDataArray->data;
+        for (uint32_t j = 0; j < connDataArray->count; j++)
+        {
+          swTCPClient *client = (swTCPClient *)(connData[i].connection);
+          swTrafficClientDestroy(client);
+          swTrafficConnectionDataRelease(&(connData[i]));
+        }
+      }
+    }
+        swTrafficClientStorageDelete(clientConnectionsData);
+    clientConnectionsData = NULL;
+  }
+}
+
+static bool swTrafficClientStart()
+{
+  bool rtn = false;
+  if (trafficClientArrayData[0] && trafficClientArrayData[1] && trafficClientArrayData[2])
+  {
+    swEdgeLoop *loop = trafficClientArrayData[0];
+    minMessageSize = *((uint32_t *)(trafficClientArrayData[1]));
+    maxMessageSize = *((uint32_t *)(trafficClientArrayData[2]));
+    if (swTrafficClientValidate())
+    {
+      int64_t *connectionsPerPort = (int64_t *)connectionsPerPorts.data;
+      if ((clientConnectionsData = swTrafficClietStorageNew(ipAddresses.count, connectionsPerPort)))
+      {
+        swStaticString *ipAddress = (swStaticString *)ipAddresses.data;
+        int64_t *port = (int64_t *)ports.data;
+        int64_t *sendInterval = (int64_t *)sendIntervals.data;
+
+        uint32_t i = 0;
+        while (i < ipAddresses.count)
+        {
+          swDynamicArray *storageDataArray = swTrafficClientStorageGet(clientConnectionsData, i);
+          swTrafficConnectionData *connectionDataPtr = (swTrafficConnectionData *)(storageDataArray->data);
+          int64_t j = 0;
+          while (j < connectionsPerPort[i])
+          {
+            if (swTrafficClientCreate(loop, connectionDataPtr++, &(ipAddress[i]), port[i], sendInterval[i]))
+              j++;
+            else
+              break;
+          }
+          if (j == connectionsPerPort[i])
+            i++;
+          else
+            break;
+        }
+        if (i == ipAddresses.count)
+          rtn = true;
+        else
+          swTrafficClientStop();
+      }
+    }
+  }
+  return rtn;
+}
+
+static swInitData trafficClientData = {.startFunc = swTrafficClientStart, .stopFunc = swTrafficClientStop, .name = "Traffic Clients"};
+
+swInitData *swTrafficClientDataGet(swEdgeLoop *loop, int64_t *minMessageSize, int64_t *maxMessageSize)
+{
+  trafficClientArrayData[0] = loop;
+  trafficClientArrayData[1] = minMessageSize;
+  trafficClientArrayData[2] = maxMessageSize;
+  return &trafficClientData;
+}

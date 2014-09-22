@@ -18,6 +18,20 @@ swDynamicBuffer *swDynamicBufferNew(size_t size)
   return rtn;
 }
 
+bool swDynamicBufferInit(swDynamicBuffer *buffer, size_t size)
+{
+  bool rtn = false;
+  if (buffer && size)
+  {
+    if ((buffer->data = swMemoryMalloc(size)))
+    {
+      buffer->size = size;
+      rtn = true;
+    }
+  }
+  return rtn;
+}
+
 void swDynamicBufferDelete(swDynamicBuffer *buffer)
 {
   if (buffer)
