@@ -21,7 +21,7 @@ static bool swInitIOEdgeLoopStart()
 
 static void swInitIOEdgeLoopStop()
 {
-  swEdgeLoop **loopPtr = edgeLoopArrayData[0];
+  swEdgeLoop **loopPtr = (swEdgeLoop **)edgeLoopArrayData[0];
   if (loopPtr && *loopPtr)
   {
     swEdgeLoopDelete(*loopPtr);
@@ -51,12 +51,12 @@ static void signalCallback(swEdgeSignal *signalWatcher, struct signalfd_siginfo 
 static bool swInitIOEdgeSignalsStart()
 {
   bool rtn = false;
-  swEdgeLoop *loop = edgeLoopArrayData[0];
-  if (loop)
+  swEdgeLoop **loopPtr = edgeLoopArrayData[0];
+  if (loopPtr && *loopPtr)
   {
     if (swEdgeSignalInit(&signalWatcher, signalCallback))
     {
-      if (swEdgeSignalStart(&signalWatcher, loop, mask))
+      if (swEdgeSignalStart(&signalWatcher, *loopPtr, mask))
       {
         signal(SIGPIPE, SIG_IGN);
         rtn = true;
@@ -73,18 +73,18 @@ static void swInitIOEdgeSignalsStop()
   swEdgeSignalStop(&signalWatcher);
   swEdgeSignalClose(&signalWatcher);
   memset(&signalWatcher, 0, sizeof(swEdgeSignal));
-  edgeLoopArrayData[0] = NULL;
+  edgeSignalsArrayData[0] = NULL;
 }
 
 static swInitData edgeSignalsData = {.startFunc = swInitIOEdgeSignalsStart, .stopFunc = swInitIOEdgeSignalsStop, .name = "Signals"};
 
-swInitData *swInitIOEdgeSignalsDataGet(swEdgeLoop *loop, ...)
+swInitData *swInitIOEdgeSignalsDataGet(swEdgeLoop **loopPtr, ...)
 {
-  edgeSignalsArrayData[0] = loop;
+  edgeSignalsArrayData[0] = loopPtr;
 
   sigemptyset(&mask);
   va_list argPtr;
-  va_start(argPtr, loop);
+  va_start(argPtr, loopPtr);
   while (1)
   {
     int signal = va_arg(argPtr, int);

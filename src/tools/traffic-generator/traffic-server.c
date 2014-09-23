@@ -357,9 +357,9 @@ static void swTrafficServerStop()
 static bool swTrafficServerStart()
 {
   bool rtn = false;
-  if (trafficServerArrayData[0] && trafficServerArrayData[1] && trafficServerArrayData[2])
+  swEdgeLoop **loopPtr = (swEdgeLoop **)trafficServerArrayData[0];
+  if (loopPtr && *loopPtr && trafficServerArrayData[1] && trafficServerArrayData[2])
   {
-    swEdgeLoop *loop = trafficServerArrayData[0];
     minMessageSize = *((uint32_t *)(trafficServerArrayData[1]));
     maxMessageSize = *((uint32_t *)(trafficServerArrayData[2]));
     if (swTrafficServerValidate())
@@ -374,7 +374,7 @@ static bool swTrafficServerStart()
         uint32_t i = 0;
         while (i < ipAddresses.count)
         {
-          if ((acceptorData->acceptor = swTrafficServerNew(loop, acceptorData, &(ipAddress[i]), port[i], sendInterval[i])))
+          if ((acceptorData->acceptor = swTrafficServerNew(*loopPtr, acceptorData, &(ipAddress[i]), port[i], sendInterval[i])))
           {
             acceptorData->portPosition = i;
             i++;
@@ -395,9 +395,9 @@ static bool swTrafficServerStart()
 
 static swInitData trafficServerData = {.startFunc = swTrafficServerStart, .stopFunc = swTrafficServerStop, .name = "Traffic Servers"};
 
-swInitData *swTrafficServerDataGet(swEdgeLoop *loop, int64_t *minMessageSize, int64_t *maxMessageSize)
+swInitData *swTrafficServerDataGet(swEdgeLoop **loopPtr, int64_t *minMessageSize, int64_t *maxMessageSize)
 {
-  trafficServerArrayData[0] = loop;
+  trafficServerArrayData[0] = loopPtr;
   trafficServerArrayData[1] = minMessageSize;
   trafficServerArrayData[2] = maxMessageSize;
   return &trafficServerData;

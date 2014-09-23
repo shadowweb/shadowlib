@@ -5,6 +5,6 @@
 #include "io/edge-loop.h"
 
 swInitData *swInitIOEdgeLoopDataGet(swEdgeLoop **loopPtr);
-swInitData *swInitIOEdgeSignalsDataGet(swEdgeLoop *loop, ...);
+swInitData *swInitIOEdgeSignalsDataGet(swEdgeLoop **loopPtr, ...);
 
 #endif // SW_INIT_INITIO_H

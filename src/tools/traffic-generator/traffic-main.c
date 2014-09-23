@@ -32,9 +32,9 @@ int main (int argc, char *argv[])
   {
     swInitCommandLineDataGet(&argc, argv, "Traffic Generator Program", NULL),
     swInitIOEdgeLoopDataGet(&loop),
-    swInitIOEdgeSignalsDataGet(loop, SIGINT, SIGHUP, SIGQUIT, SIGTERM, SIGUSR1, SIGUSR2),
-    swTrafficClientDataGet(loop, &minMessageSize, &maxMessageSize),
-    swTrafficServerDataGet(loop, &minMessageSize, &maxMessageSize),
+    swInitIOEdgeSignalsDataGet(&loop, SIGINT, SIGHUP, SIGQUIT, SIGTERM, SIGUSR1, SIGUSR2, 0),
+    swTrafficClientDataGet(&loop, &minMessageSize, &maxMessageSize),
+    swTrafficServerDataGet(&loop, &minMessageSize, &maxMessageSize),
     swInitLastGet
   };
 

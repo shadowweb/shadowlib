@@ -17,9 +17,9 @@ static int64_t connectTimeout    = 0;
 static int64_t reconnectInterval = 0;
 
 swOptionCategoryModuleDeclare(swTrafficClientOptions, "Traffic Generator Client Options",
-  swOptionDeclareArray("connect-ips",           "List of IP addresses that client should connect to",
+  swOptionDeclareArray("connect-ip",            "List of IP addresses that client should connect to",
     "IP",   &ipAddresses,         0, swOptionValueTypeString,  swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("connect-ports",         "List of ports that client should connect to for each IP",
+  swOptionDeclareArray("connect-port",          "List of ports that client should connect to for each IP",
     "port", &ports,               0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
   swOptionDeclareArray("connections-per-ports", "Number of client connections for each port",
     NULL,   &connectionsPerPorts, 0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
@@ -305,9 +305,9 @@ static void swTrafficClientStop()
 static bool swTrafficClientStart()
 {
   bool rtn = false;
-  if (trafficClientArrayData[0] && trafficClientArrayData[1] && trafficClientArrayData[2])
+  swEdgeLoop **loopPtr = (swEdgeLoop **)trafficClientArrayData[0];
+  if (loopPtr && *loopPtr && trafficClientArrayData[1] && trafficClientArrayData[2])
   {
-    swEdgeLoop *loop = trafficClientArrayData[0];
     minMessageSize = *((uint32_t *)(trafficClientArrayData[1]));
     maxMessageSize = *((uint32_t *)(trafficClientArrayData[2]));
     if (swTrafficClientValidate())
@@ -327,7 +327,7 @@ static bool swTrafficClientStart()
           int64_t j = 0;
           while (j < connectionsPerPort[i])
           {
-            if (swTrafficClientCreate(loop, connectionDataPtr++, &(ipAddress[i]), port[i], sendInterval[i]))
+            if (swTrafficClientCreate(*loopPtr, connectionDataPtr++, &(ipAddress[i]), port[i], sendInterval[i]))
               j++;
             else
               break;
@@ -349,9 +349,9 @@ static bool swTrafficClientStart()
 
 static swInitData trafficClientData = {.startFunc = swTrafficClientStart, .stopFunc = swTrafficClientStop, .name = "Traffic Clients"};
 
-swInitData *swTrafficClientDataGet(swEdgeLoop *loop, int64_t *minMessageSize, int64_t *maxMessageSize)
+swInitData *swTrafficClientDataGet(swEdgeLoop **loopPtr, int64_t *minMessageSize, int64_t *maxMessageSize)
 {
-  trafficClientArrayData[0] = loop;
+  trafficClientArrayData[0] = loopPtr;
   trafficClientArrayData[1] = minMessageSize;
   trafficClientArrayData[2] = maxMessageSize;
   return &trafficClientData;

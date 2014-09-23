@@ -132,9 +132,7 @@ swEdgeLoop *swEdgeLoopNew()
           swFastArrayInit(&(newLoop->pendingEvents[1]), sizeof(swEdgeWatcher *), SW_EPOLLEVENTS_SIZE))
       {
         if ((newLoop->fd = epoll_create1(EPOLL_CLOEXEC)) >= 0)
-        {
           rtn = newLoop;
-        }
       }
     }
     if (!rtn)

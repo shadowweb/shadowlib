@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-// #include <stdio.h>
 
 bool swEdgeSignalInit(swEdgeSignal *signalWatcher, swEdgeSignalCallback cb)
 {

@@ -15,6 +15,6 @@ typedef struct swTrafficAcceptorData
   uint32_t firstFree;
 } swTrafficAcceptorData;
 
-swInitData *swTrafficServerDataGet(swEdgeLoop *loop, int64_t *minMessageSize, int64_t *maxMessageSize);
+swInitData *swTrafficServerDataGet(swEdgeLoop **loopPtr, int64_t *minMessageSize, int64_t *maxMessageSize);
 
 #endif  // SW_TOOLS_TRAFFICGENERATOR_TRAFFICSERVER_H
