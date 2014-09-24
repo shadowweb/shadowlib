@@ -364,30 +364,35 @@ static bool swTrafficServerStart()
     maxMessageSize = *((uint32_t *)(trafficServerArrayData[2]));
     if (swTrafficServerValidate())
     {
-      if ((serverAcceptorsData = swTrafficServerStorageNew(ipAddresses.count)))
+      if (ipAddresses.count)
       {
-        swStaticString *ipAddress = (swStaticString *)ipAddresses.data;
-        int64_t *port = (int64_t *)ports.data;
-        int64_t *sendInterval = (int64_t *)sendIntervals.data;
-        swTrafficAcceptorData *acceptorData = (swTrafficAcceptorData *)(serverAcceptorsData->data);
-
-        uint32_t i = 0;
-        while (i < ipAddresses.count)
+        if ((serverAcceptorsData = swTrafficServerStorageNew(ipAddresses.count)))
         {
-          if ((acceptorData->acceptor = swTrafficServerNew(*loopPtr, acceptorData, &(ipAddress[i]), port[i], sendInterval[i])))
+          swStaticString *ipAddress = (swStaticString *)ipAddresses.data;
+          int64_t *port = (int64_t *)ports.data;
+          int64_t *sendInterval = (int64_t *)sendIntervals.data;
+          swTrafficAcceptorData *acceptorData = (swTrafficAcceptorData *)(serverAcceptorsData->data);
+
+          uint32_t i = 0;
+          while (i < ipAddresses.count)
           {
-            acceptorData->portPosition = i;
-            i++;
-            acceptorData++;
+            if ((acceptorData->acceptor = swTrafficServerNew(*loopPtr, acceptorData, &(ipAddress[i]), port[i], sendInterval[i])))
+            {
+              acceptorData->portPosition = i;
+              i++;
+              acceptorData++;
+            }
+            else
+              break;
           }
+          if (i == ipAddresses.count)
+            rtn = true;
           else
-            break;
+            swTrafficServerStop();
         }
-        if (i == ipAddresses.count)
-          rtn = true;
-        else
-          swTrafficServerStop();
       }
+      else
+        rtn = true;
     }
   }
   return rtn;

@@ -312,36 +312,41 @@ static bool swTrafficClientStart()
     maxMessageSize = *((uint32_t *)(trafficClientArrayData[2]));
     if (swTrafficClientValidate())
     {
-      int64_t *connectionsPerPort = (int64_t *)connectionsPerPorts.data;
-      if ((clientConnectionsData = swTrafficClietStorageNew(ipAddresses.count, connectionsPerPort)))
+      if (ipAddresses.count)
       {
-        swStaticString *ipAddress = (swStaticString *)ipAddresses.data;
-        int64_t *port = (int64_t *)ports.data;
-        int64_t *sendInterval = (int64_t *)sendIntervals.data;
-
-        uint32_t i = 0;
-        while (i < ipAddresses.count)
+        int64_t *connectionsPerPort = (int64_t *)connectionsPerPorts.data;
+        if ((clientConnectionsData = swTrafficClietStorageNew(ipAddresses.count, connectionsPerPort)))
         {
-          swDynamicArray *storageDataArray = swTrafficClientStorageGet(clientConnectionsData, i);
-          swTrafficConnectionData *connectionDataPtr = (swTrafficConnectionData *)(storageDataArray->data);
-          int64_t j = 0;
-          while (j < connectionsPerPort[i])
+          swStaticString *ipAddress = (swStaticString *)ipAddresses.data;
+          int64_t *port = (int64_t *)ports.data;
+          int64_t *sendInterval = (int64_t *)sendIntervals.data;
+
+          uint32_t i = 0;
+          while (i < ipAddresses.count)
           {
-            if (swTrafficClientCreate(*loopPtr, connectionDataPtr++, &(ipAddress[i]), port[i], sendInterval[i]))
-              j++;
+            swDynamicArray *storageDataArray = swTrafficClientStorageGet(clientConnectionsData, i);
+            swTrafficConnectionData *connectionDataPtr = (swTrafficConnectionData *)(storageDataArray->data);
+            int64_t j = 0;
+            while (j < connectionsPerPort[i])
+            {
+              if (swTrafficClientCreate(*loopPtr, connectionDataPtr++, &(ipAddress[i]), port[i], sendInterval[i]))
+                j++;
+              else
+                break;
+            }
+            if (j == connectionsPerPort[i])
+              i++;
             else
               break;
           }
-          if (j == connectionsPerPort[i])
-            i++;
+          if (i == ipAddresses.count)
+            rtn = true;
           else
-            break;
+            swTrafficClientStop();
         }
-        if (i == ipAddresses.count)
-          rtn = true;
-        else
-          swTrafficClientStop();
       }
+      else
+        rtn = true;
     }
   }
   return rtn;

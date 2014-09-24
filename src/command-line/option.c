@@ -152,8 +152,8 @@ void swOptionPrint(swOption *option)
         if (aliases[i].len == 1)
         {
           charactersCount += printf ("%s%s%.*s%s%s", ((oneLetterCount)? ", ": ""), "-", (int)(aliases[i].len), aliases[i].data,
-                  ((option->valueType != swOptionValueTypeBool)? " " : ""),
-                  ((option->valueType != swOptionValueTypeBool)? valueName : ""));
+                                      ((option->valueType != swOptionValueTypeBool)? " " : ""),
+                                      ((option->valueType != swOptionValueTypeBool)? valueName : ""));
           oneLetterCount++;
         }
       }
@@ -173,7 +173,6 @@ void swOptionPrint(swOption *option)
     else
     {
       bool isOneLetter = (option->name.len == 1);
-      // printf ("  %s%.*s%s%s\n", ((isOneLetter)? "-" : "--"), (int)(option->name.len), option->name.data, ((isOneLetter)? " " : "="),
       charactersCount += printf ("%s%.*s%s%s", ((isOneLetter)? "-" : "--"), (int)(option->name.len), option->name.data, ((isOneLetter)? " " : "="),
               ((isOneLetter && option->valueType == swOptionValueTypeBool)? "" : valueName));
     }

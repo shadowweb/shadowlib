@@ -43,9 +43,9 @@ static void *edgeSignalsArrayData[1] = {NULL};
 
 static void signalCallback(swEdgeSignal *signalWatcher, struct signalfd_siginfo *signalReceived, uint32_t events)
 {
-  swEdgeLoop *loop = edgeSignalsArrayData[0];
-  if (loop)
-    swEdgeLoopBreak(loop);
+  swEdgeLoop **loop = (swEdgeLoop **)edgeSignalsArrayData[0];
+  if (loop && *loop)
+    swEdgeLoopBreak(*loop);
 }
 
 static bool swInitIOEdgeSignalsStart()

@@ -1,4 +1,5 @@
 #include "init/init.h"
+#include "utils/colors.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -15,15 +16,15 @@ bool swInitStart (swInitData *data[])
       if (dataPtr->startFunc)
       {
         if (dataPtr->name)
-          printf ("Initializing: %s\n", dataPtr->name);
+          printf ("%sInitializing:%s %s\n", SW_COLOR_ANSI_GREEN, SW_COLOR_ANSI_NORMAL, dataPtr->name);
         if (!dataPtr->startFunc())
         {
           if (dataPtr->name)
-            printf ("Initialization failure: %s\n", dataPtr->name);
+            printf ("%sInitialization failure:%s %s\n", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
           break;
         }
         if (dataPtr->name)
-          printf ("Initialization successful: %s\n", dataPtr->name);
+          printf ("%sInitialization successful:%s %s\n", SW_COLOR_ANSI_GREEN, SW_COLOR_ANSI_NORMAL, dataPtr->name);
       }
       i++;
     }
@@ -39,10 +40,10 @@ bool swInitStart (swInitData *data[])
           if (dataPtr->stopFunc)
           {
             if (dataPtr->name)
-              printf ("Tearing down: %s\n", dataPtr->name);
+              printf ("%sTearing down:%s %s\n", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
             dataPtr->stopFunc();
             if (dataPtr->name)
-              printf ("Tearing down done: %s\n", dataPtr->name);
+              printf ("%sTearing down done:%s %s\n", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
           }
           i--;
         } while (i > 0);
@@ -67,10 +68,10 @@ void swInitStop (swInitData *data[])
         if (dataPtr->stopFunc)
         {
           if (dataPtr->name)
-            printf ("Tearing down: %s\n", dataPtr->name);
+            printf ("%sTearing down:%s %s\n", SW_COLOR_ANSI_BLUE, SW_COLOR_ANSI_NORMAL, dataPtr->name);
           dataPtr->stopFunc();
           if (dataPtr->name)
-            printf ("Tearing down done: %s\n", dataPtr->name);
+            printf ("%sTearing down done:%s %s\n", SW_COLOR_ANSI_BLUE, SW_COLOR_ANSI_NORMAL, dataPtr->name);
         }
         i--;
       } while (i > 0);
