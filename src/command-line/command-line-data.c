@@ -1,6 +1,7 @@
 #include "command-line/command-line-data.h"
 #include "command-line/command-line-state.h"
 #include "core/memory.h"
+#include "utils/colors.h"
 
 static void _fastArrayClear(swFastArray *array)
 {
@@ -445,7 +446,7 @@ static void swCommandLineDataPrintCategory(swOptionCategory *category)
 {
   if (category)
   {
-    printf ("%s: %s\n", category->name, category->file);
+    printf ("%s%s: %s%s\n", SW_COLOR_ANSI_BLUE, category->name, category->file, SW_COLOR_ANSI_NORMAL);
     swOption *option = category->options;
     while (option->valueType > swOptionValueTypeNone)
     {

@@ -6,25 +6,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "unittest.h"
-
-#define SW_COLOR_ANSI_BLACK    "\033[0;30m"
-#define SW_COLOR_ANSI_RED      "\033[0;31m"
-#define SW_COLOR_ANSI_GREEN    "\033[0;32m"
-#define SW_COLOR_ANSI_YELLOW   "\033[0;33m"
-#define SW_COLOR_ANSI_BLUE     "\033[0;34m"
-#define SW_COLOR_ANSI_MAGENTA  "\033[0;35m"
-#define SW_COLOR_ANSI_CYAN     "\033[0;36m"
-#define SW_COLOR_ANSI_GREY     "\033[0;37m"
-#define SW_COLOR_ANSI_DARKGREY "\033[01;30m"
-#define SW_COLOR_ANSI_BRED     "\033[01;31m"
-#define SW_COLOR_ANSI_BGREEN   "\033[01;32m"
-#define SW_COLOR_ANSI_BYELLOW  "\033[01;33m"
-#define SW_COLOR_ANSI_BBLUE    "\033[01;34m"
-#define SW_COLOR_ANSI_BMAGENTA "\033[01;35m"
-#define SW_COLOR_ANSI_BCYAN    "\033[01;36m"
-#define SW_COLOR_ANSI_WHITE    "\033[01;37m"
-#define SW_COLOR_ANSI_NORMAL   "\033[0m"
+#include "unittest/unittest.h"
+#include "utils/colors.h"
 
 #define SW_TIME_FORMAT  "(%05.3lfms %05.3lfus %"PRIu64"ns)"
 #define SW_TIME_FORMAT_PRINT(t) (double)(t)/1000000.0, (double)(t)/1000.0, (t)

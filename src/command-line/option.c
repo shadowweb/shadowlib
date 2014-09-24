@@ -1,5 +1,6 @@
 #include "command-line/option.h"
 #include "command-line/option-value-pair.h"
+#include "utils/colors.h"
 
 #include <errno.h>
 #include <math.h>
@@ -131,46 +132,56 @@ char *swOptionValueTypeNameGet(swOptionValueType type)
   return NULL;
 }
 
+static char *spacePrefix = "                                        ";
+#define SW_OPTION_DESCRIPTION_OFFSET    40
+
 void swOptionPrint(swOption *option)
 {
   if (option)
   {
+    int charactersCount = 0;
     char *valueName = (option->valueDescription)? option->valueDescription : swOptionValueTypeNameGet(option->valueType);
+    charactersCount += printf ("  ");
+    printf ("%s", SW_COLOR_ANSI_GREEN);
     if (option->aliases.count)
     {
       uint32_t oneLetterCount = 0;
-      printf ("  ");
       swStaticString *aliases = (swStaticString *)(option->aliases.data);
       for (uint32_t i = 0; i < option->aliases.count; i++)
       {
         if (aliases[i].len == 1)
         {
-          printf ("%s%s%.*s%s%s", ((oneLetterCount)? ", ": ""), "-", (int)(aliases[i].len), aliases[i].data,
+          charactersCount += printf ("%s%s%.*s%s%s", ((oneLetterCount)? ", ": ""), "-", (int)(aliases[i].len), aliases[i].data,
                   ((option->valueType != swOptionValueTypeBool)? " " : ""),
                   ((option->valueType != swOptionValueTypeBool)? valueName : ""));
           oneLetterCount++;
         }
       }
       if (oneLetterCount)
-        printf("\n  ");
+        charactersCount += printf(", ");
+
       uint32_t otherCount = 0;
       for (uint32_t i = 0; i < option->aliases.count; i++)
       {
         if (aliases[i].len > 1)
         {
-          printf ("%s%s%.*s=%s", ((otherCount)? ", ": ""), "--", (int)(aliases[i].len), aliases[i].data, valueName);
+          charactersCount += printf ("%s%s%.*s=%s", ((otherCount)? ", ": ""), "--", (int)(aliases[i].len), aliases[i].data, valueName);
           otherCount++;
         }
       }
-      if (otherCount)
-        printf("\n");
     }
     else
     {
       bool isOneLetter = (option->name.len == 1);
-      printf ("  %s%.*s%s%s\n", ((isOneLetter)? "-" : "--"), (int)(option->name.len), option->name.data, ((isOneLetter)? " " : "="),
+      // printf ("  %s%.*s%s%s\n", ((isOneLetter)? "-" : "--"), (int)(option->name.len), option->name.data, ((isOneLetter)? " " : "="),
+      charactersCount += printf ("%s%.*s%s%s", ((isOneLetter)? "-" : "--"), (int)(option->name.len), option->name.data, ((isOneLetter)? " " : "="),
               ((isOneLetter && option->valueType == swOptionValueTypeBool)? "" : valueName));
     }
-    printf ("\t%s\n", (option->description)? option->description : "NO DESCRIPTION");
+    printf ("%s", SW_COLOR_ANSI_NORMAL);
+    if (charactersCount >= SW_OPTION_DESCRIPTION_OFFSET)
+      printf ("\n%.*s", SW_OPTION_DESCRIPTION_OFFSET, spacePrefix);
+    else
+      printf ("%.*s", (SW_OPTION_DESCRIPTION_OFFSET - charactersCount), spacePrefix);
+    printf ("%s\n", ((option->description)? option->description : "NO DESCRIPTION"));
   }
 }
