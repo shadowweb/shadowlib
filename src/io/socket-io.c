@@ -36,16 +36,21 @@ void swSocketIOClose(swSocketIO *io, swSocketIOErrorType errorCode)
 {
   if (io)
   {
-    if (errorCode && io->errorFunc)
-      io->errorFunc(io, errorCode);
-    // cleanup IO watcher before closing the socket, otherwise epoll_ctl is not going to like
-    // this file descriptor
-    swEdgeIOStop(&(io->ioEvent));
-    swEdgeTimerStop(&(io->readTimer));
-    swEdgeTimerStop(&(io->writeTimer));
-    io->socketCleanupFunc(io);
-    if (io->closeFunc)
-      io->closeFunc(io);
+    if (!(io->insideIOEventCallback))
+    {
+      if (errorCode && io->errorFunc)
+        io->errorFunc(io, errorCode);
+      // cleanup IO watcher before closing the socket, otherwise epoll_ctl is not going to like
+      // this file descriptor
+      swEdgeIOStop(&(io->ioEvent));
+      swEdgeTimerStop(&(io->readTimer));
+      swEdgeTimerStop(&(io->writeTimer));
+      io->socketCleanupFunc(io);
+      if (io->closeFunc)
+        io->closeFunc(io);
+    }
+    else
+      io->lastError = errorCode;
   }
 }
 
@@ -88,18 +93,22 @@ static void swSocketIOIOEventCallback(swEdgeIO *ioWatcher, uint32_t events)
   {
     if (!(events & (swEdgeEventError | swEdgeEventHungUp)))
     {
+      io->insideIOEventCallback = true;
       if (events & swEdgeEventRead)
       {
         swEdgeTimerStop(&(io->readTimer));
         if (io->readReadyFunc)
           io->readReadyFunc(io);
       }
-      if (events & swEdgeEventWrite)
+      if ((io->lastError == swSocketIOErrorNone) && (events & swEdgeEventWrite))
       {
         swEdgeTimerStop(&(io->writeTimer));
         if (io->writeReadyFunc)
           io->writeReadyFunc(io);
       }
+      io->insideIOEventCallback = false;
+      if (io->lastError > swSocketIOErrorNone)
+        swSocketIOClose(io, io->lastError);
     }
     else
       swSocketIOClose(io, ((events & swEdgeEventError) ? swSocketIOErrorSocketError : swSocketIOErrorSocketHangUp));
@@ -174,6 +183,7 @@ bool swSocketIOStart(swSocketIO *io, swEdgeLoop *loop)
   bool rtn = false;
   if (io && loop && (((swSocket *)io)->fd >= 0))
   {
+    io->lastError = swSocketIOErrorNone;
     if (swEdgeIOStart(&(io->ioEvent), loop, ((swSocket *)io)->fd, (swEdgeEventRead | swEdgeEventWrite)))
     {
       io->loop = loop;

@@ -62,8 +62,10 @@ struct swSocketIO
 
   swSocketIOSocketCleanupFunc socketCleanupFunc;
 
+  swSocketIOErrorType lastError;
   unsigned int cleaning : 1;
   unsigned int deleting : 1;
+  unsigned int insideIOEventCallback : 1;
 };
 
 swSocketIO *swSocketIONew();

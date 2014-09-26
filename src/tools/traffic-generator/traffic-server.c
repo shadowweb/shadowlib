@@ -15,22 +15,43 @@ static int64_t writeTimeout      = 0;
 
 swOptionCategoryModuleDeclare(swTrafficServerOptions, "Traffic Generator Server Options",
 
-  swOptionDeclareArray("listen-ips", "List of IP addresses that server should listen on",
+  swOptionDeclareArray("listen-ip",             "List of IP addresses that server should listen on",
     "IP",   &ipAddresses,         0, swOptionValueTypeString,  swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("listen-ports", "List of ports that server should listen on (one for each IP)",
+  swOptionDeclareArray("listen-port",           "List of ports that server should listen on (one for each IP)",
     "port", &ports,               0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
-  swOptionDeclareArray("server-send-interval", "Send interval in milli seconds for each port",
+  swOptionDeclareArray("server-send-interval",  "Send interval in milli seconds for each port",
     NULL,   &sendIntervals,       0, swOptionValueTypeInt,     swOptionArrayTypeSimple, false),
 
-  swOptionDeclareScalar("server-read-timeout",
-    "Server connection read timeout",  NULL, &readTimeout,         swOptionValueTypeInt, false),
-  swOptionDeclareScalar("server-write-timeout",
-    "Server connection write timeout", NULL, &writeTimeout,        swOptionValueTypeInt, false)
+  swOptionDeclareScalar("server-read-timeout",  "Server connection read timeout",
+    NULL, &readTimeout,         swOptionValueTypeInt, false),
+  swOptionDeclareScalar("server-write-timeout", "Server connection write timeout",
+    NULL, &writeTimeout,        swOptionValueTypeInt, false)
 );
 
 static swDynamicArray *serverAcceptorsData = NULL;
 static uint32_t minMessageSize = 0;
 static uint32_t maxMessageSize = 0;
+
+/*
+static void swTrafficServerStoragePrint(swDynamicArray *serversStorage)
+{
+  printf ("serverStorage =\n{\n\t%p(size = %u, count = %u, data = %p)\n",
+          (void *)serversStorage, serversStorage->size, serversStorage->count, serversStorage->data);
+  swTrafficAcceptorData *acceptorData = (swTrafficAcceptorData *)(serversStorage->data);
+  for (uint32_t i = 0; i < serversStorage->count; i++)
+  {
+    printf("\t\t%u: acceptor = %p, serverConnections = (s: %u, c: %u, d: %p), sendInterval = %lu, portPosition = %u, firstFree = %u\n",
+           i, (void *)(acceptorData[i].acceptor), acceptorData[i].serverConnections.size, acceptorData[i].serverConnections.count, (void *)(acceptorData[i].serverConnections.data),
+           acceptorData[i].sendInterval, acceptorData[i].portPosition, acceptorData[i].firstFree);
+    swTrafficConnectionData **connections = (swTrafficConnectionData **)(acceptorData[i].serverConnections.data);
+    for (uint32_t j = 0; j < acceptorData[i].serverConnections.count; j++)
+    {
+      printf ("\t\t\t%u: connectionData = %p, connection = %p\n", j, (void *)(connections[i]), (void *)(connections[i]->connection));
+    }
+  }
+  printf ("}\n");
+}
+*/
 
 static void swTrafficServerStorageDelete(swDynamicArray *serversStorage)
 {
@@ -98,7 +119,7 @@ static bool swTrafficServerValidate()
 
     while (i < ipAddresses.count)
     {
-      if (verifyIpAddresses[1].len && verifyPorts[i] > 0 && verifyPorts[i] <= USHRT_MAX &&
+      if (verifyIpAddresses[i].len && verifyPorts[i] > 0 && verifyPorts[i] <= USHRT_MAX &&
           verifySendIntervals[i] > 0)
         i++;
       else
@@ -112,58 +133,51 @@ static bool swTrafficServerValidate()
 
 static bool onAccept(swTCPServerAcceptor *serverAcceptor)
 {
-  printf("Acceptor: accepting connection\n");
+  printf("'%s': accepting connection\n", __func__);
   return true;
 }
 
 static void onStop(swTCPServerAcceptor *serverAcceptor)
 {
-  printf("Acceptor: stopping\n");
+  printf("'%s': stopping\n", __func__);
 }
 
 static void onError(swTCPServerAcceptor *serverAcceptor, swSocketIOErrorType errorCode)
 {
-  printf("Acceptor: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
+  printf("'%s': error \"%s\"\n", __func__, swSocketIOErrorTextGet(errorCode));
 }
 
 static void onServerReadReady(swTCPServer *server)
 {
+  // printf ("'%s': read ready entered\n", __func__);
   swSocketReturnType ret = swSocketReturnNone;
   swTrafficConnectionData *serverData = (swTrafficConnectionData *)swTCPServerDataGet(server);
-  swStaticBuffer *buffer = (swStaticBuffer *)&(serverData->sendBuffer);
+  swStaticBuffer buffer = swStaticBufferDefineWithLength(serverData->receiveBuffer.data, serverData->receiveBuffer.size);
   ssize_t bytesRead = 0;
   for (uint32_t i = 0; i < 10; i++)
   {
-    ret = swTCPServerRead(server, buffer, &bytesRead);
+    ret = swTCPServerRead(server, &buffer, &bytesRead);
     if (ret != swSocketReturnOK)
       break;
     serverData->bytesReceived += bytesRead;
   }
-  // TODO: not sure if need to initiate connection teardown on failed read
-  // so, test it
-  if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
-    printf ("'%s': write failed\n", __func__);
 }
 
 static void onServerWriteReady(swTCPServer *server)
 {
+  // printf ("'%s': write ready entered\n", __func__);
   swTrafficConnectionData *serverData = (swTrafficConnectionData *)swTCPServerDataGet(server);
   if (serverData->retrySend)
   {
     swSocketReturnType ret = swSocketReturnNone;
-    swStaticBuffer *buffer = (swStaticBuffer *)&(serverData->sendBuffer);
-    buffer->len = minMessageSize + rand()%(maxMessageSize - minMessageSize + 1);
+    swStaticBuffer buffer = swStaticBufferDefineWithLength(serverData->sendBuffer.data, minMessageSize + rand()%(maxMessageSize - minMessageSize + 1));
     ssize_t bytesWritten = 0;
-    ret = swTCPServerWrite(server, buffer, &bytesWritten);
+    ret = swTCPServerWrite(server, &buffer, &bytesWritten);
     if (ret == swSocketReturnOK)
     {
-            serverData->bytesSent += bytesWritten;
-            serverData->retrySend = false;
+      serverData->bytesSent += bytesWritten;
+      serverData->retrySend = false;
     }
-    // TODO: not sure if need to initiate connection teardown on failed write
-    // so, test it
-    if (ret != swSocketReturnOK && ret != swSocketReturnNotReady)
-      printf ("'%s': write failed\n", __func__);
   }
 }
 
@@ -181,50 +195,50 @@ static bool onServerWriteTimeout(swTCPServer *server)
 
 static void onServerError(swTCPServer *server, swSocketIOErrorType errorCode)
 {
-  printf("Server: error \"%s\"\n", swSocketIOErrorTextGet(errorCode));
+  printf("'%s': error \"%s\"\n", __func__, swSocketIOErrorTextGet(errorCode));
 }
 
 static void onServerClose(swTCPServer *server)
 {
   printf ("'%s': Server close\n", __func__);
   swTrafficConnectionData *serverData = swTCPServerDataGet(server);
-  swEdgeTimerStop(&(serverData->sendTimer));
-  serverData->connection = NULL;
-  swTrafficAcceptorData *acceptorData = swTrafficServerStorageGet(serverAcceptorsData, serverData->portPosition);
-  if (acceptorData)
+  if (serverData)
   {
-    if ((acceptorData->firstFree > serverData->arrayPosition))
-      acceptorData->firstFree = serverData->arrayPosition;
+    printf ("'%s': bytesSent = %lu, bytesReceived = %lu\n", __func__, serverData->bytesSent, serverData->bytesReceived);
+    swEdgeTimerStop(&(serverData->sendTimer));
+    serverData->connection = NULL;
+    swTrafficAcceptorData *acceptorData = swTrafficServerStorageGet(serverAcceptorsData, serverData->portPosition);
+    if (acceptorData)
+    {
+      if ((acceptorData->firstFree > serverData->arrayPosition))
+        acceptorData->firstFree = serverData->arrayPosition;
+    }
   }
   swTCPServerDelete(server);
 }
 
 static void onSendTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
+  // printf ("'%s': entered\n", __func__);
   if (timer)
   {
     swTrafficConnectionData *serverData = swEdgeWatcherDataGet(timer);
     swTCPServer *server = (swTCPServer *)(serverData->connection);
-    swStaticBuffer *buffer = (swStaticBuffer *)&(serverData->sendBuffer);
-    buffer->len = minMessageSize + rand()%(maxMessageSize - minMessageSize + 1);
     ssize_t bytesWritten = 0;
+    swStaticBuffer buffer = swStaticBufferDefineWithLength(serverData->sendBuffer.data, minMessageSize + rand()%(maxMessageSize - minMessageSize + 1));
     swSocketReturnType ret = swSocketReturnNone;
-    ret = swTCPServerWrite(server, buffer, &bytesWritten);
+    ret = swTCPServerWrite(server, &buffer, &bytesWritten);
     if (ret == swSocketReturnOK)
-            serverData->bytesSent += bytesWritten;
+      serverData->bytesSent += bytesWritten;
     else if (ret == swSocketReturnNotReady)
-            serverData->retrySend = true;
-    // TODO: not sure if need to initiate connection teardown on failed write
-    // so, test it
-    else
-      printf ("'%s': write failed\n", __func__);
+      serverData->retrySend = true;
   }
 }
 
 static bool onConnectionSetup(swTCPServerAcceptor *serverAcceptor, swTCPServer *server)
 {
   bool rtn = false;
-  printf("Server: new connection setup\n");
+  printf("'%s': new connection setup for %p\n", __func__, (void *)server);
   if (serverAcceptor)
   {
     swTrafficAcceptorData *acceptorData = swTCPServerAcceptorDataGet(serverAcceptor);
@@ -241,28 +255,33 @@ static bool onConnectionSetup(swTCPServerAcceptor *serverAcceptor, swTCPServer *
         swTCPServerErrorFuncSet       (server, onServerError);
         swTCPServerCloseFuncSet       (server, onServerClose);
 
-        swTrafficConnectionData **connections = (swTrafficConnectionData **)acceptorData->serverConnections.data;
+        swTrafficConnectionData **connections = (swTrafficConnectionData **)(acceptorData->serverConnections.data);
         swTrafficConnectionData *serverData = NULL;
         if (acceptorData->firstFree < acceptorData->serverConnections.count)
         {
+          // printf ("have free serverData spot %u\n", acceptorData->firstFree);
           serverData = connections[acceptorData->firstFree];
           serverData->connection = (swSocketIO *)server;
           acceptorData->firstFree++;
           while ((acceptorData->firstFree < acceptorData->serverConnections.count) && !(connections[acceptorData->firstFree]->connection))
             acceptorData->firstFree++;
         }
-        else if ((serverData = swTrafficConnectionDataNew((swSocketIO *)server, onSendTimerCallback, acceptorData->sendInterval, maxMessageSize)))
+        else
         {
-          if (swDynamicArrayPush(&(acceptorData->serverConnections), serverData))
+          // printf ("trying to create serverData\n");
+          if ((serverData = swTrafficConnectionDataNew((swSocketIO *)server, onSendTimerCallback, acceptorData->sendInterval, maxMessageSize)))
           {
-            serverData->portPosition = acceptorData->portPosition;
-            serverData->arrayPosition = acceptorData->firstFree;
-            acceptorData->firstFree++;
-          }
-          else
-          {
-            swTrafficConnectionDataDelete(serverData);
-            serverData = NULL;
+            if (swDynamicArrayPush(&(acceptorData->serverConnections), &serverData))
+            {
+              serverData->portPosition = acceptorData->portPosition;
+              serverData->arrayPosition = acceptorData->firstFree;
+              acceptorData->firstFree++;
+            }
+            else
+            {
+              swTrafficConnectionDataDelete(serverData);
+              serverData = NULL;
+            }
           }
         }
         if (serverData)
@@ -318,10 +337,7 @@ swTCPServerAcceptor *swTrafficServerNew(swEdgeLoop *loop, swTrafficAcceptorData 
 static void swTrafficServerDestroy(swTCPServer *server)
 {
   if (server)
-  {
     swTCPServerStop(server);
-    swTCPServerDelete(server);
-  }
 }
 
 static void *trafficServerArrayData[3] = {NULL};
@@ -336,13 +352,13 @@ static void swTrafficServerStop()
     {
       if (acceptorData->acceptor)
       {
-        swTrafficConnectionData *connData = (swTrafficConnectionData *)(acceptorData->serverConnections.data);
+        swTrafficConnectionData **connData = (swTrafficConnectionData **)(acceptorData->serverConnections.data);
         uint32_t connCount = acceptorData->serverConnections.count;
         for (uint32_t j = 0; j < connCount; j++)
         {
-          swTCPServer *server = (swTCPServer *)(connData[i].connection);
+          swTCPServer *server = (swTCPServer *)(connData[i]->connection);
           swTrafficServerDestroy(server);
-          swTrafficConnectionDataRelease(&(connData[i]));
+          swTrafficConnectionDataDelete(connData[i]);
         }
 
         swTCPServerAcceptorStop(acceptorData->acceptor);

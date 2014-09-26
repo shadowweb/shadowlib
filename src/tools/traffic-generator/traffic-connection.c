@@ -24,6 +24,8 @@ bool swTrafficConnectionDataInit(swTrafficConnectionData *connData, swSocketIO *
     memset(connData, 0, sizeof(*connData));
     if (swDynamicBufferInit(&(connData->sendBuffer), bufferSize) && swDynamicBufferInit(&(connData->receiveBuffer), bufferSize))
     {
+      memset(connData->sendBuffer.data, 0, bufferSize);
+      memset(connData->receiveBuffer.data, 0, bufferSize);
       if (swEdgeTimerInit(&(connData->sendTimer), timerCB, true))
       {
         swEdgeWatcherDataSet(&(connData->sendTimer), connData);

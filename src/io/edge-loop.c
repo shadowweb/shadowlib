@@ -103,8 +103,7 @@ static inline bool swEdgeLoopIOProcess(swEdgeIO *ioWatcher, uint32_t events)
   bool rtn = false;
   if (ioWatcher && ioWatcher->ioCB)
   {
-    // printf("'%s' (%d): calling ioCB with events 0x%x\n",
-    //        __func__, swEdgeIOFDGet(ioWatcher), events);
+    // printf("'%s' (%d): calling ioCB with events 0x%x\n", __func__, swEdgeIOFDGet(ioWatcher), events);
     ioWatcher->ioCB(ioWatcher, events);
     rtn = true;
   }
@@ -305,10 +304,10 @@ void swEdgeLoopPendingPrint(swEdgeLoop *loop)
 {
   if (loop)
   {
-    printf("currentPending = %u\n", loop->currentPending);
+    printf("\tcurrentPending = %u\n", loop->currentPending);
     for (uint8_t i = 0; i < 2; i++)
     {
-      printf("Pending %u: ", i);
+      printf("\t\tPending %u (count = %u): ", i, loop->pendingEvents[i].count);
       for(uint32_t j = 0; j < loop->pendingEvents[i].count; j++)
       {
         swEdgeWatcher *watcher = NULL;
@@ -327,4 +326,3 @@ void swEdgeLoopPendingPrint(swEdgeLoop *loop)
   }
 }
 */
-
