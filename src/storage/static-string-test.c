@@ -198,6 +198,6 @@ swTestDeclare(TestCountChar, NULL, NULL, swTestRun)
   return true;
 }
 
-swTestSuiteStructDeclare(StaticStrungUnittest, NULL, NULL, swTestRun,
+swTestSuiteStructDeclare(StaticStringUnittest, NULL, NULL, swTestRun,
   &TestCompare, &TestEqual, &TestHash, &TestSame, &TestFindChar, &TestSetSubstring, &TestCountChar);
 
