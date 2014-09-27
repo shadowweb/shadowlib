@@ -2,6 +2,8 @@
 
 #include "core/memory.h"
 
+#define SW_TRAFFIC_RECEIVE_BUFFER_SIZE    (4 * 1024 * 1024)
+
 swTrafficConnectionData *swTrafficConnectionDataNew(swSocketIO *connection, swEdgeTimerCallback timerCB, uint64_t sendInterval, uint32_t bufferSize)
 {
   swTrafficConnectionData *rtn = swMemoryMalloc(sizeof(*rtn));
@@ -22,10 +24,10 @@ bool swTrafficConnectionDataInit(swTrafficConnectionData *connData, swSocketIO *
   if (connData && connection && timerCB && sendInterval && bufferSize)
   {
     memset(connData, 0, sizeof(*connData));
-    if (swDynamicBufferInit(&(connData->sendBuffer), bufferSize) && swDynamicBufferInit(&(connData->receiveBuffer), bufferSize))
+    if (swDynamicBufferInit(&(connData->sendBuffer), bufferSize) && swDynamicBufferInit(&(connData->receiveBuffer), SW_TRAFFIC_RECEIVE_BUFFER_SIZE))
     {
       memset(connData->sendBuffer.data, 0, bufferSize);
-      memset(connData->receiveBuffer.data, 0, bufferSize);
+      memset(connData->receiveBuffer.data, 0, SW_TRAFFIC_RECEIVE_BUFFER_SIZE);
       if (swEdgeTimerInit(&(connData->sendTimer), timerCB, true))
       {
         swEdgeWatcherDataSet(&(connData->sendTimer), connData);

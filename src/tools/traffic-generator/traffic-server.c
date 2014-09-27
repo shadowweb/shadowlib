@@ -356,9 +356,9 @@ static void swTrafficServerStop()
         uint32_t connCount = acceptorData->serverConnections.count;
         for (uint32_t j = 0; j < connCount; j++)
         {
-          swTCPServer *server = (swTCPServer *)(connData[i]->connection);
+          swTCPServer *server = (swTCPServer *)(connData[j]->connection);
           swTrafficServerDestroy(server);
-          swTrafficConnectionDataDelete(connData[i]);
+          swTrafficConnectionDataDelete(connData[j]);
         }
 
         swTCPServerAcceptorStop(acceptorData->acceptor);
