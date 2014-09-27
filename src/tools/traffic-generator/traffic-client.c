@@ -57,7 +57,7 @@ static bool swTrafficClientValidate()
     {
       if (verifyIpAddresses[i].len && verifyPorts[i] > 0 && verifyPorts[i] <= USHRT_MAX &&
           verifyConnectionsPerPort[i] > 0 && verifyConnectionsPerPort[i] <= UINT_MAX &&
-          verifySendIntervals[i] > 0)
+          verifySendIntervals[i] >= 0)
         i++;
       else
         break;
@@ -72,7 +72,7 @@ static void onClientConnected(swTCPClient *client)
 {
   printf("'%s': connected\n", __func__);
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
-  if (swEdgeTimerStart(&(clientData->sendTimer), client->loop, clientData->sendInterval, clientData->sendInterval, false))
+  if (!(clientData->sendInterval) || swEdgeTimerStart(&(clientData->sendTimer), client->loop, clientData->sendInterval, clientData->sendInterval, false))
     clientData->retrySend = true;
   else
     swTCPClientClose(client);
@@ -86,7 +86,6 @@ static void swTrafficClientStorageDelete(swDynamicArray *connStorage)
     swDynamicArray *connStorageDataLast = connStorageData + connStorage->size;
     while (connStorageData < connStorageDataLast)
     {
-      // TODO: per array element cleanup might be needed here
       swDynamicArrayRelease(connStorageData);
       connStorageData++;
     }
@@ -138,7 +137,8 @@ static void onClientClose(swTCPClient *client)
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
   if (clientData)
   {
-    swEdgeTimerStop(&(clientData->sendTimer));
+    if (clientData->sendInterval)
+      swEdgeTimerStop(&(clientData->sendTimer));
     printf ("'%s': bytesSent = %lu, bytesReceived = %lu\n", __func__, clientData->bytesSent, clientData->bytesReceived);
   }
 }
@@ -155,7 +155,7 @@ static void onClientReadReady(swTCPClient *client)
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
   swStaticBuffer buffer = swStaticBufferDefineWithLength(clientData->receiveBuffer.data, clientData->receiveBuffer.size);
   ssize_t bytesRead = 0;
-  for (uint32_t i = 0; i < 10; i++)
+  for (uint32_t i = 0; i < 100; i++)
   {
     ret = swTCPClientRead(client, &buffer, &bytesRead);
     if (ret != swSocketReturnOK)
@@ -168,18 +168,8 @@ static void onClientWriteReady(swTCPClient *client)
 {
   // printf ("'%s': write ready entered\n", __func__);
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
-  if (clientData->retrySend)
-  {
-    swSocketReturnType ret = swSocketReturnNone;
-    swStaticBuffer buffer = swStaticBufferDefineWithLength(clientData->sendBuffer.data, minMessageSize + rand()%(maxMessageSize - minMessageSize + 1));
-    ssize_t bytesWritten = 0;
-    ret = swTCPClientWrite(client, &buffer, &bytesWritten);
-    if (ret == swSocketReturnOK)
-    {
-      clientData->bytesSent += bytesWritten;
-      clientData->retrySend = false;
-    }
-  }
+  if (!(clientData->sendInterval) || clientData->retrySend)
+    swTrafficConnectionDataSend(clientData, clientData->connection, minMessageSize);
 }
 
 static bool onClientReadTimeout(swTCPClient *client)
@@ -205,15 +195,7 @@ static void onSendTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint3
   if (timer)
   {
     swTrafficConnectionData *clientData = swEdgeWatcherDataGet(timer);
-    swTCPClient *client = (swTCPClient *)(clientData->connection);
-    swStaticBuffer buffer = swStaticBufferDefineWithLength(clientData->sendBuffer.data, minMessageSize + rand()%(maxMessageSize - minMessageSize + 1));
-    ssize_t bytesWritten = 0;
-    swSocketReturnType ret = swSocketReturnNone;
-    ret = swTCPClientWrite(client, &buffer, &bytesWritten);
-    if (ret == swSocketReturnOK)
-      clientData->bytesSent += bytesWritten;
-    else if (ret == swSocketReturnNotReady)
-      clientData->retrySend = true;
+    swTrafficConnectionDataSend(clientData, clientData->connection, minMessageSize);
   }
 }
 

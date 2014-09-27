@@ -19,12 +19,13 @@ typedef struct swTrafficConnectionData
   uint32_t disconnectedCount;
   uint32_t portPosition;
   uint32_t arrayPosition;
-  bool retrySend;
+  unsigned int retrySend : 1;
 } swTrafficConnectionData;
 
 swTrafficConnectionData *swTrafficConnectionDataNew(swSocketIO *connection, swEdgeTimerCallback timerCB, uint64_t sendInterval, uint32_t bufferSize);
 bool swTrafficConnectionDataInit(swTrafficConnectionData *connData, swSocketIO *connection, swEdgeTimerCallback timerCB, uint64_t sendInterval, uint32_t bufferSize);
 void swTrafficConnectionDataDelete(swTrafficConnectionData *connData);
 void swTrafficConnectionDataRelease(swTrafficConnectionData *connData);
+void swTrafficConnectionDataSend(swTrafficConnectionData *connData, swSocketIO *connection, uint32_t minMessageSize);
 
 #endif  // SW_TOOLS_TRAFFICGENERATOR_TRAFFICCONNECTION_H
