@@ -1,5 +1,5 @@
-#ifndef SW_CORE_MEMORY_H
-#define SW_CORE_MEMORY_H
+#ifndef SW_CORE_TIME_H
+#define SW_CORE_TIME_H
 
 #define SW_TIME_1K  1000
 #define SW_TIME_1M  1000000
@@ -26,4 +26,4 @@
 #define swTimeMSecToUSec(n)     (n)*SW_TIME_1K
 #define swTimeUSecToNSec(n)     (n)*SW_TIME_1K
 
-#endif // SW_CORE_MEMORY_H
+#endif // SW_CORE_TIME_H

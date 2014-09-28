@@ -31,7 +31,15 @@ build $builddir/src/unittest/unittest-test:   link $builddir/src/unittest/unitte
 
 # core library
 build $builddir/src/core/memory.o:            cc src/core/memory.c
-build $builddir/src/core/core.a:              ar $builddir/src/core/memory.o
+build $builddir/src/core/benchmark.o:         cc src/core/benchmark.c
+build $builddir/src/core/core.a:              ar $builddir/src/core/memory.o $builddir/src/core/benchmark.o
+
+# core tests
+build $builddir/src/core/stop-watch-test.o:   cc src/core/stop-watch-test.c
+build $builddir/src/core/stop-watch-test:     link $builddir/src/core/stop-watch-test.o $builddir/src/unittest/unittest.a
+
+build $builddir/src/core/benchmark-test.o:    cc src/core/benchmark-test.c
+build $builddir/src/core/benchmark-test:      link $builddir/src/core/benchmark-test.o $builddir/src/unittest/unittest.a $builddir/src/core/core.a
 
 # collections library
 build $builddir/src/collections/hash-common.o:          cc src/collections/hash-common.c
