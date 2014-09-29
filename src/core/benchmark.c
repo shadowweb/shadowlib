@@ -4,61 +4,60 @@
 
 #include <string.h>
 
-bool swBenchmarkInit(swBenchmark *benchmark, uint32_t loopCount, uint32_t sampleSize, void (*func)())
+bool swBenchmarkReset(swBenchmark *benchmark, uint32_t sampleSize, void (*func)())
 {
   bool rtn = false;
-  if (benchmark && loopCount && sampleSize && func)
+  if (benchmark && sampleSize && func)
   {
     memset(benchmark, 0, sizeof(*benchmark));
-    if ((benchmark->variances = swMemoryMalloc(sampleSize * sizeof(uint64_t))))
-    {
-      if ((benchmark->minValues = swMemoryMalloc(sampleSize * sizeof(uint64_t))))
-      {
-        if ((benchmark->maxDeviations = swMemoryMalloc(sampleSize * sizeof(uint64_t))))
-        {
-          benchmark->loopCount = loopCount;
-          benchmark->sampleSize = sampleSize;
-          benchmark->func = func;
-          rtn = true;
-        }
-      }
-    }
-    if (!rtn)
-      swBenchmarkRelease(benchmark);
+    benchmark->sampleSize = sampleSize;
+    benchmark->func = func;
+    benchmark->min = ULONG_MAX;
+    rtn = true;
   }
   return rtn;
 }
 
-void swBenchmarkRelease(swBenchmark *benchmark)
+static bool swBenchmarkMeasure(swBenchmark *benchmark)
 {
+  bool rtn = false;
   if (benchmark)
   {
-    if (benchmark->variances)
-      swMemoryFree(benchmark->variances);
-    if (benchmark->minValues)
-      swMemoryFree(benchmark->minValues);
-    if (benchmark->maxDeviations)
-      swMemoryFree(benchmark->maxDeviations);
-  }
-}
-
-// static void swBenchmarkMeasure(uint64_t *ticks[], uint32_t loopCount, uint32_t sampleSize, void (*func)())
-static void swBenchmarkMeasure(swBenchmark *benchmark)
-{
-  if (benchmark)
-  {
-    uint64_t (*ticks)[benchmark->loopCount][benchmark->sampleSize] = benchmark->ticks;
+    uint32_t i = 0;
+    uint32_t previousSum = 0;
+    uint32_t previousSumOfSquares = 0;
     swStopWatch stopWatch = {0};
     swStopWatchPrepare(&stopWatch);
-    for (uint32_t i = 0; i < benchmark->loopCount; i++)
+    for (; i < benchmark->sampleSize; i++)
     {
-      for (uint32_t j = 0; j < benchmark->sampleSize; j++)
+      swStopWatchMeasure(&stopWatch, benchmark->func);
+      /*
+      swStopWatch stopWatch = {0};
+      swStopWatchStart(&stopWatch);
+      benchmark->func();
+      swStopWatchStop(&stopWatch);
+      */
+      if (benchmark->min > stopWatch.timeTicks)
+        benchmark->min = stopWatch.timeTicks;
+      if (benchmark->max < stopWatch.timeTicks)
+        benchmark->max = stopWatch.timeTicks;
+      benchmark->sum += stopWatch.timeTicks;
+      if (benchmark->sum >= previousSum)
       {
-        swStopWatchMeasure(&stopWatch, benchmark->func);
-        (*ticks)[ i ][ j ] = stopWatch.timeTicks;
+        previousSum = benchmark->sum;
+        benchmark->sumOfSquares += stopWatch.timeTicks * stopWatch.timeTicks;
+        if (benchmark->sumOfSquares >= previousSumOfSquares)
+          previousSumOfSquares = benchmark->sumOfSquares;
+        else
+          break;
       }
+      else
+        break;
     }
+    if (i == benchmark->sampleSize)
+      rtn = true;
   }
+  return rtn;
 }
 
 // This implements the following formula
@@ -69,46 +68,17 @@ static void swBenchmarkMeasure(swBenchmark *benchmark)
 // and eliminates the need of dealing with negative numbers
 // this formula can be derived from the original one by simple algebraic transformations
 
-static bool swBenchmarkCalculateVariance(uint64_t *ticks, uint32_t sampleSize, uint64_t *result)
+static bool swBenchmarkCalculateVariance(swBenchmark *benchmark)
 {
   bool rtn = false;
-  if (ticks && sampleSize && result)
+  if (benchmark)
   {
-    uint32_t i = 0;
-    uint64_t sum = 0;
-    uint64_t previousSum = 0;
-    while (i < sampleSize)
+    uint64_t previousSum = benchmark->sum;
+    uint64_t sumSquare = benchmark->sum * benchmark->sum;
+    if (sumSquare >= previousSum)
     {
-      previousSum = sum;
-      sum += ticks[i];
-      // watch for overflow
-      if (sum < previousSum)
-        break;
-      i++;
-    }
-
-    if (i == sampleSize)
-    {
-      uint64_t sumSquare = sum * sum;
-      // watch for overflow again
-      if (sumSquare >= previousSum)
-      {
-        uint64_t sumOfSquares = 0;
-        uint64_t previousSumOfSquares = 0;
-        for (i = 0; i < sampleSize; i++)
-        {
-          previousSumOfSquares = sumOfSquares;
-          sumOfSquares += (ticks[i] * ticks[i]);
-          // watch for overflow again
-          if (sumOfSquares < previousSumOfSquares)
-            break;
-        }
-        if (i == sampleSize)
-        {
-          *result = (sumOfSquares / ((uint64_t)(sampleSize))) - (sumSquare / (((uint64_t)(sampleSize)) * ((uint64_t)(sampleSize))));
-          rtn = true;
-        }
-      }
+      benchmark->variance = (benchmark->sumOfSquares / ((uint64_t)(benchmark->sampleSize))) - (sumSquare / (((uint64_t)(benchmark->sampleSize)) * ((uint64_t)(benchmark->sampleSize))));
+      rtn = true;
     }
   }
   return rtn;
@@ -119,48 +89,14 @@ bool swBenchmarkRun(swBenchmark *benchmark)
   bool rtn = false;
   if (benchmark)
   {
-    uint64_t ticks[benchmark->loopCount][benchmark->sampleSize];
-    benchmark->ticks = (void *)(&ticks);
-
-    // swBenchmarkMeasure(ticks, benchmark->loopCount, benchmark->sampleSize, benchmark->func);
-    swBenchmarkMeasure(benchmark);
-
-    uint64_t preveousMin = 0;
-    uint32_t j = 0;
-    for (; j < benchmark->loopCount; j++)
+    if (swBenchmarkMeasure(benchmark))
     {
-      uint64_t minTime = ULONG_MAX;
-      uint64_t maxTime = 0;
-
-      for (uint32_t i = 0; i < benchmark->sampleSize; i++)
+      if (swBenchmarkCalculateVariance(benchmark))
       {
-        if (minTime > ticks[j][i])
-          minTime = ticks[j][i];
-        if (maxTime < ticks[j][i])
-          maxTime = ticks[j][i];
-      }
-
-      benchmark->maxDeviations[j] = maxTime - minTime;
-      benchmark->minValues[j] = minTime;
-
-      if ((preveousMin != 0) && (preveousMin > minTime))
-        benchmark->spurious++;
-      if (benchmark->maxDeviations[j] > benchmark->maxDeviationAll)
-        benchmark->maxDeviationAll = benchmark->maxDeviations[j];
-
-      if (!swBenchmarkCalculateVariance(ticks[j], benchmark->sampleSize, &(benchmark->variances[j])))
-        break;
-      benchmark->totalVariance += benchmark->variances[j];
-      preveousMin = minTime;
-    }
-
-    if (j == benchmark->sampleSize)
-    {
-      if (swBenchmarkCalculateVariance(benchmark->variances, benchmark->sampleSize, &(benchmark->varianceOfVariances)) &&
-            swBenchmarkCalculateVariance(benchmark->minValues, benchmark->sampleSize, &(benchmark->varianceOfMins)))
+        benchmark->deviation = (benchmark->max - benchmark->min);
         rtn = true;
+      }
     }
-    benchmark->ticks = NULL;
   }
   return rtn;
 }

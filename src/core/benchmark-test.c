@@ -9,27 +9,18 @@ static void testFunction(void)
     j++;
 }
 
-// TODO: verify correctness of benchmark calculations
 swTestDeclare(BenchmarkBasicTest, NULL, NULL, swTestRun)
 {
   bool rtn = false;
   swBenchmark benchmark = { NULL };
-  if (swBenchmarkInit(&benchmark, 100, 100, testFunction))
+  if (swBenchmarkReset(&benchmark, 10000000, testFunction))
   {
     rtn = swBenchmarkRun(&benchmark);
-    swTestLogLine("maxDeviationAll = %lu, totalVariance = %lu, varianceOfVariances = %lu, varianceOfMins = %lu, spurious = %u\n",
-      benchmark.maxDeviationAll,
-      benchmark.totalVariance,
-      benchmark.varianceOfVariances,
-      benchmark.varianceOfMins,
-      benchmark.spurious
-    );
-
-    swBenchmarkRelease(&benchmark);
+    swTestLogLine("min = %lu, max = %lu, deviation = %lu, variance = %lu, samples = %u\n",
+                  benchmark.min, benchmark.max, benchmark.deviation, benchmark.variance, benchmark.sampleSize);
   }
   return rtn;
 }
 
-swTestSuiteStructDeclare(BenchmarkTest, NULL, NULL, swTestRun,
-                         &BenchmarkBasicTest);
+swTestSuiteStructDeclare(BenchmarkTest, NULL, NULL, swTestRun, &BenchmarkBasicTest);
 

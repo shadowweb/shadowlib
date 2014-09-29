@@ -13,6 +13,13 @@ typedef struct swStopWatch
   uint32_t finishHigh;
 } swStopWatch;
 
+// TODO: I see no clear way yet on how turn off interrupts and preemtion in the user space like kernel
+// allows us to do using the following functions
+//    preempt_disable();
+//    raw_local_irq_save(flags);
+//    raw_local_irq_restore(flags);
+//    preempt_enable();
+
 static inline void swStopWatchStart(swStopWatch *stopWatch)
 {
   if (stopWatch)
