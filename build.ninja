@@ -32,7 +32,8 @@ build $builddir/src/unittest/unittest-test:   link $builddir/src/unittest/unitte
 # core library
 build $builddir/src/core/memory.o:            cc src/core/memory.c
 build $builddir/src/core/benchmark.o:         cc src/core/benchmark.c
-build $builddir/src/core/core.a:              ar $builddir/src/core/memory.o $builddir/src/core/benchmark.o
+build $builddir/src/core/time.o:              cc src/core/time.c
+build $builddir/src/core/core.a:              ar $builddir/src/core/memory.o $builddir/src/core/benchmark.o $builddir/src/core/time.o
 
 # core tests
 build $builddir/src/core/stop-watch-test.o:   cc src/core/stop-watch-test.c

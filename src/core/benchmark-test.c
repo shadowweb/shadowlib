@@ -13,14 +13,68 @@ swTestDeclare(BenchmarkBasicTest, NULL, NULL, swTestRun)
 {
   bool rtn = false;
   swBenchmark benchmark = { NULL };
-  if (swBenchmarkReset(&benchmark, 10000000, testFunction))
+  if (swBenchmarkTicksReset(&benchmark, 10000000, testFunction))
   {
-    rtn = swBenchmarkRun(&benchmark);
+    rtn = swBenchmarkTicksRun(&benchmark);
     swTestLogLine("min = %lu, max = %lu, deviation = %lu, variance = %lu, samples = %u\n",
                   benchmark.min, benchmark.max, benchmark.deviation, benchmark.variance, benchmark.sampleSize);
   }
   return rtn;
 }
 
-swTestSuiteStructDeclare(BenchmarkTest, NULL, NULL, swTestRun, &BenchmarkBasicTest);
+swTestDeclare(BenchmarkRealTimeTest, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swBenchmark benchmark = { NULL };
+  if (swBenchmarkTimeReset(&benchmark, CLOCK_REALTIME, 10000000, testFunction))
+  {
+    rtn = swBenchmarkTimeRun(&benchmark);
+    swTestLogLine("min = %lu, max = %lu, deviation = %lu, variance = %lu, samples = %u\n",
+                  benchmark.min, benchmark.max, benchmark.deviation, benchmark.variance, benchmark.sampleSize);
+  }
+  return rtn;
+}
+
+swTestDeclare(BenchmarkMonotonicTest, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swBenchmark benchmark = { NULL };
+  if (swBenchmarkTimeReset(&benchmark, CLOCK_MONOTONIC, 10000000, testFunction))
+  {
+    rtn = swBenchmarkTimeRun(&benchmark);
+    swTestLogLine("min = %lu, max = %lu, deviation = %lu, variance = %lu, samples = %u\n",
+                  benchmark.min, benchmark.max, benchmark.deviation, benchmark.variance, benchmark.sampleSize);
+  }
+  return rtn;
+}
+
+swTestDeclare(BenchmarkMonotonicRawTest, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swBenchmark benchmark = { NULL };
+  if (swBenchmarkTimeReset(&benchmark, CLOCK_MONOTONIC_RAW, 10000000, testFunction))
+  {
+    rtn = swBenchmarkTimeRun(&benchmark);
+    swTestLogLine("min = %lu, max = %lu, deviation = %lu, variance = %lu, samples = %u\n",
+                  benchmark.min, benchmark.max, benchmark.deviation, benchmark.variance, benchmark.sampleSize);
+  }
+  return rtn;
+}
+
+swTestDeclare(BenchmarkCPUTimeTest, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swBenchmark benchmark = { NULL };
+  if (swBenchmarkTimeReset(&benchmark, CLOCK_PROCESS_CPUTIME_ID, 10000000, testFunction))
+  {
+    rtn = swBenchmarkTimeRun(&benchmark);
+    swTestLogLine("min = %lu, max = %lu, deviation = %lu, variance = %lu, samples = %u\n",
+                  benchmark.min, benchmark.max, benchmark.deviation, benchmark.variance, benchmark.sampleSize);
+  }
+  return rtn;
+}
+
+
+swTestSuiteStructDeclare(BenchmarkTest, NULL, NULL, swTestRun,
+                         &BenchmarkBasicTest, &BenchmarkRealTimeTest, &BenchmarkMonotonicTest, &BenchmarkMonotonicRawTest, &BenchmarkCPUTimeTest);
 

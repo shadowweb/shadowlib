@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 
 typedef struct swBenchmark
 {
@@ -16,9 +17,13 @@ typedef struct swBenchmark
   uint64_t sumOfSquares;
 
   uint32_t sampleSize;
+  clockid_t clockId;
 } swBenchmark;
 
-bool swBenchmarkReset(swBenchmark *benchmark, uint32_t sampleSize, void (*func)());
-bool swBenchmarkRun(swBenchmark *benchmark);
+bool swBenchmarkTicksReset(swBenchmark *benchmark, uint32_t sampleSize, void (*func)());
+bool swBenchmarkTicksRun(swBenchmark *benchmark);
+
+bool swBenchmarkTimeReset(swBenchmark *benchmark, clockid_t clockId, uint32_t sampleSize, void (*func)());
+bool swBenchmarkTimeRun(swBenchmark *benchmark);
 
 #endif // SW_CORE_BENCHMARK_H

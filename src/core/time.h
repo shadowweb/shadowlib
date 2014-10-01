@@ -1,9 +1,12 @@
 #ifndef SW_CORE_TIME_H
 #define SW_CORE_TIME_H
 
-#define SW_TIME_1K  1000
-#define SW_TIME_1M  1000000
-#define SW_TIME_1B  1000000000
+#include <stdint.h>
+#include <time.h>
+
+#define SW_TIME_1K  1000UL
+#define SW_TIME_1M  1000000UL
+#define SW_TIME_1B  1000000000UL
 
 #define swTimeNSecToSec(n)      (n)/SW_TIME_1B
 #define swTimeUSecToSec(n)      (n)/SW_TIME_1M
@@ -25,5 +28,8 @@
 #define swTimeMSecToNSec(n)     (n)*SW_TIME_1M
 #define swTimeMSecToUSec(n)     (n)*SW_TIME_1K
 #define swTimeUSecToNSec(n)     (n)*SW_TIME_1K
+
+uint64_t swTimeMeasure(clockid_t clockId, void (*func)());
+uint64_t swTimeGet(clockid_t clockId);
 
 #endif // SW_CORE_TIME_H
