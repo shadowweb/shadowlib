@@ -6,6 +6,7 @@
 #include "command-line/command-line.h"
 #include "init/init.h"
 #include "init/init-command-line.h"
+#include "init/init-cpu-timer.h"
 #include "init/init-io.h"
 
 #include <stdlib.h>
@@ -28,6 +29,7 @@ int main (int argc, char *argv[])
   int rtn = EXIT_FAILURE;
   swEdgeLoop *loop = NULL;
   srand(time(NULL));
+  uint64_t cpuTimerInterval = 1000;
   swInitData *initData[] =
   {
     swInitCommandLineDataGet(&argc, argv, "Traffic Generator Program", NULL),
@@ -35,6 +37,7 @@ int main (int argc, char *argv[])
     swInitIOEdgeSignalsDataGet(&loop, SIGINT, SIGHUP, SIGQUIT, SIGTERM, SIGUSR1, SIGUSR2, 0),
     swTrafficClientDataGet(&loop, &minMessageSize, &maxMessageSize),
     swTrafficServerDataGet(&loop, &minMessageSize, &maxMessageSize),
+    swInitCPUTimerGet(&loop, &cpuTimerInterval),
     swInitLastGet
   };
 

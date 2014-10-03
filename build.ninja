@@ -145,7 +145,8 @@ build $builddir/src/command-line/command-line-test:      link $builddir/src/comm
 build $builddir/src/init/init.o:                          cc src/init/init.c
 build $builddir/src/init/init-io.o:                       cc src/init/init-io.c
 build $builddir/src/init/init-command-line.o:             cc src/init/init-command-line.c
-build $builddir/src/init/init.a:                          ar $builddir/src/init/init.o $builddir/src/init/init-io.o $builddir/src/init/init-command-line.o
+build $builddir/src/init/init-cpu-timer.o:                cc src/init/init-cpu-timer.c
+build $builddir/src/init/init.a:                          ar $builddir/src/init/init.o $builddir/src/init/init-io.o $builddir/src/init/init-command-line.o $builddir/src/init/init-cpu-timer.o
 
 # tools
 
