@@ -16,6 +16,4 @@ typedef struct swInitData
 bool swInitStart  (swInitData *data[]);
 void swInitStop   (swInitData *data[]);
 
-#define swInitLastGet    (swInitData []){{ NULL }}
-
 #endif // SW_INIT_INIT_H

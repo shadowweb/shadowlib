@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
     swTrafficClientDataGet(&loop, &minMessageSize, &maxMessageSize),
     swTrafficServerDataGet(&loop, &minMessageSize, &maxMessageSize),
     swInitCPUTimerGet(&loop, &cpuTimerInterval),
-    swInitLastGet
+    NULL
   };
 
   if (swInitStart (initData))
