@@ -52,7 +52,6 @@ int main (int argc, char *argv[])
   /*
     // verify that all arguments are valid
     // init logging
-    // init CPU utilization stat
     // init stats reporting
   */
 

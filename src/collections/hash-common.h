@@ -23,10 +23,11 @@ typedef void     (*swHashValueDeleteFunction)(void *data);
 
 #define SW_HASH_ITER_END_POSITION   (~0UL)
 
+uint32_t  swHashGetMask (uint32_t shift);
 void      swHashShiftSet (uint32_t shift, size_t *size, uint32_t *mod, uint32_t *mask);
 uint32_t  swHashClosestShiftFind (uint32_t n);
 
-uint32_t  swHashPointerHash(const void *data);
+uint32_t  swHashPointerHash (const void *data);
 
 /*
 typedef enum

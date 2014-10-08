@@ -83,6 +83,13 @@ static const struct swPrimeModMask primeModMask [] =
 //  /* 64 */ {18446744073709551557UL,    0xFFFFFFFFFFFFFFFFUL}
 };
 
+uint32_t swHashGetMask(uint32_t shift)
+{
+  if (shift <= 32)
+    return primeModMask [shift].mask;
+  return 0;
+}
+
 void swHashShiftSet (uint32_t shift, size_t *size, uint32_t *mod, uint32_t *mask)
 {
   if (size && mod && mask)

@@ -1,12 +1,12 @@
 #include "unittest/unittest.h"
-#include "collections/dynamic-array.h"
+#include "collections/sparse-array.h"
 #include "storage/static-string.h"
 #include "core/memory.h"
 #include "utils/file.h"
 
 typedef struct swDictionaryTestData
 {
-  swDynamicArray *array;
+  swSparseArray array;
   swStaticString fileData;
 } swDictionaryTestData;
 
@@ -25,9 +25,11 @@ bool swDictionaryTestDataSlicesSet(swDictionaryTestData *data)
       {
         if (i > j)
         {
-          swStaticString word = swStaticStringDefineWithLength(&str[j], i-j);
-          if (!swDynamicArrayPush(data->array, &word))
+          swStaticString *word = NULL;
+          uint32_t index = 0;
+          if (!swSparseArrayAcquireFirstFree(&(data->array), &index, (void **)(&word)))
             break;
+          *word = swStaticStringSetWithLength(&str[j], i-j);
         }
         j = i+1;
       }
@@ -43,8 +45,7 @@ void swDictionaryTestDataDelete(swDictionaryTestData *data)
 {
   if (data)
   {
-    if (data->array)
-      swDynamicArrayDelete(data->array);
+    swSparseArrayRelease(&(data->array));
     if (data->fileData.data)
       swMemoryFree(data->fileData.data);
     swMemoryFree(data);
@@ -59,7 +60,7 @@ swDictionaryTestData *swDictionaryTestDataNew(const char *fileName, bool useKeyD
     swDictionaryTestData *dictionaryTestData = swMemoryCalloc(1, sizeof(swDictionaryTestData));
     if (dictionaryTestData)
     {
-      if ((dictionaryTestData->array = swDynamicArrayNew(sizeof(swStaticString), 8)))
+      if (swSparseArrayInit(&(dictionaryTestData->array), sizeof(swStaticString), 64, 8))
       {
         if ((dictionaryTestData->fileData.len = swFileRead(fileName, &(dictionaryTestData->fileData.data))))
         {
@@ -93,27 +94,16 @@ void dictionaryTestSuiteTeardown(swTestSuite *suite)
 swTestDeclare(DictionaryTestVerify, NULL, NULL, swTestRun)
 {
   swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
-  ASSERT_TRUE(swDynamicArrayCount(*(dictionaryTestData->array)) <= swDynamicArraySize(*(dictionaryTestData->array)));
-  swTestLogLine("Array count %u; Array size %u\n", swDynamicArrayCount(*(dictionaryTestData->array)), swDynamicArraySize(*(dictionaryTestData->array)));
+  ASSERT_TRUE(swSparseArrayCount(dictionaryTestData->array) > 0);
+  swTestLogLine("Array count %u\n", swSparseArrayCount(dictionaryTestData->array));
   return true;
 }
 
-swTestDeclare(DictionaryTestPop, NULL, NULL, swTestRun)
-{
-  swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
-  uint32_t count = swDynamicArrayCount(*(dictionaryTestData->array));
-  swStaticString element = swStaticStringDefineEmpty;
-  for (uint32_t i = 0; i < count; i++)
-  {
-    ASSERT_TRUE(swDynamicArrayPop(dictionaryTestData->array, &element));
-    ASSERT_NOT_NULL(element.data);
-    ASSERT_TRUE(element.len != 0);
-  }
-  ASSERT_FALSE(swDynamicArrayPop(dictionaryTestData->array, &element));
-  ASSERT_EQUAL(swDynamicArrayCount(*(dictionaryTestData->array)), 0);
-  swTestLogLine("Array count %u; Array size %u\n", swDynamicArrayCount(*(dictionaryTestData->array)), swDynamicArraySize(*(dictionaryTestData->array)));
-  return true;
-}
+// TODO: add the following tests
+// read all elements randomly
+// remove half of the elements; read elements randomly
+// add some elements back; read elements randomly
+// remove all one by one
 
-swTestSuiteStructDeclare(DynamicArrayDictionaryTest, dictionaryTestSuiteSetup, dictionaryTestSuiteTeardown, swTestRun,
-                         &DictionaryTestVerify, &DictionaryTestPop);
+swTestSuiteStructDeclare(SparseArrayDictionaryTest, dictionaryTestSuiteSetup, dictionaryTestSuiteTeardown, swTestRun,
+                         &DictionaryTestVerify);

@@ -31,6 +31,7 @@ bool swDynamicArraySetFromStaticArray(swDynamicArray *dynamicArray, const swStat
 bool swDynamicArrayInit(swDynamicArray *array, size_t elementSize, uint32_t size);
 void swDynamicArrayClear(swDynamicArray *array);
 void swDynamicArrayRelease(swDynamicArray *array);
+bool swDynamicArrayEnsureCapacity(swDynamicArray *array, uint32_t size);
 
 bool swDynamicArrayAppendStaticArray(swDynamicArray *dynamicArray, const swStaticArray *staticArray);
 bool swDynamicArraySet(swDynamicArray *dynamicArray, uint32_t position, void *element);

@@ -122,6 +122,19 @@ void swDynamicArrayRelease(swDynamicArray *array)
   }
 }
 
+bool swDynamicArrayEnsureCapacity(swDynamicArray *array, uint32_t size)
+{
+  bool rtn = false;
+  if (array && size)
+  {
+    if (array->size < size)
+      rtn = swDynamicArrayResize(array, size);
+    else
+      rtn = true;
+  }
+  return rtn;
+}
+
 bool swDynamicArrayAppendStaticArray(swDynamicArray *dynamicArray, const swStaticArray *staticArray)
 {
   bool rtn = false;
