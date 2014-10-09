@@ -99,6 +99,23 @@ swTestDeclare(DictionaryTestVerify, NULL, NULL, swTestRun)
   return true;
 }
 
+swTestDeclare(DictionaryTestRemove, NULL, NULL, swTestRun)
+{
+  swDictionaryTestData *dictionaryTestData = swTestSuiteDataGet(suite);
+  uint32_t count = swSparseArrayCount(dictionaryTestData->array);
+
+  for (uint32_t i = 0; i < count; i++)
+    ASSERT_TRUE(swSparseArrayRemove(&(dictionaryTestData->array), i));
+  // for (uint32_t i = count; i > 0; i--)
+  //   ASSERT_TRUE(swSparseArrayRemove(&(dictionaryTestData->array), i - 1));
+
+  ASSERT_FALSE(swSparseArrayRemove(&(dictionaryTestData->array), count));
+  ASSERT_EQUAL(swSparseArrayCount(dictionaryTestData->array), 0);
+  swTestLogLine("Array count %u\n", swSparseArrayCount(dictionaryTestData->array));
+  return true;
+}
+
+
 // TODO: add the following tests
 // read all elements randomly
 // remove half of the elements; read elements randomly
@@ -106,4 +123,4 @@ swTestDeclare(DictionaryTestVerify, NULL, NULL, swTestRun)
 // remove all one by one
 
 swTestSuiteStructDeclare(SparseArrayDictionaryTest, dictionaryTestSuiteSetup, dictionaryTestSuiteTeardown, swTestRun,
-                         &DictionaryTestVerify);
+                         &DictionaryTestVerify, &DictionaryTestRemove);

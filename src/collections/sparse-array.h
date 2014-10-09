@@ -25,6 +25,7 @@ typedef struct swSparseArray
   // TODO: the rest can be smaller than 32 bit (16 perhaps)
   uint32_t groupSize;
   uint32_t shift;
+  uint32_t groupCount;
 } swSparseArray;
 
 #define swSparseArrayIsPowerOfTwo(x)    ((x) && !((x) & ((x) - 1)))

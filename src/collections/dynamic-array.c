@@ -47,6 +47,8 @@ static bool swDynamicArrayResize(swDynamicArray *dynamicArray, uint32_t index)
         rtn = true;
       }
     }
+    else
+      rtn = true;
   }
   return rtn;
 }
@@ -125,9 +127,11 @@ void swDynamicArrayRelease(swDynamicArray *array)
 bool swDynamicArrayEnsureCapacity(swDynamicArray *array, uint32_t size)
 {
   bool rtn = false;
-  if (array && size)
+  if (array && size && (array->count <= size))
   {
     if (array->size < size)
+      rtn = swDynamicArrayResize(array, size);
+    else if (array->count < size)
       rtn = swDynamicArrayResize(array, size);
     else
       rtn = true;
