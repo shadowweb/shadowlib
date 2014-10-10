@@ -10,7 +10,6 @@ typedef struct swSparseArrayBlockInfo
 {
   uint8_t *data;
   uint64_t usedMap;
-  // uint32_t count;
   uint32_t firstFree;
 } swSparseArrayBlockInfo;
 
@@ -38,6 +37,7 @@ void swSparseArrayFree(swSparseArray *array);
 
 bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void **data);
 bool swSparseArrayRemove(swSparseArray *array, uint32_t index);
+bool swSparseArrayExtract(swSparseArray *array, uint32_t index, void *data);
 bool swSparseArrayWalk(swSparseArray *array, bool (*func)(void *ptr));
 
 #endif  // SW_COLLECTIONS_SPARSEARRAY_H

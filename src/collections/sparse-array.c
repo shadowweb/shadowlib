@@ -6,7 +6,7 @@
 #include <limits.h>
 #include <string.h>
 
-static bool swStaticArrayBlockInfoInit(swSparseArrayBlockInfo *info, size_t elementSize, uint32_t blockSize)
+static bool swSparseArrayBlockInfoInit(swSparseArrayBlockInfo *info, size_t elementSize, uint32_t blockSize)
 {
   bool rtn = false;
   if (info && elementSize && blockSize)
@@ -18,7 +18,7 @@ static bool swStaticArrayBlockInfoInit(swSparseArrayBlockInfo *info, size_t elem
   return rtn;
 }
 
-static void swStaticArrayBlockInfoRelease(swSparseArrayBlockInfo *info)
+static void swSpareArrayBlockInfoRelease(swSparseArrayBlockInfo *info)
 {
   if (info && info->data)
   {
@@ -68,7 +68,7 @@ void swSparseArrayRelease(swSparseArray *array)
       swSparseArrayBlockInfo *metaDataLast = metaData + array->metaData.count;
       while (metaData < metaDataLast)
       {
-        swStaticArrayBlockInfoRelease(metaData);
+        swSpareArrayBlockInfoRelease(metaData);
         metaData++;
       }
     }
@@ -127,14 +127,13 @@ bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void *
         swSparseArrayBlockInfo *metaData = swDynamicArrayGet(&(array->metaData), memBlockId);
         if (metaData)
         {
-          if (metaData->data || swStaticArrayBlockInfoInit(metaData, array->elementSize, array->groupSize))
+          if (metaData->data || swSparseArrayBlockInfoInit(metaData, array->elementSize, array->groupSize))
           {
             if (index)
               *index = array->firstFree;
             if (data)
               *data = (void *)(metaData->data + blockPosition * array->elementSize);
             SW_BF_SET(metaData->firstFree, metaData->usedMap);
-            // metaData->count++;
             metaData->firstFree = swBitFieldGetNextFree(metaData->usedMap, blockPosition, array->groupSize);
             if (metaData->firstFree < SW_SPARSE_ARRAY_MAX_BLOCK_SIZE)
               array->firstFree = memBlockId * array->groupSize + metaData->firstFree;
@@ -167,25 +166,31 @@ bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void *
 
 bool swSparseArrayRemove(swSparseArray *array, uint32_t index)
 {
+  return swSparseArrayExtract(array, index, NULL);
+}
+
+bool swSparseArrayExtract(swSparseArray *array, uint32_t index, void *data)
+{
   bool rtn = false;
   if (array && array->count)
   {
     uint32_t memBlockId = index >> array->shift;
     uint32_t blockPosition = index & array->mask;
-    swSparseArrayBlockInfo *metaData = swDynamicArrayGet(&(array->metaData), memBlockId);
-    if (metaData)
+    swSparseArrayBlockInfo *blockInfo = swDynamicArrayGet(&(array->metaData), memBlockId);
+    if (blockInfo)
     {
+      if (data)
+        memcpy(data, (void *)(blockInfo->data + array->elementSize * blockPosition), array->elementSize);
       rtn = true;
-      SW_BF_CLR(blockPosition, metaData->usedMap);
+      SW_BF_CLR(blockPosition, blockInfo->usedMap);
       if (index < array->firstFree)
         array->firstFree = index;
       array->count--;
-      // metaData->count--;
-      if (blockPosition < metaData->firstFree)
-        metaData->firstFree = blockPosition;
-      if (!(metaData->usedMap))
+      if (blockPosition < blockInfo->firstFree)
+        blockInfo->firstFree = blockPosition;
+      if (!(blockInfo->usedMap))
       {
-        swStaticArrayBlockInfoRelease(metaData);
+        swSpareArrayBlockInfoRelease(blockInfo);
         if (!(array->count))
         {
           array->metaData.count = 0;
@@ -193,7 +198,7 @@ bool swSparseArrayRemove(swSparseArray *array, uint32_t index)
         }
         else if ((memBlockId + 1) == array->metaData.count)
         {
-          while (--(array->metaData.count) && --metaData && !(metaData->usedMap));
+          while (--(array->metaData.count) && --blockInfo && !(blockInfo->usedMap));
           rtn = swDynamicArrayEnsureCapacity(&(array->metaData), (array->metaData.count > array->groupCount)? array->metaData.count : array->groupCount);
         }
       }
