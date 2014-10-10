@@ -41,7 +41,7 @@ swSparseArray *swSparseArrayNew(size_t elementSize, uint32_t groupSize, uint32_t
 bool swSparseArrayInit(swSparseArray *array, size_t elementSize, uint32_t groupSize, uint32_t groupCount)
 {
   bool rtn = false;
-  if (array && elementSize && swSparseArrayIsPowerOfTwo(groupSize) && groupSize <= SW_SPARSE_ARRAY_MAX_BLOCK_SIZE && groupCount)
+  if (array && elementSize && swSparseArrayIsPowerOfTwo(groupSize) && (groupSize <= swBitMapLongIntBitCount) && groupCount)
   {
     if (swDynamicArrayInit(&(array->metaData), sizeof(swSparseArrayBlockInfo), groupCount))
     {
@@ -86,30 +86,6 @@ void swSparseArrayFree(swSparseArray *array)
   }
 }
 
-// -------------
-// TODO: move this into a separate header file
-#define SW_BF_NBITS            (8 * sizeof (uint64_t))
-// #define SW_BF_ELT(d)           ((d) / SW_BF_NBITS)
-#define SW_BF_MASK(d)          ((uint64_t) 1 << ((d) % SW_BF_NBITS))
-#define SW_BF_SET(d, bits)     ((void) ((bits) |= SW_BF_MASK (d)))
-#define SW_BF_CLR(d, bits)     ((void) ((bits) &= ~SW_BF_MASK (d)))
-#define SW_BF_ISSET(d, bits)   (((bits) & SW_BF_MASK (d)) != 0)
-
-static uint32_t swBitFieldGetNextFree(uint64_t bitField, uint32_t startPosition, uint32_t maxPosition)
-{
-  uint32_t rtn = startPosition + 1;
-  uint64_t mask = SW_BF_MASK(startPosition);
-  while (rtn < maxPosition)
-  {
-    mask <<= 1;
-    if (!(bitField & mask))
-      break;
-    rtn++;
-  }
-  return rtn;
-}
-// ------------------
-
 static swSparseArrayBlockInfo emptyBlock = { NULL };
 
 bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void **data)
@@ -124,29 +100,29 @@ bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void *
       while ((array->metaData.count <= memBlockId) && swDynamicArrayPush(&(array->metaData), &emptyBlock));
       if (array->metaData.count > memBlockId)
       {
-        swSparseArrayBlockInfo *metaData = swDynamicArrayGet(&(array->metaData), memBlockId);
-        if (metaData)
+        swSparseArrayBlockInfo *blockInfo = swDynamicArrayGet(&(array->metaData), memBlockId);
+        if (blockInfo)
         {
-          if (metaData->data || swSparseArrayBlockInfoInit(metaData, array->elementSize, array->groupSize))
+          if (blockInfo->data || swSparseArrayBlockInfoInit(blockInfo, array->elementSize, array->groupSize))
           {
             if (index)
               *index = array->firstFree;
             if (data)
-              *data = (void *)(metaData->data + blockPosition * array->elementSize);
-            SW_BF_SET(metaData->firstFree, metaData->usedMap);
-            metaData->firstFree = swBitFieldGetNextFree(metaData->usedMap, blockPosition, array->groupSize);
-            if (metaData->firstFree < SW_SPARSE_ARRAY_MAX_BLOCK_SIZE)
-              array->firstFree = memBlockId * array->groupSize + metaData->firstFree;
+              *data = (void *)(blockInfo->data + blockPosition * array->elementSize);
+            swBitMapLongIntSet(blockInfo->usedMap, blockInfo->firstFree);
+            blockInfo->firstFree = swBitMapLongIntGetNextFalse(blockInfo->usedMap, blockPosition, array->groupSize);
+            if (blockInfo->firstFree < swBitMapLongIntBitCount)
+              array->firstFree = memBlockId * array->groupSize + blockInfo->firstFree;
             else
             {
               memBlockId++;
               while (memBlockId < array->metaData.count)
               {
-                metaData++;
+                blockInfo++;
                 // metaData = swDynamicArrayGet(&(array->metaData), memBlockId);
-                if (metaData->usedMap < ULONG_MAX)
+                if (blockInfo->usedMap < ULONG_MAX)
                 {
-                  array->firstFree = memBlockId * array->groupSize + metaData->firstFree;
+                  array->firstFree = memBlockId * array->groupSize + blockInfo->firstFree;
                   break;
                 }
                 memBlockId++;
@@ -182,7 +158,7 @@ bool swSparseArrayExtract(swSparseArray *array, uint32_t index, void *data)
       if (data)
         memcpy(data, (void *)(blockInfo->data + array->elementSize * blockPosition), array->elementSize);
       rtn = true;
-      SW_BF_CLR(blockPosition, blockInfo->usedMap);
+      swBitMapLongIntClear(blockInfo->usedMap, blockPosition);
       if (index < array->firstFree)
         array->firstFree = index;
       array->count--;

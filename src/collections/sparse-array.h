@@ -1,16 +1,15 @@
 #ifndef SW_COLLECTIONS_SPARSEARRAY_H
 #define SW_COLLECTIONS_SPARSEARRAY_H
 
+#include "collections/bit-map.h"
 #include "collections/dynamic-array.h"
 #include "collections/static-array.h"
 
-#define SW_SPARSE_ARRAY_MAX_BLOCK_SIZE  64
-
 typedef struct swSparseArrayBlockInfo
 {
-  uint8_t *data;
-  uint64_t usedMap;
-  uint32_t firstFree;
+  uint8_t        *data;
+  swBitMapLongInt usedMap;
+  uint32_t        firstFree;
 } swSparseArrayBlockInfo;
 
 typedef struct swSparseArray
