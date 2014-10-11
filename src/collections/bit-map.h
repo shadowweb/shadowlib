@@ -26,4 +26,6 @@ static inline uint32_t swBitMapLongIntGetNextFalse(swBitMapLongInt map, uint32_t
   return rtn;
 }
 
+// TODO: implement larger bit map
+
 #endif  // SW_COLLECTIONS_BITMAP_H

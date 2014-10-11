@@ -16,21 +16,19 @@ typedef struct swSparseArray
 {
   swDynamicArray metaData;
   size_t elementSize;
-  // TODO: think of a better name, this one sucks
   uint32_t firstFree;
   uint32_t count;
   uint32_t mask;
-  // TODO: the rest can be smaller than 32 bit (16 perhaps)
-  uint32_t groupSize;
   uint32_t shift;
-  uint32_t groupCount;
+  uint32_t blockElementsMax;
+  uint32_t blocksCount;
 } swSparseArray;
 
 #define swSparseArrayIsPowerOfTwo(x)    ((x) && !((x) & ((x) - 1)))
 #define swSparseArrayCount(a)           (a).count
 
-swSparseArray *swSparseArrayNew(size_t elementSize, uint32_t groupSize, uint32_t groupCount);
-bool swSparseArrayInit(swSparseArray *array, size_t elementSize, uint32_t groupSize, uint32_t groupCount);
+swSparseArray *swSparseArrayNew(size_t elementSize, uint32_t blockElementsMax, uint32_t blocksCount);
+bool swSparseArrayInit(swSparseArray *array, size_t elementSize, uint32_t blockElementsMax, uint32_t blocksCount);
 void swSparseArrayRelease(swSparseArray *array);
 void swSparseArrayFree(swSparseArray *array);
 

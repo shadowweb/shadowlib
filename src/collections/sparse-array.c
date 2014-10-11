@@ -27,10 +27,10 @@ static void swSpareArrayBlockInfoRelease(swSparseArrayBlockInfo *info)
   }
 }
 
-swSparseArray *swSparseArrayNew(size_t elementSize, uint32_t groupSize, uint32_t groupCount)
+swSparseArray *swSparseArrayNew(size_t elementSize, uint32_t blockElementsMax, uint32_t blocksCount)
 {
   swSparseArray *rtn = swMemoryMalloc(sizeof(swSparseArray *));
-  if (rtn && !swSparseArrayInit(rtn, elementSize, groupSize, groupCount))
+  if (rtn && !swSparseArrayInit(rtn, elementSize, blockElementsMax, blocksCount))
   {
     swMemoryFree(rtn);
     rtn = NULL;
@@ -38,17 +38,17 @@ swSparseArray *swSparseArrayNew(size_t elementSize, uint32_t groupSize, uint32_t
   return rtn;
 }
 
-bool swSparseArrayInit(swSparseArray *array, size_t elementSize, uint32_t groupSize, uint32_t groupCount)
+bool swSparseArrayInit(swSparseArray *array, size_t elementSize, uint32_t blockElementsMax, uint32_t blocksCount)
 {
   bool rtn = false;
-  if (array && elementSize && swSparseArrayIsPowerOfTwo(groupSize) && (groupSize <= swBitMapLongIntBitCount) && groupCount)
+  if (array && elementSize && swSparseArrayIsPowerOfTwo(blockElementsMax) && (blockElementsMax <= swBitMapLongIntBitCount) && blocksCount)
   {
-    if (swDynamicArrayInit(&(array->metaData), sizeof(swSparseArrayBlockInfo), groupCount))
+    if (swDynamicArrayInit(&(array->metaData), sizeof(swSparseArrayBlockInfo), blocksCount))
     {
       array->elementSize = elementSize;
-      array->groupSize = groupSize;
-      array->groupCount = groupCount;
-      array->shift = swHashClosestShiftFind(groupSize) - 1;
+      array->blockElementsMax = blockElementsMax;
+      array->blocksCount = blocksCount;
+      array->shift = swHashClosestShiftFind(blockElementsMax) - 1;
       array->mask = swHashGetMask(array->shift);
       array->count = 0;
       array->firstFree = 0;
@@ -86,6 +86,29 @@ void swSparseArrayFree(swSparseArray *array)
   }
 }
 
+static void swSparseArraySetNextFree(swSparseArray *array, swSparseArrayBlockInfo *blockInfo, uint32_t memBlockId, uint32_t blockPosition)
+{
+  blockInfo->firstFree = swBitMapLongIntGetNextFalse(blockInfo->usedMap, blockPosition, array->blockElementsMax);
+  if (blockInfo->firstFree < array->blockElementsMax)
+    array->firstFree = memBlockId * array->blockElementsMax + blockInfo->firstFree;
+  else
+  {
+    memBlockId++;
+    while (memBlockId < array->metaData.count)
+    {
+      blockInfo++;
+      if (blockInfo->usedMap < ULONG_MAX)
+      {
+        array->firstFree = memBlockId * array->blockElementsMax + blockInfo->firstFree;
+        break;
+      }
+      memBlockId++;
+    }
+    if (memBlockId == array->metaData.count)
+      array->firstFree = memBlockId * array->blockElementsMax;
+  }
+}
+
 static swSparseArrayBlockInfo emptyBlock = { NULL };
 
 bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void **data)
@@ -103,34 +126,15 @@ bool swSparseArrayAcquireFirstFree(swSparseArray *array, uint32_t *index, void *
         swSparseArrayBlockInfo *blockInfo = swDynamicArrayGet(&(array->metaData), memBlockId);
         if (blockInfo)
         {
-          if (blockInfo->data || swSparseArrayBlockInfoInit(blockInfo, array->elementSize, array->groupSize))
+          if (blockInfo->data || swSparseArrayBlockInfoInit(blockInfo, array->elementSize, array->blockElementsMax))
           {
             if (index)
               *index = array->firstFree;
             if (data)
               *data = (void *)(blockInfo->data + blockPosition * array->elementSize);
             swBitMapLongIntSet(blockInfo->usedMap, blockInfo->firstFree);
-            blockInfo->firstFree = swBitMapLongIntGetNextFalse(blockInfo->usedMap, blockPosition, array->groupSize);
-            if (blockInfo->firstFree < swBitMapLongIntBitCount)
-              array->firstFree = memBlockId * array->groupSize + blockInfo->firstFree;
-            else
-            {
-              memBlockId++;
-              while (memBlockId < array->metaData.count)
-              {
-                blockInfo++;
-                // metaData = swDynamicArrayGet(&(array->metaData), memBlockId);
-                if (blockInfo->usedMap < ULONG_MAX)
-                {
-                  array->firstFree = memBlockId * array->groupSize + blockInfo->firstFree;
-                  break;
-                }
-                memBlockId++;
-              }
-              if (memBlockId == array->metaData.count)
-                array->firstFree = memBlockId * array->groupSize;
-            }
             array->count++;
+            swSparseArraySetNextFree(array, blockInfo, memBlockId, blockPosition);
             rtn = true;
           }
         }
@@ -170,12 +174,12 @@ bool swSparseArrayExtract(swSparseArray *array, uint32_t index, void *data)
         if (!(array->count))
         {
           array->metaData.count = 0;
-          rtn = swDynamicArrayEnsureCapacity(&(array->metaData), array->groupCount);
+          rtn = swDynamicArrayEnsureCapacity(&(array->metaData), array->blocksCount);
         }
         else if ((memBlockId + 1) == array->metaData.count)
         {
           while (--(array->metaData.count) && --blockInfo && !(blockInfo->usedMap));
-          rtn = swDynamicArrayEnsureCapacity(&(array->metaData), (array->metaData.count > array->groupCount)? array->metaData.count : array->groupCount);
+          rtn = swDynamicArrayEnsureCapacity(&(array->metaData), (array->metaData.count > array->blocksCount)? array->metaData.count : array->blocksCount);
         }
       }
     }
@@ -189,34 +193,27 @@ bool swSparseArrayWalk(swSparseArray *array, bool (*func)(void *ptr))
   if (array && func)
   {
     uint32_t i = 0;
-    swSparseArrayBlockInfo *metaData = (swSparseArrayBlockInfo *)(array->metaData.data);
-    swSparseArrayBlockInfo *metaDataLast = metaData + array->metaData.count;
-    while (metaData < metaDataLast)
+    swSparseArrayBlockInfo *blockInfo = (swSparseArrayBlockInfo *)(array->metaData.data);
+    swSparseArrayBlockInfo *blockInfoLast = blockInfo + array->metaData.count;
+    while (blockInfo < blockInfoLast)
     {
-      if (metaData->usedMap)
+      uint64_t usedMap = blockInfo->usedMap;
+      uint32_t blockPosition = 0;
+      while (usedMap)
       {
-        uint32_t blockPosition = 0;
-        uint64_t usedMap = metaData->usedMap;
-        bool failed = false;
-        while (usedMap)
+        if (usedMap & 1)
         {
-          if (usedMap & 1)
-          {
-            if (!func((void *)(metaData->data + blockPosition * array->elementSize)))
-            {
-              failed = true;
-              break;
-            }
-            i++;
-          }
-          usedMap >>= 1;
+          if (!func((void *)(blockInfo->data + blockPosition * array->elementSize)))
+            break;
+          i++;
         }
-        if (failed)
-          break;
+        usedMap >>= 1;
       }
-      metaData++;
+      if (usedMap)
+        break;
+      blockInfo++;
     }
-    if ((metaData == metaDataLast) && (i == array->count))
+    if ((blockInfo == blockInfoLast) && (i == array->count))
       rtn = true;
   }
   return rtn;
