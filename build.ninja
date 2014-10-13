@@ -1,3 +1,5 @@
+# TODO: the build order of openssl library and the files that depend on it is all messed up
+#       figure out what is going on here
 builddir = build
 buildthirdpartydir = build-third-party
 cc = gcc
@@ -145,12 +147,16 @@ build $builddir/src/command-line/command-line.a:         ar $builddir/src/comman
 build $builddir/src/command-line/command-line-test.o:    cc src/command-line/command-line-test.c
 build $builddir/src/command-line/command-line-test:      link $builddir/src/command-line/command-line-test.o $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
+# thread
+build $builddir/src/thread/thread-manager.o:             cc src/thread/thread-manager.c
+build $builddir/src/thread/thread.a:                     ar $builddir/src/thread/thread-manager.o
+
 # init
-build $builddir/src/init/init.o:                          cc src/init/init.c
-build $builddir/src/init/init-io.o:                       cc src/init/init-io.c
-build $builddir/src/init/init-command-line.o:             cc src/init/init-command-line.c
-build $builddir/src/init/init-cpu-timer.o:                cc src/init/init-cpu-timer.c
-build $builddir/src/init/init.a:                          ar $builddir/src/init/init.o $builddir/src/init/init-io.o $builddir/src/init/init-command-line.o $builddir/src/init/init-cpu-timer.o
+build $builddir/src/init/init.o:                         cc src/init/init.c
+build $builddir/src/init/init-io.o:                      cc src/init/init-io.c
+build $builddir/src/init/init-command-line.o:            cc src/init/init-command-line.c
+build $builddir/src/init/init-cpu-timer.o:               cc src/init/init-cpu-timer.c
+build $builddir/src/init/init.a:                         ar $builddir/src/init/init.o $builddir/src/init/init-io.o $builddir/src/init/init-command-line.o $builddir/src/init/init-cpu-timer.o
 
 # tools
 

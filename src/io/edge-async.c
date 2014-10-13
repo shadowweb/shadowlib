@@ -14,6 +14,7 @@ bool swEdgeAsyncInit(swEdgeAsync *asyncWatcher, swEdgeAsyncCallback cb)
     watcher->event.events = (EPOLLIN | EPOLLRDHUP | EPOLLET);
     watcher->event.data.ptr = asyncWatcher;
     watcher->type = swWatcherTypeAsync;
+    watcher->fd = -1;
     asyncWatcher->eventCB = cb;
     rtn = true;
   }

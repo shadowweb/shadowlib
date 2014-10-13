@@ -187,14 +187,15 @@ bool swSparseArrayExtract(swSparseArray *array, uint32_t index, void *data)
   return rtn;
 }
 
-bool swSparseArrayWalk(swSparseArray *array, bool (*func)(void *ptr))
+bool swSparseArrayWalk(swSparseArray *array, swSparseArrayWalkFunction walkFunc)
 {
   bool rtn = false;
-  if (array && func)
+  if (array && walkFunc)
   {
     uint32_t i = 0;
     swSparseArrayBlockInfo *blockInfo = (swSparseArrayBlockInfo *)(array->metaData.data);
     swSparseArrayBlockInfo *blockInfoLast = blockInfo + array->metaData.count;
+    uint32_t count = array->count;
     while (blockInfo < blockInfoLast)
     {
       uint64_t usedMap = blockInfo->usedMap;
@@ -203,7 +204,7 @@ bool swSparseArrayWalk(swSparseArray *array, bool (*func)(void *ptr))
       {
         if (usedMap & 1)
         {
-          if (!func((void *)(blockInfo->data + blockPosition * array->elementSize)))
+          if (!walkFunc((void *)(blockInfo->data + blockPosition * array->elementSize)))
             break;
           i++;
         }
@@ -213,7 +214,7 @@ bool swSparseArrayWalk(swSparseArray *array, bool (*func)(void *ptr))
         break;
       blockInfo++;
     }
-    if ((blockInfo == blockInfoLast) && (i == array->count))
+    if ((blockInfo == blockInfoLast) && (i == count))
       rtn = true;
   }
   return rtn;
