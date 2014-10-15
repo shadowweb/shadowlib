@@ -45,7 +45,7 @@ typedef struct swTreadTestData
 void *runFunction(void *arg)
 {
   swTreadTestData *testData = arg;
-  ASSERT_NOT_NULL(*(testData->terminate));
+  ASSERT_NOT_NULL(testData->terminate);
   while (!(*(testData->terminate)))
     sleep(2);
   return NULL;
@@ -74,6 +74,7 @@ swTestDeclare(ThreadCreate, threadCreateSetup, threadCreateTearDown, swTestRun)
   swThreadManager *manager = swTestSuiteDataGet(suite);
   uint64_t *terminate = swTestDataGet(test);
   swTreadTestData testData = {.manager = manager, .terminate = terminate};
+  // TODO: trigger thread exit somehow
   ASSERT_TRUE(swThreadManagerStartThread(manager, runFunction, stopFunction, doneFunction, &testData));
   swEdgeLoopRun(manager->loop, false);
   return true;
