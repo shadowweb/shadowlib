@@ -4,7 +4,7 @@ exit_code=1
 
 current_dir=${PWD}
 openssl_file=${PWD}/$1
-build_dir="build-third-party"
+build_dir="build/build-third-party"
 openssl_dir=`basename ${openssl_file%.tar.gz}`
 
 rm -rf ${build_dir}/${openssl_dir}

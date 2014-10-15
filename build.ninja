@@ -1,11 +1,10 @@
-# TODO: the build order of openssl library and the files that depend on it is all messed up
-#       figure out what is going on here
 builddir = build
-buildthirdpartydir = build-third-party
+buildthirdpartydir = $builddir/build-third-party
 cc = gcc
 ar = ar
 cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -pthread -Isrc -I${buildthirdpartydir}/include
 ldflags = -pthread
+openssldep = $buildithirdpartydir/include/openssl $buildithirdpartydir/lib/openssl
 
 rule cc
     command = $cc -MMD -MT $out -MF $out.d $cflags -c $in -o $out
@@ -116,17 +115,22 @@ build $builddir/src/io/udp-test.o:                       cc src/io/udp-test.c
 build $builddir/src/io/udp-test:                         link $builddir/src/io/udp-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
 # openssl library
-build $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl: $
+build $buildthirdpartydir/include/openssl $
+      $buildthirdpartydir/lib/openssl $
+      $buildthirdpartydir/lib/openssl/libssl.a $
+      $buildthirdpartydir/lib/openssl/libcrypto.a: $
                                                          build-openssl third-party/openssl/openssl-1.0.1h.tar.gz
+build openssl:                                           phony $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl
+
 # open-ssl
-build $builddir/src/open-ssl/init.o:                     cc src/open-ssl/init.c
-build $builddir/src/open-ssl/ssl-context.o:              cc src/open-ssl/ssl-context.c
-build $builddir/src/open-ssl/ssl-certificate.o:          cc src/open-ssl/ssl-certificate.c
-build $builddir/src/open-ssl/ssl-key.o:                  cc src/open-ssl/ssl-key.c
-build $builddir/src/open-ssl/ssl.o:                      cc src/open-ssl/ssl.c
-build $builddir/src/open-ssl/ssl-socket-io.o:            cc src/open-ssl/ssl-socket-io.c
-build $builddir/src/open-ssl/ssl-client.o:               cc src/open-ssl/ssl-client.c
-build $builddir/src/open-ssl/ssl-server.o:               cc src/open-ssl/ssl-server.c
+build $builddir/src/open-ssl/init.o:                     cc src/open-ssl/init.c | openssl
+build $builddir/src/open-ssl/ssl-context.o:              cc src/open-ssl/ssl-context.c | openssl
+build $builddir/src/open-ssl/ssl-certificate.o:          cc src/open-ssl/ssl-certificate.c | openssl
+build $builddir/src/open-ssl/ssl-key.o:                  cc src/open-ssl/ssl-key.c | openssl
+build $builddir/src/open-ssl/ssl.o:                      cc src/open-ssl/ssl.c | openssl
+build $builddir/src/open-ssl/ssl-socket-io.o:            cc src/open-ssl/ssl-socket-io.c | openssl
+build $builddir/src/open-ssl/ssl-client.o:               cc src/open-ssl/ssl-client.c | openssl
+build $builddir/src/open-ssl/ssl-server.o:               cc src/open-ssl/ssl-server.c | openssl
 build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-ssl/init.o $builddir/src/open-ssl/ssl-context.o $builddir/src/open-ssl/ssl-certificate.o $builddir/src/open-ssl/ssl-key.o $builddir/src/open-ssl/ssl.o $builddir/src/open-ssl/ssl-socket-io.o $builddir/src/open-ssl/ssl-client.o $builddir/src/open-ssl/ssl-server.o
 
 # ssl test
