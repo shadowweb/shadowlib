@@ -1,15 +1,12 @@
 #ifndef SW_THREAD_MANAGER_H
 #define SW_THREAD_MANAGER_H
 
+#define _GNU_SOURCE
 #include "collections/sparse-array.h"
 #include "io/edge-async.h"
 #include "io/edge-timer.h"
 
-// #define _GNU_SOURCE // TODO: find out why defining it did not work
-#define __USE_GNU
 #include <pthread.h>
-#undef __USE_GNU
-// #undef _GNU_SOURCE
 
 // this can only be used from the main thread
 // create specific thread dedicated to performing specific task

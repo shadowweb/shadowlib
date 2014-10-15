@@ -1,7 +1,7 @@
-#include "unittest/unittest.h"
 #include "collections/dynamic-array.h"
 #include "storage/static-string.h"
 #include "core/memory.h"
+#include "unittest/unittest.h"
 #include "utils/file.h"
 
 typedef struct swDictionaryTestData
