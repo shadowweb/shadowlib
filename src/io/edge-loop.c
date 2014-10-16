@@ -27,6 +27,12 @@ const char const *swWatcherTypeTextGet(swWatcherType watcherType)
   return NULL;
 }
 
+// returnin true for this function means try again
+// the reason to do it this way is because the calling function
+// will know should if the watcher is removed and we can drive all
+// iterations from there
+// while the watcher specific function would not know if the watcher
+// was removed in the callback and therefore can't drive iterations
 typedef bool (*swEdgeWatcherProcess)(swEdgeWatcher *watcher, uint32_t events);
 
 static inline bool swEdgeLoopTimerProcess(swEdgeTimer *timerWatcher, uint32_t events)
@@ -34,18 +40,23 @@ static inline bool swEdgeLoopTimerProcess(swEdgeTimer *timerWatcher, uint32_t ev
   bool rtn = false;
   if (timerWatcher)
   {
+    bool again = false;
     if (events & EPOLLIN)
     {
       swEdgeWatcher *watcher = (swEdgeWatcher *)timerWatcher;
       int readSize = 0;
       uint64_t expiredCount = 0;
-      while ((readSize = read(watcher->fd, &expiredCount, sizeof(uint64_t))) == sizeof(uint64_t))
+      if ((readSize = read(watcher->fd, &expiredCount, sizeof(uint64_t))) == sizeof(uint64_t))
+      {
         timerWatcher->timerCB(timerWatcher, expiredCount, events);
+        again = true;
+        rtn = true;
+      }
       // should close fd (I am not sure this will ever happen)
       if (readSize < 0 && errno == EAGAIN)
-        rtn = true;
+        again = true;
     }
-    if (!rtn)
+    if (!again)
       timerWatcher->timerCB(timerWatcher, 0, events);
   }
   return rtn;
@@ -56,22 +67,25 @@ static inline bool swEdgeLoopSignalProcess(swEdgeSignal *signalWatcher, uint32_t
   bool rtn = false;
   if (signalWatcher)
   {
+    bool again = false;
     if (events & EPOLLIN)
     {
       swEdgeWatcher *watcher = (swEdgeWatcher *)signalWatcher;
       int readSize = 0;
       struct signalfd_siginfo signalInfo = {0};
-      while ((readSize = read(watcher->fd, &signalInfo, sizeof(struct signalfd_siginfo))) == sizeof(struct signalfd_siginfo))
+      if ((readSize = read(watcher->fd, &signalInfo, sizeof(struct signalfd_siginfo))) == sizeof(struct signalfd_siginfo))
       {
         if (sigismember(&(signalWatcher->mask), signalInfo.ssi_signo) == 1)
+        {
           signalWatcher->signalCB(signalWatcher, &signalInfo, events);
-        else
-          break;
+          again = true;
+          rtn = true;
+        }
       }
       if (readSize < 0 && errno == EAGAIN)
-        rtn = true;
+        again = true;
     }
-    if (!rtn)
+    if (!again)
       signalWatcher->signalCB(signalWatcher, NULL, events);
   }
   return rtn;
@@ -82,17 +96,22 @@ static inline bool swEdgeLoopAsyncProcess(swEdgeAsync *asyncWatcher, uint32_t ev
   bool rtn = false;
   if (asyncWatcher)
   {
+    bool again = false;
     if (events & EPOLLIN)
     {
       swEdgeWatcher *watcher = (swEdgeWatcher *)asyncWatcher;
       int readSize = 0;
       eventfd_t value = 0;
-      while ((readSize = read(watcher->fd, &value, sizeof(value))) == sizeof(value))
+      if ((readSize = read(watcher->fd, &value, sizeof(value))) == sizeof(value))
+      {
         asyncWatcher->eventCB(asyncWatcher, value, events);
-      if (readSize < 0 && errno == EAGAIN)
+        again = true;
         rtn = true;
+      }
+      if (readSize < 0 && errno == EAGAIN)
+        again = true;
     }
-    if (!rtn)
+    if (!again)
       asyncWatcher->eventCB(asyncWatcher, 0, events);
   }
   return rtn;
@@ -105,7 +124,6 @@ static inline bool swEdgeLoopIOProcess(swEdgeIO *ioWatcher, uint32_t events)
   {
     // printf("'%s' (%d): calling ioCB with events 0x%x\n", __func__, swEdgeIOFDGet(ioWatcher), events);
     ioWatcher->ioCB(ioWatcher, events);
-    rtn = true;
   }
   return rtn;
 }
@@ -276,11 +294,17 @@ void swEdgeLoopRun(swEdgeLoop *loop, bool once)
         for (uint32_t i = 0; i < pendingCount; i++)
         {
           swEdgeWatcher *watcher = NULL;
+          // TODO: this works, but I am not happy with the logic, not sure how to make it more elegant
           if (swFastArrayGet(loop->pendingEvents[lastPending], i, watcher) && watcher && watcherProcess[watcher->type])
           {
-            uint32_t pendingEvents = watcher->pendingEvents;
-            watcher->pendingEvents = 0;
-            watcherProcess[watcher->type](watcher, pendingEvents);
+            while (watcherProcess[watcher->type](watcher, watcher->pendingEvents))
+            {
+              if (swFastArrayGet(loop->pendingEvents[lastPending], i, watcher) && watcher)
+                continue;
+              break;
+            }
+            if (swFastArrayGet(loop->pendingEvents[lastPending], i, watcher) && watcher)
+              watcher->pendingEvents = 0;
           }
         }
         loop->pendingEvents[lastPending].count = 0;

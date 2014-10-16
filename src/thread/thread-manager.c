@@ -74,6 +74,7 @@ static bool swThreadInfoFinalizeThread(swThreadInfo *threadInfo)
         threadInfo->doneFunc(threadInfo->data, threadInfo->returnValue);
       if (threadInfo->joinWaitTimer.watcher.loop)
         swEdgeTimerClose(&(threadInfo->joinWaitTimer));
+      swEdgeAsyncClose(&(threadInfo->doneEvent));
       swSparseArrayRemove(&(threadInfo->manager->threadInfoArray), threadInfo->position);
     }
     else if (errno == EBUSY)

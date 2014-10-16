@@ -40,6 +40,7 @@ typedef struct swTreadTestData
 {
   swThreadManager *manager;
   uint64_t *terminate;
+  swEdgeTimer timer;
 } swTreadTestData;
 
 void *runFunction(void *arg)
@@ -57,7 +58,6 @@ void stopFunction(void *arg)
   swTreadTestData *testData = arg;
   ASSERT_NOT_NULL(testData);
   ASSERT_NOT_NULL(testData->terminate);
-  testData->terminate = arg;
   *(testData->terminate) = 1L;
 }
 
@@ -68,16 +68,33 @@ void doneFunction(void *arg, void *returnValue)
   ASSERT_NOT_NULL(testData);
   swEdgeLoopBreak(testData->manager->loop);
 }
+void timerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
+{
+  swTreadTestData *testData = swEdgeWatcherDataGet(timer);
+  if (testData)
+    *(testData->terminate) = true;
+}
 
 swTestDeclare(ThreadCreate, threadCreateSetup, threadCreateTearDown, swTestRun)
 {
+  bool rtn = false;
   swThreadManager *manager = swTestSuiteDataGet(suite);
   uint64_t *terminate = swTestDataGet(test);
   swTreadTestData testData = {.manager = manager, .terminate = terminate};
   // TODO: trigger thread exit somehow
-  ASSERT_TRUE(swThreadManagerStartThread(manager, runFunction, stopFunction, doneFunction, &testData));
-  swEdgeLoopRun(manager->loop, false);
-  return true;
+  if (swEdgeTimerInit(&(testData.timer), timerCallback, false))
+  {
+    if (swEdgeTimerStart(&(testData.timer), manager->loop, 2000, 0, false))
+    {
+      swEdgeWatcherDataSet(&(testData.timer), &testData);
+      ASSERT_TRUE(swThreadManagerStartThread(manager, runFunction, stopFunction, doneFunction, &testData));
+      swEdgeLoopRun(manager->loop, false);
+      swEdgeTimerStop(&(testData.timer));
+      rtn = true;
+    }
+    swEdgeTimerClose(&(testData.timer));
+  }
+  return rtn;
 }
 
 swTestSuiteStructDeclare(ThreadManagerTest, threadManagerSetup, threadManagerTearDown, swTestRun,
