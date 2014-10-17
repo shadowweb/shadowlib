@@ -26,7 +26,7 @@ bool swEdgeTimerInit(swEdgeTimer *timer, swEdgeTimerCallback cb, bool realTime)
 bool swEdgeTimerStart(swEdgeTimer *timer, swEdgeLoop *loop, uint64_t offset, uint64_t interval, bool absolute)
 {
   bool rtn = false;
-  if (timer && loop)
+  if (timer && loop && (offset || interval))
   {
     swEdgeWatcher *watcher = (swEdgeWatcher *)timer;
     if (watcher->loop)

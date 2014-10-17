@@ -209,6 +209,7 @@ bool swSparseArrayWalk(swSparseArray *array, swSparseArrayWalkFunction walkFunc)
           i++;
         }
         usedMap >>= 1;
+        blockPosition++;
       }
       if (usedMap)
         break;

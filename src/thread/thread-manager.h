@@ -21,8 +21,6 @@
 // work my way up to multiple producer vs single consumer; the intention is to utilize lock free
 // concurrency in all the cases; I would also need it for testing of all these scenarios
 
-// TODO: create unit test
-
 typedef void *(*swThreadRunFunction)(void *arg);
 typedef void (*swThreadStopFunction)(void *arg);
 typedef void (*swThreadDoneFunction)(void *arg, void *returnValue);
@@ -50,8 +48,8 @@ typedef struct swThreadInfo
   uint32_t position;
 } swThreadInfo;
 
-swThreadManager *swThreadManagerNew(swEdgeLoop *loop);
-bool swThreadManagerInit(swThreadManager *manager, swEdgeLoop *loop);
+swThreadManager *swThreadManagerNew(swEdgeLoop *loop, uint64_t joinWaitInterval);
+bool swThreadManagerInit(swThreadManager *manager, swEdgeLoop *loop, uint64_t joinWaitInterval);
 bool swThreadManagerStartThread(swThreadManager *manager, swThreadRunFunction runFunc, swThreadStopFunction stopFunc, swThreadDoneFunction doneFunc, void *data);
 void swThreadManagerRelease(swThreadManager *manager);
 void swThreadManagerDelete(swThreadManager *manager);

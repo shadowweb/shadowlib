@@ -5,10 +5,10 @@
 #include <errno.h>
 #include <string.h>
 
-swThreadManager *swThreadManagerNew(swEdgeLoop *loop)
+swThreadManager *swThreadManagerNew(swEdgeLoop *loop, uint64_t joinWaitInterval)
 {
   swThreadManager *manager = swMemoryMalloc(sizeof(*manager));
-  if (!swThreadManagerInit(manager, loop))
+  if (!swThreadManagerInit(manager, loop, joinWaitInterval))
   {
     swMemoryFree(manager);
     manager = NULL;
@@ -16,7 +16,7 @@ swThreadManager *swThreadManagerNew(swEdgeLoop *loop)
   return manager;
 }
 
-bool swThreadManagerInit(swThreadManager *manager, swEdgeLoop *loop)
+bool swThreadManagerInit(swThreadManager *manager, swEdgeLoop *loop, uint64_t joinWaitInterval)
 {
   bool rtn = false;
   if (manager && loop)
@@ -24,6 +24,7 @@ bool swThreadManagerInit(swThreadManager *manager, swEdgeLoop *loop)
     memset(manager, 0, sizeof(*manager));
     if ((swSparseArrayInit(&(manager->threadInfoArray), sizeof(swThreadInfo), 64, 4)))
     {
+      manager->joinWaitInterval = joinWaitInterval;
       manager->loop = loop;
       rtn = true;
     }
@@ -31,14 +32,20 @@ bool swThreadManagerInit(swThreadManager *manager, swEdgeLoop *loop)
   return rtn;
 }
 
+static void swThreadInfoClean(swThreadInfo *threadInfo)
+{
+  if (threadInfo->doneFunc)
+    threadInfo->doneFunc(threadInfo->data, threadInfo->returnValue);
+  swEdgeAsyncClose(&(threadInfo->doneEvent));
+  swSparseArrayRemove(&(threadInfo->manager->threadInfoArray), threadInfo->position);
+}
+
 static void swThreadInfoForceJoin(swThreadInfo *threadInfo)
 {
   if (pthread_cancel(threadInfo->threadId))
   {
     pthread_join(threadInfo->threadId, &(threadInfo->returnValue));
-    if (threadInfo->doneFunc)
-      threadInfo->doneFunc(threadInfo->data, threadInfo->returnValue);
-    swSparseArrayRemove(&(threadInfo->manager->threadInfoArray), threadInfo->position);
+    swThreadInfoClean(threadInfo);
   }
 }
 
@@ -47,18 +54,14 @@ static void swThreadInfoJoinWaitCallback(swEdgeTimer *timer, uint64_t expiredCou
   if (timer)
   {
     swThreadInfo *threadInfo = swEdgeWatcherDataGet(timer);
+    swEdgeTimerClose(timer);
     if (threadInfo)
     {
       if (!pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue)))
-      {
-        if (threadInfo->doneFunc)
-          threadInfo->doneFunc(threadInfo->data, threadInfo->returnValue);
-        swSparseArrayRemove(&(threadInfo->manager->threadInfoArray), threadInfo->position);
-      }
+        swThreadInfoClean(threadInfo);
       else
         swThreadInfoForceJoin(threadInfo);
     }
-    swEdgeTimerClose(timer);
   }
 }
 
@@ -67,17 +70,16 @@ static bool swThreadInfoFinalizeThread(swThreadInfo *threadInfo)
   bool rtn = false;
   if (threadInfo)
   {
-    if (!pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue)))
+    if (pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue)) == 0)
     {
       rtn = true;
-      if (threadInfo->doneFunc)
-        threadInfo->doneFunc(threadInfo->data, threadInfo->returnValue);
       if (threadInfo->joinWaitTimer.watcher.loop)
         swEdgeTimerClose(&(threadInfo->joinWaitTimer));
-      swEdgeAsyncClose(&(threadInfo->doneEvent));
-      swSparseArrayRemove(&(threadInfo->manager->threadInfoArray), threadInfo->position);
+      swThreadInfoClean(threadInfo);
     }
-    else if (errno == EBUSY)
+    // WARNING: despite what the man page says everywhere, pthread_tryjoin_np returns EAGAIN when it fails
+    // and expects retry
+    else if (errno == EAGAIN || errno == EBUSY)
     {
       if (!threadInfo->joinWaitTimer.watcher.loop)
       {
