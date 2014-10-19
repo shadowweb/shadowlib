@@ -153,7 +153,8 @@ build $builddir/src/command-line/command-line-test:      link $builddir/src/comm
 
 # thread
 build $builddir/src/thread/thread-manager.o:             cc src/thread/thread-manager.c
-build $builddir/src/thread/thread.a:                     ar $builddir/src/thread/thread-manager.o
+build $builddir/src/thread/mpsc-ring-buffer.o:           cc src/thread/mpsc-ring-buffer.c
+build $builddir/src/thread/thread.a:                     ar $builddir/src/thread/thread-manager.o $builddir/src/thread/mpsc-ring-buffer.o
 
 # thread unit test
 build $builddir/src/thread/thread-manager-test.o:        cc src/thread/thread-manager-test.c

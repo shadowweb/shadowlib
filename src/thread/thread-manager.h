@@ -1,5 +1,5 @@
-#ifndef SW_THREAD_MANAGER_H
-#define SW_THREAD_MANAGER_H
+#ifndef SW_THREAD_THREADMANAGER_H
+#define SW_THREAD_THREADMANAGER_H
 
 #define _GNU_SOURCE
 #include "collections/sparse-array.h"
@@ -54,4 +54,4 @@ bool swThreadManagerStartThread(swThreadManager *manager, swThreadRunFunction ru
 void swThreadManagerRelease(swThreadManager *manager);
 void swThreadManagerDelete(swThreadManager *manager);
 
-#endif // SW_THREAD_MANAGER_H
+#endif // SW_THREAD_THREADMANAGER_H
