@@ -7,16 +7,16 @@
 #include <unistd.h>
 
 // for futex: this won't work anyway as futex expects pointer to an int, not to a pointer to pointer
-#include <linux/futex.h>
-#include <sys/time.h>
+// #include <linux/futex.h>
+// #include <sys/time.h>
 
 static void *swMPSCRingBufferRun(swMPSCRingBuffer *ringBuffer)
 {
   if (ringBuffer)
   {
     uint8_t *currentTail = NULL;
-    struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 1000 };
-    while(!ringBuffer->shutdown)
+    struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 5 };
+    while(!ringBuffer->shutdown || (ringBuffer->currentTail != ringBuffer->head))
     {
       currentTail = ringBuffer->currentTail;
       if (ringBuffer->head != currentTail)
@@ -66,7 +66,7 @@ bool swMPSCRingBufferInit(swMPSCRingBuffer *ringBuffer, swThreadManager *threadM
     ringBuffer->size = getpagesize() * pages;
     if((ringBuffer->buffer = (uint8_t *)mmap(NULL, ringBuffer->size << 1, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
     {
-      char *tempFile = "/dev/shm/mpscbuffer-XXXXXX";
+      char tempFile[] = "/dev/shm/mpscbuffer-XXXXXX";
       int fd = mkstemp(tempFile);
       if (fd >= 0)
       {
@@ -149,7 +149,7 @@ bool swMPSCRingBufferProduceAcquire(swMPSCRingBuffer *ringBuffer, uint8_t **buff
       if (sizeAvailable < size)
         break;
       candidateTail = candidateData + size;
-      candidateTail = (candidateTail <= ringBuffer->bufferEnd)? candidateTail : (uint8_t *)(candidateTail - ringBuffer->bufferEnd);
+      candidateTail = (candidateTail <= ringBuffer->bufferEnd)? candidateTail : (uint8_t *)(candidateTail - ringBuffer->size);
       if (__sync_bool_compare_and_swap(&(ringBuffer->candidateTail), candidateData, candidateTail))
       {
         *buffer = candidateData;

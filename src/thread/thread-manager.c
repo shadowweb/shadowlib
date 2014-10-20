@@ -57,7 +57,7 @@ static void swThreadInfoJoinWaitCallback(swEdgeTimer *timer, uint64_t expiredCou
     swEdgeTimerClose(timer);
     if (threadInfo)
     {
-      if (!pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue)))
+      if (pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue)) == 0)
         swThreadInfoClean(threadInfo);
       else
         swThreadInfoForceJoin(threadInfo);
@@ -70,16 +70,15 @@ static bool swThreadInfoFinalizeThread(swThreadInfo *threadInfo)
   bool rtn = false;
   if (threadInfo)
   {
-    if (pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue)) == 0)
+    int error = pthread_tryjoin_np(threadInfo->threadId, &(threadInfo->returnValue));
+    if (error == 0)
     {
       rtn = true;
       if (threadInfo->joinWaitTimer.watcher.loop)
         swEdgeTimerClose(&(threadInfo->joinWaitTimer));
       swThreadInfoClean(threadInfo);
     }
-    // WARNING: despite what the man page says everywhere, pthread_tryjoin_np returns EAGAIN when it fails
-    // and expects retry
-    else if (errno == EAGAIN || errno == EBUSY)
+    else if (error == EBUSY)
     {
       if (!threadInfo->joinWaitTimer.watcher.loop)
       {

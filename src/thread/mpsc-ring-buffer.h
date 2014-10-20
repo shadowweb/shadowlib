@@ -19,19 +19,19 @@
 // MPSC stands for Multiple Producer Single Consumer
 struct swMPSCRingBuffer;
 
-typedef bool (*swMPSCRingBufferConsumeFunction)(uint8_t *data, size_t size, void *arg);
+typedef bool (*swMPSCRingBufferConsumeFunction)(uint8_t *buffer, size_t size, void *data);
 
 typedef struct swMPSCRingBuffer
 {
   swThreadManager *threadManager;
   swMPSCRingBufferConsumeFunction consumeFunc;
+  void *data;
+  size_t size;
   uint8_t *buffer;
   uint8_t *bufferEnd;
   uint8_t *head;
   uint8_t *candidateTail;
   uint8_t *currentTail;
-  void *data;
-  size_t size;
   bool shutdown;
   bool done;
 } swMPSCRingBuffer;

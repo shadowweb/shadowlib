@@ -160,6 +160,11 @@ build $builddir/src/thread/thread.a:                     ar $builddir/src/thread
 build $builddir/src/thread/thread-manager-test.o:        cc src/thread/thread-manager-test.c
 build $builddir/src/thread/thread-manager-test:          link $builddir/src/thread/thread-manager-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
+# ring buffer test
+build $builddir/src/thread/mpsc-ring-buffer-test.o:      cc src/thread/mpsc-ring-buffer-test.c
+build $builddir/src/thread/mpsc-ring-buffer-test:        link $builddir/src/thread/mpsc-ring-buffer-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+
+
 # init
 build $builddir/src/init/init.o:                         cc src/init/init.c
 build $builddir/src/init/init-io.o:                      cc src/init/init-io.c
