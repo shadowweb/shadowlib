@@ -15,7 +15,7 @@ static void *swMPSCRingBufferRun(swMPSCRingBuffer *ringBuffer)
   if (ringBuffer)
   {
     uint8_t *currentTail = NULL;
-    struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 5 };
+    struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 100 };
     while(!ringBuffer->shutdown || (ringBuffer->currentTail != ringBuffer->head))
     {
       currentTail = ringBuffer->currentTail;
@@ -145,7 +145,7 @@ bool swMPSCRingBufferProduceAcquire(swMPSCRingBuffer *ringBuffer, uint8_t **buff
       candidateData = ringBuffer->candidateTail;
       sizeAvailable = (candidateData > head)?
           (size_t)((ringBuffer->bufferEnd - candidateData) + (head - ringBuffer->buffer) - 1) :
-          ((candidateData < head)? (size_t)(head - candidateData - 1) : ringBuffer->size);
+          ((candidateData < head)? (size_t)(head - candidateData - 1) : (ringBuffer->size - 1));
       if (sizeAvailable < size)
         break;
       candidateTail = candidateData + size;
