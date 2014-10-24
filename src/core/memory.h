@@ -29,6 +29,5 @@ extern swMemoryFreeFunction    *swMemoryFree;
 
 void *swMemoryDuplicate(void *src, size_t size);
 void *swMemoryCacheAlignMalloc(size_t size);
-// size_t swMemoryL1DSizeGet();
 
 #endif // SW_CORE_MEMORY_H
