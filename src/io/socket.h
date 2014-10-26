@@ -2,7 +2,6 @@
 #define SW_IO_SOCKET_H
 
 #include <stdbool.h>
-#define _GNU_SOURCE
 #include <sys/socket.h>
 #include <stdio.h>
 

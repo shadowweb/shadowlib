@@ -1,21 +1,19 @@
 #include "core/memory.h"
+#include "core/time.h"
 #include "thread/mpsc-ring-buffer.h"
+#include "thread/futex.h"
 
 #include <string.h>
 #include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
 
-// for futex: this won't work anyway as futex expects pointer to an int, not to a pointer to pointer
-// #include <linux/futex.h>
-// #include <sys/time.h>
-
 static void *swMPSCRingBufferRun(swMPSCRingBuffer *ringBuffer)
 {
   if (ringBuffer)
   {
     uint8_t *currentTail = NULL;
-    struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 100 };
+    struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 50 };
     while(!ringBuffer->shutdown || (ringBuffer->currentTail != ringBuffer->head))
     {
       currentTail = ringBuffer->currentTail;
@@ -27,10 +25,7 @@ static void *swMPSCRingBufferRun(swMPSCRingBuffer *ringBuffer)
         ringBuffer->head = currentTail;
       }
       else
-      {
         nanosleep(&sleepInterval, NULL);
-        // futex(&(ringBuffer->currentTail), FUTEX_WAIT, currentTail, &sleepInterval, NULL, 0);
-      }
     }
   }
   return NULL;
@@ -48,7 +43,7 @@ static void swMPSCRingBufferDone(swMPSCRingBuffer *ringBuffer, void *returnValue
 
 swMPSCRingBuffer *swMPSCRingBufferNew(swThreadManager *threadManager, uint32_t pages, swMPSCRingBufferConsumeFunction consumeFunc, void *data)
 {
-  swMPSCRingBuffer *ringBuffer = swMemoryMalloc(sizeof(*ringBuffer));
+  swMPSCRingBuffer *ringBuffer = swMemoryCacheAlignMalloc(sizeof(*ringBuffer));
   if (!swMPSCRingBufferInit(ringBuffer, threadManager, pages, consumeFunc, data))
   {
     swMemoryFree(ringBuffer);
@@ -81,15 +76,18 @@ bool swMPSCRingBufferInit(swMPSCRingBuffer *ringBuffer, swThreadManager *threadM
               if (mmap(upperData, ringBuffer->size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_SHARED, fd, 0) == upperData)
               {
                 ringBuffer->bufferEnd = ringBuffer->buffer + ringBuffer->size;
-                ringBuffer->threadManager = threadManager;
-                ringBuffer->consumeFunc = consumeFunc;
                 ringBuffer->head = ringBuffer->buffer;
                 ringBuffer->candidateTail = ringBuffer->buffer;
                 ringBuffer->currentTail = ringBuffer->buffer;
+                ringBuffer->tailLock = 0;
+                ringBuffer->threadManager = threadManager;
+                ringBuffer->consumeFunc = consumeFunc;
                 ringBuffer->shutdown = false;
                 ringBuffer->done = false;
                 ringBuffer->data = data;
                 rtn = swThreadManagerStartThread(threadManager, (swThreadRunFunction)swMPSCRingBufferRun, (swThreadStopFunction)swMPSCRingBufferStop, (swThreadDoneFunction)swMPSCRingBufferDone, ringBuffer);
+                if (!rtn)
+                  munmap(upperData, ringBuffer->size);
               }
               if (!rtn)
                 munmap(lowerData, ringBuffer->size);
@@ -139,24 +137,21 @@ bool swMPSCRingBufferProduceAcquire(swMPSCRingBuffer *ringBuffer, uint8_t **buff
     uint8_t *candidateTail = NULL;
     uint8_t *head = NULL;
     size_t sizeAvailable = 0;
-    do
+    swSpinLockLock(&(ringBuffer->tailLock));
+    head = ringBuffer->head;
+    candidateData = ringBuffer->candidateTail;
+    sizeAvailable = (candidateData > head)?
+        (size_t)((ringBuffer->bufferEnd - candidateData) + (head - ringBuffer->buffer) - 1) :
+        ((candidateData < head)? (size_t)(head - candidateData - 1) : (ringBuffer->size - 1));
+    if (sizeAvailable >= size)
     {
-      head = ringBuffer->head;
-      candidateData = ringBuffer->candidateTail;
-      sizeAvailable = (candidateData > head)?
-          (size_t)((ringBuffer->bufferEnd - candidateData) + (head - ringBuffer->buffer) - 1) :
-          ((candidateData < head)? (size_t)(head - candidateData - 1) : (ringBuffer->size - 1));
-      if (sizeAvailable < size)
-        break;
       candidateTail = candidateData + size;
       candidateTail = (candidateTail <= ringBuffer->bufferEnd)? candidateTail : (uint8_t *)(candidateTail - ringBuffer->size);
-      if (__sync_bool_compare_and_swap(&(ringBuffer->candidateTail), candidateData, candidateTail))
-      {
-        *buffer = candidateData;
-        rtn = true;
-        break;
-      }
-    } while (true);
+      ringBuffer->candidateTail = candidateTail;
+      *buffer = candidateData;
+      rtn = true;
+    }
+    swSpinLockUnlock(&(ringBuffer->tailLock));
   }
   return rtn;
 }
@@ -166,11 +161,24 @@ bool swMPSCRingBufferProduceRelease(swMPSCRingBuffer *ringBuffer, uint8_t *buffe
   bool rtn = false;
   if (ringBuffer && buffer && size)
   {
+    // struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 1000 };
+    uint32_t i = 0;
     uint8_t *currentTail = buffer + size;
     currentTail = (currentTail <= ringBuffer->bufferEnd)? currentTail : (currentTail - ringBuffer->size);
-    while (__sync_val_compare_and_swap(&(ringBuffer->currentTail), buffer, currentTail) != buffer);
-    // futex(&(ringBuffer->currentTail), FUTEX_WAKE, 1, NULL, NULL, 0);
+    while (__sync_val_compare_and_swap(&(ringBuffer->currentTail), buffer, currentTail) != buffer)
+    {
+      i++;
+      if (i == 100)
+      {
+        i = 0;
+        pthread_yield();
+      }
+      // WARNING: does not behave well in valgrind test without this nanosleep
+      // nanosleep(&sleepInterval, NULL);
+    }
+
     rtn = true;
   }
   return rtn;
 }
+

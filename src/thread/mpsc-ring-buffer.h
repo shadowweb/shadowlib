@@ -1,6 +1,7 @@
 #ifndef SW_THREAD_MPSCRINGBUFFER_H
 #define SW_THREAD_MPSCRINGBUFFER_H
 
+#include "thread/spin-lock.h"
 #include "thread/thread-manager.h"
 
 #include <stdbool.h>
@@ -16,6 +17,10 @@
 // can be found here: http://vrb.slashusr.org/
 // it also shows how the same can be done using shared memory
 
+// WARNING: to get unit test to work in valgrind; replace pthread_yield() with nanosleep()
+// in the library and in the test itself. It will be slow, but it will pass
+// when running without valgrind, the test is really fast with pthread_yield() in place
+
 // MPSC stands for Multiple Producer Single Consumer
 struct swMPSCRingBuffer;
 
@@ -30,10 +35,11 @@ typedef struct swMPSCRingBuffer
   uint8_t *buffer;
   uint8_t *bufferEnd;
   uint8_t *head;
-  uint8_t *candidateTail;
-  uint8_t *currentTail;
   bool shutdown;
   bool done;
+  uint8_t *candidateTail;
+  uint8_t *currentTail;
+  swSpinLock tailLock;
 } swMPSCRingBuffer;
 
 swMPSCRingBuffer *swMPSCRingBufferNew(swThreadManager *threadManager, uint32_t pages, swMPSCRingBufferConsumeFunction consumeFunc, void *data);

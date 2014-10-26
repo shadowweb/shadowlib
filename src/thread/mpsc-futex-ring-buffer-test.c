@@ -1,4 +1,4 @@
-#include "thread/mpsc-ring-buffer.h"
+#include "thread/mpsc-futex-ring-buffer.h"
 
 #include "core/memory.h"
 #include "core/time.h"
@@ -6,7 +6,7 @@
 
 typedef struct swRingBufferTestThreadData
 {
-  swMPSCRingBuffer *ringBuffer;
+  swMPSCFutexRingBuffer *ringBuffer;
   size_t    bytesAcquired;
   size_t    acquireBytesTotal;
   uint64_t  acquireSuccess;
@@ -20,12 +20,13 @@ typedef struct swRingBufferTestThreadData
 
 typedef struct swRingBufferTestData
 {
-  swMPSCRingBuffer *ringBuffer;
+  swMPSCFutexRingBuffer *ringBuffer;
   swRingBufferTestThreadData *threadData;
   swEdgeAsync killLoop;
   size_t acquireBytesPerThread;
   size_t acquireBytesTotal;
   size_t consumedBytesTotal;
+  size_t producedBytesTotal;
   uint32_t numThreads;
 } swRingBufferTestData;
 
@@ -38,10 +39,10 @@ void swRingBufferTestDataDelete(swRingBufferTestData *testData)
   {
     if (testData->killLoop.watcher.loop)
       swEdgeAsyncClose(&(testData->killLoop));
-    swMPSCRingBuffer *ringBuffer = testData->ringBuffer;
+    swMPSCFutexRingBuffer *ringBuffer = testData->ringBuffer;
     swThreadManager *manager = ringBuffer->threadManager;
     swEdgeLoop *loop = manager->loop;
-    swMPSCRingBufferDelete(ringBuffer);
+    swMPSCFutexRingBufferDelete(ringBuffer);
     swThreadManagerDelete(manager);
     if (testData->threadData)
       swMemoryFree(testData->threadData);
@@ -66,24 +67,22 @@ void *testRunFunction(swRingBufferTestThreadData *threadData)
 {
   if (threadData)
   {
-    // struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 1000 };
     uint64_t threadCPUTime  = swTimeGet(CLOCK_THREAD_CPUTIME_ID);
     uint64_t totalTime      = swTimeGet(CLOCK_MONOTONIC_RAW);
     uint8_t *buffer = NULL;
     while (!threadData->shutdown && threadData->bytesAcquired < threadData->acquireBytesTotal)
     {
-      if (swMPSCRingBufferProduceAcquire(threadData->ringBuffer, &buffer, acquireBytes))
+      if (swMPSCFutexRingBufferProduceAcquire(threadData->ringBuffer, &buffer, acquireBytes))
       {
         threadData->acquireSuccess++;
         threadData->bytesAcquired += acquireBytes;
-        if (!swMPSCRingBufferProduceRelease(threadData->ringBuffer, buffer, acquireBytes))
+        if (!swMPSCFutexRingBufferProduceRelease(threadData->ringBuffer, buffer, acquireBytes))
           break;
+        __sync_add_and_fetch(&(((swRingBufferTestData *)(threadData->ringBuffer->data))->producedBytesTotal), acquireBytes);
       }
       else
       {
         threadData->acquireFailure++;
-        // WARNING: does not behave well in valgrind test without this nanosleep
-        // nanosleep(&sleepInterval, NULL);
         pthread_yield();
       }
     }
@@ -182,7 +181,7 @@ swRingBufferTestData *swRingBufferTestDataNew(size_t acquireBytesTotal, uint32_t
         swThreadManager *manager = swThreadManagerNew(loop, 1000);
         if (manager)
         {
-          if ((testData->ringBuffer = swMPSCRingBufferNew(manager, 4, ringBufferConsumeFunction, testData)))
+          if ((testData->ringBuffer = swMPSCFutexRingBufferNew(manager, 4, ringBufferConsumeFunction, testData)))
           {
             if (swRingBufferTestDataSetTest(testData, acquireBytesTotal, numThreads))
               rtn = testData;
@@ -254,7 +253,7 @@ static inline bool runAnyTest(swTest *test)
 {
   bool rtn = false;
   swRingBufferTestData *testData = swTestDataGet(test);
-  swMPSCRingBuffer *ringBuffer = testData->ringBuffer;
+  swMPSCFutexRingBuffer *ringBuffer = testData->ringBuffer;
   if (ringBuffer)
   {
     swThreadManager *manager = ringBuffer->threadManager;

@@ -1,7 +1,5 @@
-#define _GNU_SOURCE
 #include <errno.h>
 #include <stdio.h>
-#undef _GNU_SOURCE
 #include <stdarg.h>
 
 #include "unittest/unittest.h"

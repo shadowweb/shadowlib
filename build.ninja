@@ -2,7 +2,7 @@ builddir = build
 buildthirdpartydir = $builddir/build-third-party
 cc = gcc
 ar = ar
-cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -pthread -Isrc -I${buildthirdpartydir}/include
+cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -D_GNU_SOURCE -pthread -Isrc -I${buildthirdpartydir}/include
 ldflags = -pthread
 openssldep = $buildithirdpartydir/include/openssl $buildithirdpartydir/lib/openssl
 
@@ -154,7 +154,8 @@ build $builddir/src/command-line/command-line-test:      link $builddir/src/comm
 # thread
 build $builddir/src/thread/thread-manager.o:             cc src/thread/thread-manager.c
 build $builddir/src/thread/mpsc-ring-buffer.o:           cc src/thread/mpsc-ring-buffer.c
-build $builddir/src/thread/thread.a:                     ar $builddir/src/thread/thread-manager.o $builddir/src/thread/mpsc-ring-buffer.o
+build $builddir/src/thread/mpsc-futex-ring-buffer.o:     cc src/thread/mpsc-futex-ring-buffer.c
+build $builddir/src/thread/thread.a:                     ar $builddir/src/thread/thread-manager.o $builddir/src/thread/mpsc-ring-buffer.o $builddir/src/thread/mpsc-futex-ring-buffer.o
 
 # thread unit test
 build $builddir/src/thread/thread-manager-test.o:        cc src/thread/thread-manager-test.c
@@ -164,6 +165,9 @@ build $builddir/src/thread/thread-manager-test:          link $builddir/src/thre
 build $builddir/src/thread/mpsc-ring-buffer-test.o:      cc src/thread/mpsc-ring-buffer-test.c
 build $builddir/src/thread/mpsc-ring-buffer-test:        link $builddir/src/thread/mpsc-ring-buffer-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
+# ring buffer with futex test
+build $builddir/src/thread/mpsc-futex-ring-buffer-test.o: cc src/thread/mpsc-futex-ring-buffer-test.c
+build $builddir/src/thread/mpsc-futex-ring-buffer-test:   link $builddir/src/thread/mpsc-futex-ring-buffer-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
 # init
 build $builddir/src/init/init.o:                         cc src/init/init.c

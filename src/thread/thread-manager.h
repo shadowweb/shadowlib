@@ -1,7 +1,6 @@
 #ifndef SW_THREAD_THREADMANAGER_H
 #define SW_THREAD_THREADMANAGER_H
 
-#define _GNU_SOURCE
 #include "collections/sparse-array.h"
 #include "io/edge-async.h"
 #include "io/edge-timer.h"
