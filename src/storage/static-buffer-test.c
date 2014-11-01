@@ -1,5 +1,5 @@
-#include <storage/static-buffer.h>
-#include <unittest/unittest.h>
+#include "storage/static-buffer.h"
+#include "unittest/unittest.h"
 
 swTestDeclare(TestCompare, NULL, NULL, swTestRun)
 {

@@ -31,7 +31,9 @@ typedef struct swHashMapLinearIterator
 } swHashMapLinearIterator;
 
 swHashMapLinear *swHashMapLinearNew(swHashKeyHashFunction keyHash, swHashKeyEqualFunction keyEqual, swHashKeyDeleteFunction keyDelete, swHashValueDeleteFunction valueDelete);
+bool    swHashMapLinearInit(swHashMapLinear *map, swHashKeyHashFunction keyHash, swHashKeyEqualFunction keyEqual, swHashKeyDeleteFunction keyDelete, swHashValueDeleteFunction valueDelete);
 void    swHashMapLinearDelete(swHashMapLinear *map);
+void    swHashMapLinearRelease(swHashMapLinear *map);
 bool    swHashMapLinearInsert(swHashMapLinear *map, void *key, void *value);
 bool    swHashMapLinearUpsert(swHashMapLinear *map, void *key, void *value);
 bool    swHashMapLinearRemove(swHashMapLinear *map, void *key);

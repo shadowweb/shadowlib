@@ -32,8 +32,18 @@ static inline void swHashMapLinearClearInternal(swHashMapLinear *map)
 
 swHashMapLinear *swHashMapLinearNew(swHashKeyHashFunction keyHash, swHashKeyEqualFunction keyEqual, swHashKeyDeleteFunction keyDelete, swHashValueDeleteFunction valueDelete)
 {
-  swHashMapLinear *rtn = NULL;
-  swHashMapLinear *map = swMemoryCalloc(1, sizeof(swHashMapLinear));
+  swHashMapLinear *rtn = swMemoryCalloc(1, sizeof(swHashMapLinear));
+  if (!swHashMapLinearInit(rtn, keyHash, keyEqual, keyDelete, valueDelete))
+  {
+    swMemoryFree(rtn);
+    rtn = NULL;
+  }
+  return rtn;
+}
+
+bool swHashMapLinearInit(swHashMapLinear *map, swHashKeyHashFunction keyHash, swHashKeyEqualFunction keyEqual, swHashKeyDeleteFunction keyDelete, swHashValueDeleteFunction valueDelete)
+{
+  bool rtn = false;
   if (map)
   {
     swHashShiftSet (SW_HASH_MIN_SHIFT, &map->size, &map->mod, &map->mask);
@@ -47,17 +57,26 @@ swHashMapLinear *swHashMapLinearNew(swHashKeyHashFunction keyHash, swHashKeyEqua
           map->keyHash      = (keyHash) ? keyHash : swHashPointerHash;
           map->keyDelete    = keyDelete;
           map->valueDelete  = valueDelete;
-          rtn = map;
+          rtn = true;
         }
       }
     }
     if (!rtn)
-      swHashMapLinearDelete(map);
+      swHashMapLinearRelease(map);
   }
   return rtn;
 }
 
-void swHashMapLinearDelete (swHashMapLinear *map)
+void swHashMapLinearDelete(swHashMapLinear *map)
+{
+  if (map)
+  {
+    swHashMapLinearRelease(map);
+    swMemoryFree(map);
+  }
+}
+
+void swHashMapLinearRelease(swHashMapLinear *map)
 {
   if (map)
   {
@@ -68,9 +87,10 @@ void swHashMapLinearDelete (swHashMapLinear *map)
       swMemoryFree(map->keys);
     if (map->hashes)
       swMemoryFree(map->hashes);
-    swMemoryFree(map);
+    memset(map, 0, sizeof(*map));
   }
 }
+
 
 static inline uint32_t swHashMapLinearHashGet(swHashMapLinear *map, void *key)
 {
