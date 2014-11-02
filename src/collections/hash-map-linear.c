@@ -32,7 +32,7 @@ static inline void swHashMapLinearClearInternal(swHashMapLinear *map)
 
 swHashMapLinear *swHashMapLinearNew(swHashKeyHashFunction keyHash, swHashKeyEqualFunction keyEqual, swHashKeyDeleteFunction keyDelete, swHashValueDeleteFunction valueDelete)
 {
-  swHashMapLinear *rtn = swMemoryCalloc(1, sizeof(swHashMapLinear));
+  swHashMapLinear *rtn = swMemoryMalloc(sizeof(*rtn));
   if (!swHashMapLinearInit(rtn, keyHash, keyEqual, keyDelete, valueDelete))
   {
     swMemoryFree(rtn);
@@ -46,6 +46,7 @@ bool swHashMapLinearInit(swHashMapLinear *map, swHashKeyHashFunction keyHash, sw
   bool rtn = false;
   if (map)
   {
+    memset(map, 0, sizeof(*map));
     swHashShiftSet (SW_HASH_MIN_SHIFT, &map->size, &map->mod, &map->mask);
     if ((map->hashes = swMemoryCalloc(map->size, sizeof(uint32_t))))
     {

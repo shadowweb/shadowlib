@@ -66,12 +66,12 @@ struct swLogSink
 void  swLogSinkDataSet(swLogSink *sink, void *data);
 void *swLogSinkDataGet(swLogSink *sink);
 
-bool swLogSinkInit(swLogSink *sink, swLogSinkAcquireFunction );
+// bool swLogSinkInit(swLogSink *sink, swLogSinkAcquireFunction );
 
 typedef struct swLogFormatter swLogFormatter;
 typedef bool (*swLogFormatterInitFunction)      (swLogFormatter *formatter);
-typedef bool (*swLogFormatterPreformatFunction) (swLogFormatter *formatter, size_t *sizeNeeded,                   const char *format, va_list ap);
-typedef bool (*swLogFormatterFormatFunction)    (swLogFormatter *formatter, size_t  sizeNeeded, uint8_t  *buffer, const char *format, va_list ap);
+typedef bool (*swLogFormatterPreformatFunction) (swLogFormatter *formatter, size_t *sizeNeeded,                   swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
+typedef bool (*swLogFormatterFormatFunction)    (swLogFormatter *formatter, size_t  sizeNeeded, uint8_t  *buffer, swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
 typedef bool (*swLogFormatterClearFunction)     (swLogFormatter *formatter);
 
 struct swLogFormatter
@@ -132,42 +132,54 @@ typedef struct swLogger
   swLogLevel level;
   uint32_t magic;
   unsigned int useManagerLevel : 1;
+  uint64_t unused1;
+  uint64_t unused2;
+  uint64_t unused3;
 } swLogger;
 
 #define swLoggerDefineWithLevel(n, l)   {.name = swStaticStringDefine(n), .manager = NULL, .level = (l),            .magic = SW_LOGGER_MAGIC, .useManagerLevel = false}
 #define swLoggerDefine(n)               {.name = swStaticStringDefine(n), .manager = NULL, .level = swLogLevelNone, .magic = SW_LOGGER_MAGIC, .useManagerLevel = true }
-#define swLoggerDeclare(logger, n)      static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefine(n)
-#define swLoggerDeclareWithLevel(n, l)  static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefineWithLevel(n, l)
+#define swLoggerDeclare(logger, n)              static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefine(n)
+#define swLoggerDeclareWithLevel(logger, n, l)  static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefineWithLevel(n, l)
 void swLoggerLevelSet(swLogger *logger, swLogLevel level, bool useManagerLevel);
 
 void swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const char *function, int line, const char *format, ...) __attribute__ ((format(printf, 6, 7)));
-// this function will avoid extra formatting (like new timestamp and stuff)
-void swLoggerLogContinue(swLogger *logger, swLogLevel level, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
-
 
 #define SW_LOG_GENERIC(logger, lvl, file, function, line, format, ...)  \
-  if (logger && ((swLogger *)(logger))->manager && lvl && lvl <= swLogLevelMax) \
+_Pragma("GCC diagnostic push") \
+_Pragma("GCC diagnostic ignored \"-Waddress\"") \
+  if (lvl && lvl < swLogLevelMax) \
   { \
-    if ((((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->manager->level)) || (!((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->level))) \
-      swLoggerLog(logger, lvl, file, function, line, format "\n", ##__VA_ARGS__); \
+    if ((logger) && ((swLogger *)(logger))->manager) \
+    { \
+      if ((((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->manager->level)) || (!((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->level))) \
+        swLoggerLog(logger, lvl, file, function, line, format "\n", ##__VA_ARGS__); \
+    } \
+    else \
+    { \
+      if (!(logger) || ((logger) && (lvl <= (((swLogger *)(logger))->level)))) \
+        printf("%s%s " file ":%u %s():%s " format "\n", swLogLevelColorGet(lvl), swLogLevelTextGet(lvl), line, function, swLogLevelColorGet(swLogLevelNone), ##__VA_ARGS__); \
+    } \
   } \
-  else \
-  { \
-    if ( !((swLogger *)(logger)) || ( ((swLogger *)(logger)) && (lvl <= (((swLogger *)(logger))->level)) ) ) \
-      printf("%s%s " file ":%u %s():%s " format "\n", swLogLevelColorGet(lvl), swLogLevelTextGet(lvl), line, function, swLogLevelColorGet(swLogLevelNone), ##__VA_ARGS__); \
-  }
+_Pragma("GCC diagnostic pop")
 
 #define SW_LOG_GENERIC_CONTINUE(logger, lvl, format, ...)  \
-  if (((swLogger *)(logger)) && ((swLogger *)(logger))->manager && lvl && lvl <= swLogLevelMax) \
+_Pragma("GCC diagnostic push") \
+_Pragma("GCC diagnostic ignored \"-Waddress\"") \
+  if (lvl && lvl < swLogLevelMax) \
   { \
-    if ((((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->manager->level)) || (!((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->level))) \
-      swLoggerLogContinue(logger, lvl, format, ##__VA_ARGS__); \
+    if ((logger) && ((swLogger *)(logger))->manager) \
+    { \
+      if ((((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->manager->level)) || (!((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->level))) \
+        swLoggerLog(logger, lvl, NULL, NULL, 0, format, ##__VA_ARGS__); \
+    } \
+    else \
+    { \
+      if (!(logger) || ((logger) && (lvl <= ((swLogger *)(logger))->level))) \
+        printf("%s%s%s\t" format "\n", swLogLevelColorGet(lvl), swLogLevelTextGet(lvl), swLogLevelColorGet(swLogLevelNone), ##__VA_ARGS__); \
+    } \
   } \
-  else \
-  { \
-    if (!((swLogger *)(logger)) || (((swLogger *)(logger)) && (lvl <= ((swLogger *)(logger))->level))) \
-      printf("%s%s%s\t" format "\n", swLogLevelColorGet(lvl), swLogLevelTextGet(lvl), swLogLevelColorGet(swLogLevelNone), ##__VA_ARGS__); \
-  }
+_Pragma("GCC diagnostic pop")
 
 #define SW_LOG_FATAL(logger, format, ...)     SW_LOG_GENERIC(logger, swLogLevelFatal,    __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__)
 #define SW_LOG_ERROR(logger, format, ...)     SW_LOG_GENERIC(logger, swLogLevelError,    __FILE__, __FUNCTION__, __LINE__, format, ##__VA_ARGS__)

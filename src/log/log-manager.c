@@ -4,7 +4,7 @@
 
 void swLoggerLevelSet(swLogger *logger, swLogLevel level, bool useManagerLevel)
 {
-  if (logger && ((!level && useManagerLevel) || (level && level < swLogLevelMax && !useManagerLevel)))
+  if (logger && (level < swLogLevelMax))
   {
     logger->level = level;
     logger->useManagerLevel = useManagerLevel;
@@ -51,7 +51,7 @@ swLoggerDeclare(managerGlobalLogger, "manager");
 static bool swLogManagerCollectLoggers(swLogManager *manager)
 {
   bool rtn = false;
-  if (manager)
+  if (manager && !managerGlobalLogger.manager)
   {
     swLogger *loggerBegin = &managerGlobalLogger;
     swLogger *loggerEnd = &managerGlobalLogger;
@@ -74,12 +74,21 @@ static bool swLogManagerCollectLoggers(swLogManager *manager)
     swLogger *logger = loggerBegin;
     for (; logger != loggerEnd; logger++)
     {
-      if (!swHashMapLinearInsert(&(manager->loggerMap), &(logger->name), logger))
+      if (swHashMapLinearInsert(&(manager->loggerMap), &(logger->name), logger))
+        logger->manager = manager;
+      else
         break;
     }
     if (logger == loggerEnd)
       rtn = true;
-
+    else
+    {
+      while (logger > loggerBegin)
+      {
+        logger--;
+        logger->manager = NULL;
+      }
+    }
   }
   return rtn;
 }
@@ -167,5 +176,42 @@ void swLogWriterClear(swLogWriter *writer)
   {
     writer->formatter.clearFunc(&(writer->formatter));
     writer->sink.clearFunc(&(writer->sink));
+  }
+}
+
+void swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const char *function, int line, const char *format, ...)
+{
+  if (logger && logger->manager)
+  {
+    va_list argList;
+    va_list argListCopy;
+    va_start(argList, format);
+
+    size_t          sizeNeeded = 0;
+    uint8_t        *buffer     = NULL;
+    swLogFormatter *formatter  = NULL;
+    swLogSink      *sink       = NULL;
+
+    swLogWriter *writers = (swLogWriter *)swFastArrayData(logger->manager->logWriters);
+    uint32_t writersCount = swFastArrayCount(logger->manager->logWriters);
+    for (uint32_t i = 0; i < writersCount; i++)
+    {
+      va_copy(argListCopy, argList);
+      sizeNeeded = 0;
+      buffer = NULL;
+      formatter = &(writers[i].formatter);
+      sink = &(writers[i].sink);
+      if (!(formatter->preformatFunc) || (formatter->preformatFunc(formatter, &sizeNeeded, level, file, function, line, format, argListCopy) && sizeNeeded))
+      {
+        if (!sink->acquireFunc || !sizeNeeded || (sink->acquireFunc(sink, sizeNeeded, &buffer) && buffer))
+        {
+          formatter->formatFunc(formatter, sizeNeeded, buffer, level, file, function, line, format, argListCopy);
+          if (sink->releaseFunc)
+            sink->releaseFunc(sink, sizeNeeded, buffer);
+        }
+      }
+      va_end(argListCopy);
+    }
+    va_end(argList);
   }
 }

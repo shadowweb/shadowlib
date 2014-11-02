@@ -3,40 +3,103 @@
 #include "log/log-manager.h"
 #include "utils/colors.h"
 
-swTestDeclare(TestPrintfLogging, NULL, NULL, swTestRun)
+swLoggerDeclareWithLevel(testLogger, "TestLogger", swLogLevelInfo);
+
+swTestDeclare(TestColors, NULL, NULL, swTestRun)
 {
-  SW_LOG_FATAL(NULL, "test format: %s", "string to format");
-  SW_LOG_FATAL_CONT(NULL, "some more: test format: %s", "string to format");
-  SW_LOG_FATAL(NULL, "test format without arguments");
+  uint32_t firstRowCount = 16;
+  uint32_t lastRowCount = 24;
+  uint32_t width = 6;
+  uint32_t depth = (256 - firstRowCount - lastRowCount)/width;
+  uint32_t current = 0;
+  for (; current < firstRowCount; current++)
+    printf ("%s%um%03u%s  ", "\033[38;5;", current, current, SW_COLOR_ANSI_NORMAL);
+  printf("\n");
 
-  SW_LOG_ERROR(NULL, "test format: %s", "string to format");
-  SW_LOG_ERROR_CONT(NULL, "some more: test format: %s", "string to format");
-  SW_LOG_ERROR(NULL, "test format without arguments");
+  for (uint32_t i = 0; i < depth; i++)
+  {
+    for (uint32_t j = 0; j < width; j++, current++)
+      printf ("%s%um%03u%s  ", "\033[38;5;", current, current, SW_COLOR_ANSI_NORMAL);
+    printf("\n");
+  }
 
-  SW_LOG_WARNING(NULL, "test format: %s", "string to format");
-  SW_LOG_WARNING_CONT(NULL, "some more: test format: %s", "string to format");
-  SW_LOG_WARNING(NULL, "test format without arguments");
+  for (; current < 256; current++)
+    printf ("%s%um%03u%s  ", "\033[38;5;", current, current, SW_COLOR_ANSI_NORMAL);
+  printf("\n");
+  return true;
+}
 
-  SW_LOG_INFO(NULL, "test format: %s", "string to format");
-  SW_LOG_INFO_CONT(NULL, "some more: test format: %s", "string to format");
-  SW_LOG_INFO(NULL, "test format without arguments");
+static void printLogs(swLogger *logger)
+{
+  SW_LOG_FATAL(logger, "test format: %s", "string to format");
+  SW_LOG_FATAL_CONT(logger, "some more: test format: %s", "string to format");
+  SW_LOG_FATAL(logger, "test format without arguments");
 
-  SW_LOG_DEBUG(NULL, "test format: %s", "string to format");
-  SW_LOG_DEBUG_CONT(NULL, "some more: test format: %s", "string to format");
-  SW_LOG_DEBUG(NULL, "test format without arguments");
+  SW_LOG_ERROR(logger, "test format: %s", "string to format");
+  SW_LOG_ERROR_CONT(logger, "some more: test format: %s", "string to format");
+  SW_LOG_ERROR(logger, "test format without arguments");
 
+  SW_LOG_WARNING(logger, "test format: %s", "string to format");
+  SW_LOG_WARNING_CONT(logger, "some more: test format: %s", "string to format");
+  SW_LOG_WARNING(logger, "test format without arguments");
+
+  SW_LOG_INFO(logger, "test format: %s", "string to format");
+  SW_LOG_INFO_CONT(logger, "some more: test format: %s", "string to format");
+  SW_LOG_INFO(logger, "test format without arguments");
+
+  SW_LOG_DEBUG(logger, "test format: %s", "string to format");
+  SW_LOG_DEBUG_CONT(logger, "some more: test format: %s", "string to format");
+  SW_LOG_DEBUG(logger, "test format without arguments");
+
+  SW_LOG_TRACE(logger, "test format: %s", "string to format");
+  SW_LOG_TRACE_CONT(logger, "some more: test format: %s", "string to format");
+  SW_LOG_TRACE(logger, "test format without arguments");
+}
+
+swTestDeclare(TestLoggingWithoutLogger, NULL, NULL, swTestRun)
+{
   SW_LOG_TRACE(NULL, "test format: %s", "string to format");
   SW_LOG_TRACE_CONT(NULL, "some more: test format: %s", "string to format");
   SW_LOG_TRACE(NULL, "test format without arguments");
 
-  for (uint32_t i = 0; i < 36; i++)
-  {
-    for (uint32_t j = 0; j < 36; j++)
-      printf ("%s%um%04u%s  ", "\033[38;5;", (i*36 + j), (i*36 + j), SW_COLOR_ANSI_NORMAL);
-    printf("\n");
-  }
+  printLogs(NULL);
+
   return true;
 }
 
+swTestDeclare(TestLoggingWithLogger, NULL, NULL, swTestRun)
+{
+  SW_LOG_TRACE(&testLogger, "test format: %s", "string to format");
+  SW_LOG_TRACE_CONT(&testLogger, "some more: test format: %s", "string to format");
+  SW_LOG_TRACE(&testLogger, "test format without arguments");
+
+  printLogs(&testLogger);
+  swLoggerLevelSet(&testLogger, swLogLevelTrace, true);
+  printLogs(&testLogger);
+  swLoggerLevelSet(&testLogger, swLogLevelInfo, true);
+  return true;
+}
+
+swTestDeclare(TestLoggingWithLogManager, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swLogManager *manager = swLogManagerNew(swLogLevelInfo);
+  if (manager)
+  {
+    SW_LOG_TRACE(&testLogger, "test format: %s", "string to format");
+    SW_LOG_TRACE_CONT(&testLogger, "some more: test format: %s", "string to format");
+    SW_LOG_TRACE(&testLogger, "test format without arguments");
+
+    ASSERT_NOT_NULL(testLogger.manager);
+    printLogs(&testLogger);
+    swLoggerLevelSet(&testLogger, swLogLevelTrace, true);
+    printLogs(&testLogger);
+    swLoggerLevelSet(&testLogger, swLogLevelInfo, true);
+    rtn = true;
+    swLogManagerDelete(manager);
+  }
+  return rtn;
+}
+
 swTestSuiteStructDeclare(BasicLogTest, NULL, NULL, swTestRun,
-  &TestPrintfLogging);
+                         &TestColors, &TestLoggingWithoutLogger, &TestLoggingWithLogger, &TestLoggingWithLogManager);
