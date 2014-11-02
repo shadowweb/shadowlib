@@ -131,7 +131,14 @@ void swLogManagerDelete(swLogManager *manager)
     for (uint32_t i = 0; i < swFastArrayCount(manager->logWriters); i++)
       swLogWriterClear(&(writers[i]));
     swFastArrayClear(&(manager->logWriters));
+
+    swHashMapLinearIterator iter;
+    swHashMapLinearIteratorInit(&iter, &(manager->loggerMap));
+    swLogger *logger = NULL;
+    while (swHashMapLinearIteratorNext(&iter, (void **)&logger))
+      logger->manager = NULL;
     swHashMapLinearRelease(&(manager->loggerMap));
+
     swMemoryFree(manager);
   }
 }
@@ -163,6 +170,7 @@ bool swLogWriterInit(swLogWriter *writer, swLogSink sink, swLogFormatter formatt
   bool rtn = false;
   if (writer)
   {
+    memset(writer, 0, sizeof(*writer));
     writer->sink = sink;
     writer->formatter = formatter;
     rtn = true;
@@ -174,8 +182,10 @@ void swLogWriterClear(swLogWriter *writer)
 {
   if (writer)
   {
-    writer->formatter.clearFunc(&(writer->formatter));
-    writer->sink.clearFunc(&(writer->sink));
+    if (writer->formatter.clearFunc)
+      writer->formatter.clearFunc(&(writer->formatter));
+    if (writer->sink.clearFunc)
+      writer->sink.clearFunc(&(writer->sink));
   }
 }
 

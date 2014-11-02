@@ -92,14 +92,44 @@ swTestDeclare(TestLoggingWithLogManager, NULL, NULL, swTestRun)
 
     ASSERT_NOT_NULL(testLogger.manager);
     printLogs(&testLogger);
-    swLoggerLevelSet(&testLogger, swLogLevelTrace, true);
+    swLogManagerLevelSet(manager, swLogLevelTrace);
     printLogs(&testLogger);
-    swLoggerLevelSet(&testLogger, swLogLevelInfo, true);
+    swLogManagerLevelSet(manager, swLogLevelInfo);
     rtn = true;
     swLogManagerDelete(manager);
   }
   return rtn;
 }
 
+swTestDeclare(TestLoggingWithStdoutFormatter, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swLogManager *manager = swLogManagerNew(swLogLevelInfo);
+  if (manager)
+  {
+    swLogSink sink = {NULL};
+    swLogFormatter formatter = {NULL};
+    if (swLogStdoutFormatterInit(&formatter))
+    {
+      swLogWriter writer;
+      if (swLogWriterInit(&writer, sink, formatter) && swLogManagerWriterAdd(manager, writer))
+      {
+        SW_LOG_TRACE(&testLogger, "test format: %s", "string to format");
+        SW_LOG_TRACE_CONT(&testLogger, "some more: test format: %s", "string to format");
+        SW_LOG_TRACE(&testLogger, "test format without arguments");
+
+        ASSERT_NOT_NULL(testLogger.manager);
+        printLogs(&testLogger);
+        swLogManagerLevelSet(manager, swLogLevelTrace);
+        printLogs(&testLogger);
+        swLogManagerLevelSet(manager, swLogLevelInfo);
+        rtn = true;
+      }
+    }
+    swLogManagerDelete(manager);
+  }
+  return rtn;
+}
+
 swTestSuiteStructDeclare(BasicLogTest, NULL, NULL, swTestRun,
-                         &TestColors, &TestLoggingWithoutLogger, &TestLoggingWithLogger, &TestLoggingWithLogManager);
+                         &TestColors, &TestLoggingWithoutLogger, &TestLoggingWithLogger, &TestLoggingWithLogManager, &TestLoggingWithStdoutFormatter);

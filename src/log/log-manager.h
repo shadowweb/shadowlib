@@ -44,15 +44,13 @@ const char *swLogLevelColorGet(swLogLevel level);
 //    2. print the string into the provided buffer that gurantees given string length
 
 typedef struct swLogSink swLogSink;
-typedef bool (*swLogSinkInitFunction)   (swLogSink *sink);
+
 typedef bool (*swLogSinkAcquireFunction)(swLogSink *sink, size_t sizeNeeded, uint8_t **buffer);
 typedef bool (*swLogSinkReleaseFunction)(swLogSink *sink, size_t sizeNeeded, uint8_t  *buffer);
 typedef bool (*swLogSinkClearFunction)  (swLogSink *sink);
 
 struct swLogSink
 {
-  // init function
-  swLogSinkInitFunction initFunc;
   // acquire buffer function
   swLogSinkAcquireFunction acquireFunc;
   // release buffer function
@@ -69,15 +67,14 @@ void *swLogSinkDataGet(swLogSink *sink);
 // bool swLogSinkInit(swLogSink *sink, swLogSinkAcquireFunction );
 
 typedef struct swLogFormatter swLogFormatter;
-typedef bool (*swLogFormatterInitFunction)      (swLogFormatter *formatter);
+
+// TODO: add logger name to formatting
 typedef bool (*swLogFormatterPreformatFunction) (swLogFormatter *formatter, size_t *sizeNeeded,                   swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
 typedef bool (*swLogFormatterFormatFunction)    (swLogFormatter *formatter, size_t  sizeNeeded, uint8_t  *buffer, swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
 typedef bool (*swLogFormatterClearFunction)     (swLogFormatter *formatter);
 
 struct swLogFormatter
 {
-  // init function
-  swLogFormatterInitFunction initFunc;
   // preformat function (returns the number of the bytes needed)
   swLogFormatterPreformatFunction preformatFunc;
   // format function (write into the buffer)
@@ -90,6 +87,9 @@ struct swLogFormatter
 
 void  swLogFormatterDataSet(swLogFormatter *formatter, void *data);
 void *swLogFormatterDataGet(swLogFormatter *formatter);
+
+// Available formatters
+bool swLogStdoutFormatterInit(swLogFormatter *formatter);
 
 typedef struct swLogWriter
 {
@@ -118,6 +118,7 @@ void swLogManagerLevelSet(swLogManager *manager, swLogLevel level);
 void swLogManagerLoggerLevelSet(swLogManager *manager, swStaticString *name, swLogLevel level, bool useManagerLevel);
 // probably not needed as we are only going to have statically initialized loggers
 // void swLogManagerLoggerAdd(swLogManager *manager, struct swLogger *logger);
+// TODO: rethink writer initialization, we should be able to remove them as well
 bool swLogManagerWriterAdd(swLogManager *manager, swLogWriter writer);
 
 // bool swLoggingInit(swLogLevel level);
@@ -171,7 +172,7 @@ _Pragma("GCC diagnostic ignored \"-Waddress\"") \
     if ((logger) && ((swLogger *)(logger))->manager) \
     { \
       if ((((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->manager->level)) || (!((swLogger *)(logger))->useManagerLevel && (lvl <= ((swLogger *)(logger))->level))) \
-        swLoggerLog(logger, lvl, NULL, NULL, 0, format, ##__VA_ARGS__); \
+        swLoggerLog(logger, lvl, NULL, NULL, 0, format "\n", ##__VA_ARGS__); \
     } \
     else \
     { \

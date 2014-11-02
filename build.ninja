@@ -171,7 +171,8 @@ build $builddir/src/thread/mpsc-futex-ring-buffer-test:   link $builddir/src/thr
 
 # log
 build $builddir/src/log/log-manager.o:                   cc src/log/log-manager.c
-build $builddir/src/log/log.a:                           ar $builddir/src/log/log-manager.o
+build $builddir/src/log/stdout-formatter.o:              cc src/log/stdout-formatter.c
+build $builddir/src/log/log.a:                           ar $builddir/src/log/log-manager.o $builddir/src/log/stdout-formatter.o
 
 # log unit test
 build $builddir/src/log/log-manager-test.o:              cc src/log/log-manager-test.c
