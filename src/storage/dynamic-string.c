@@ -130,10 +130,10 @@ swDynamicString *swDynamicStringNewFromFormat(const char *format, ...)
       swDynamicString *newString = swDynamicStringNew(sizeNeeded + 1);
       if (newString)
       {
+        // the last character will be '\0'
         int sizePrinted = vsnprintf(newString->data, sizeNeeded + 1, format, argListCopy);
         if (sizePrinted == sizeNeeded)
         {
-          newString->data[sizeNeeded] = '\0';
           newString->len = sizeNeeded;
           rtn = newString;
         }
@@ -170,10 +170,10 @@ bool swDynamicStringSetFromFormat(swDynamicString *dynamicStr, const char *forma
         }
         if (data)
         {
+          // the last character will be '\0'
           int sizePrinted = vsnprintf(data, sizeNeeded + 1, format, argListCopy);
           if (sizePrinted == sizeNeeded)
           {
-            dynamicStr->data[sizeNeeded] = '\0';
             dynamicStr->len = sizeNeeded;
             rtn = true;
           }

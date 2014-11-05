@@ -80,6 +80,8 @@ build $builddir/src/storage/storage.a:                  ar $builddir/src/storage
 # storage test
 build $builddir/src/storage/static-string-test.o:       cc src/storage/static-string-test.c
 build $builddir/src/storage/static-string-test:         link $builddir/src/storage/static-string-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a 
+build $builddir/src/storage/dynamic-string-test.o:      cc src/storage/dynamic-string-test.c
+build $builddir/src/storage/dynamic-string-test:        link $builddir/src/storage/dynamic-string-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a $builddir/src/core/core.a
 build $builddir/src/storage/static-buffer-test.o:       cc src/storage/static-buffer-test.c
 build $builddir/src/storage/static-buffer-test:         link $builddir/src/storage/static-buffer-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a 
 
@@ -172,11 +174,13 @@ build $builddir/src/thread/mpsc-futex-ring-buffer-test:   link $builddir/src/thr
 # log
 build $builddir/src/log/log-manager.o:                   cc src/log/log-manager.c
 build $builddir/src/log/stdout-formatter.o:              cc src/log/stdout-formatter.c
-build $builddir/src/log/log.a:                           ar $builddir/src/log/log-manager.o $builddir/src/log/stdout-formatter.o
+build $builddir/src/log/buffer-formatter.o:              cc src/log/buffer-formatter.c
+build $builddir/src/log/file-sink.o:                     cc src/log/file-sink.c
+build $builddir/src/log/log.a:                           ar $builddir/src/log/log-manager.o $builddir/src/log/stdout-formatter.o $builddir/src/log/buffer-formatter.o $builddir/src/log/file-sink.o
 
 # log unit test
 build $builddir/src/log/log-manager-test.o:              cc src/log/log-manager-test.c
-build $builddir/src/log/log-manager-test:                link $builddir/src/log/log-manager-test.o $builddir/src/log/log.a $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/log/log-manager-test:                link $builddir/src/log/log-manager-test.o $builddir/src/log/log.a $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
 
 # init
 build $builddir/src/init/init.o:                         cc src/init/init.c

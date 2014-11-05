@@ -4,6 +4,7 @@
 #include "collections/fast-array.h"
 #include "collections/hash-map-linear.h"
 #include "storage/static-string.h"
+#include "thread/thread-manager.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -47,7 +48,7 @@ typedef struct swLogSink swLogSink;
 
 typedef bool (*swLogSinkAcquireFunction)(swLogSink *sink, size_t sizeNeeded, uint8_t **buffer);
 typedef bool (*swLogSinkReleaseFunction)(swLogSink *sink, size_t sizeNeeded, uint8_t  *buffer);
-typedef bool (*swLogSinkClearFunction)  (swLogSink *sink);
+typedef void (*swLogSinkClearFunction)  (swLogSink *sink);
 
 struct swLogSink
 {
@@ -61,8 +62,21 @@ struct swLogSink
   void *data;
 };
 
-void  swLogSinkDataSet(swLogSink *sink, void *data);
-void *swLogSinkDataGet(swLogSink *sink);
+static inline void  swLogSinkDataSet(swLogSink *sink, void *data)
+{
+  if (sink)
+    sink->data = data;
+}
+
+static inline void *swLogSinkDataGet(swLogSink *sink)
+{
+  if (sink)
+    return sink->data;
+  return NULL;
+}
+
+// TODO: need multithreaded unittest
+bool swLogFileSinkInit(swLogSink *sink, swThreadManager *threadManager, size_t maxFileSize, uint32_t maxFileCount, swStaticString *baseFileName);
 
 // bool swLogSinkInit(swLogSink *sink, swLogSinkAcquireFunction );
 
@@ -71,7 +85,7 @@ typedef struct swLogFormatter swLogFormatter;
 // TODO: add logger name to formatting
 typedef bool (*swLogFormatterPreformatFunction) (swLogFormatter *formatter, size_t *sizeNeeded,                   swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
 typedef bool (*swLogFormatterFormatFunction)    (swLogFormatter *formatter, size_t  sizeNeeded, uint8_t  *buffer, swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
-typedef bool (*swLogFormatterClearFunction)     (swLogFormatter *formatter);
+typedef void (*swLogFormatterClearFunction)     (swLogFormatter *formatter);
 
 struct swLogFormatter
 {
@@ -90,6 +104,7 @@ void *swLogFormatterDataGet(swLogFormatter *formatter);
 
 // Available formatters
 bool swLogStdoutFormatterInit(swLogFormatter *formatter);
+bool swLogBufferFormatterInit(swLogFormatter *formatter);
 
 typedef struct swLogWriter
 {

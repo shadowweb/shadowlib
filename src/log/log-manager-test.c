@@ -131,5 +131,50 @@ swTestDeclare(TestLoggingWithStdoutFormatter, NULL, NULL, swTestRun)
   return rtn;
 }
 
+swTestDeclare(TestLoggingWithAsyncWriter, NULL, NULL, swTestRun)
+{
+  bool rtn = false;
+  swEdgeLoop *loop = swEdgeLoopNew();
+  if (loop)
+  {
+    swThreadManager *threadManager = swThreadManagerNew(loop, 1000);
+    if (threadManager)
+    {
+      swLogManager *logManager = swLogManagerNew(swLogLevelInfo);
+      if (logManager)
+      {
+        swLogSink sink = {NULL};
+        swLogFormatter formatter = {NULL};
+        swStaticString fileName = swStaticStringDefine("/tmp/LogManagerTest");
+        if (swLogBufferFormatterInit(&formatter) && swLogFileSinkInit(&sink, threadManager, 32*1024 * 10265, 2, &fileName))
+        {
+          swLogWriter writer;
+          if (swLogWriterInit(&writer, sink, formatter) && swLogManagerWriterAdd(logManager, writer))
+          {
+            for (uint32_t i = 0; i < 5; i++)
+            {
+              SW_LOG_TRACE(&testLogger, "test format: %s", "string to format");
+              SW_LOG_TRACE_CONT(&testLogger, "some more: test format: %s", "string to format");
+              SW_LOG_TRACE(&testLogger, "test format without arguments");
+
+              ASSERT_NOT_NULL(testLogger.manager);
+              printLogs(&testLogger);
+              swLogManagerLevelSet(logManager, swLogLevelTrace);
+              printLogs(&testLogger);
+              swLogManagerLevelSet(logManager, swLogLevelInfo);
+              swEdgeLoopRun(loop, true);
+            }
+            rtn = true;
+          }
+        }
+        swLogManagerDelete(logManager);
+      }
+      swThreadManagerDelete(threadManager);
+    }
+    swEdgeLoopDelete(loop);
+  }
+  return rtn;
+}
+
 swTestSuiteStructDeclare(BasicLogTest, NULL, NULL, swTestRun,
-                         &TestColors, &TestLoggingWithoutLogger, &TestLoggingWithLogger, &TestLoggingWithLogManager, &TestLoggingWithStdoutFormatter);
+                         &TestColors, &TestLoggingWithoutLogger, &TestLoggingWithLogger, &TestLoggingWithLogManager, &TestLoggingWithStdoutFormatter, &TestLoggingWithAsyncWriter);

@@ -192,6 +192,5 @@ bool swStaticStringCountChar(const swStaticString *string, char c, uint32_t *fou
       *foundCount = charCount;
   }
   return rtn;
-
 }
 

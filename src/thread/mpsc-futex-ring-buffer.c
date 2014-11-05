@@ -20,7 +20,7 @@ static void *swMPSCFutexRingBufferRun(swMPSCFutexRingBuffer *ringBuffer)
       if (ringBuffer->head != currentTail)
       {
         size_t size = (ringBuffer->head < currentTail)? (currentTail - ringBuffer->head) : (ringBuffer->size - ringBuffer->head) + currentTail;
-        if (size && !ringBuffer->consumeFunc(&(ringBuffer->buffer[currentTail]), size, ringBuffer->data))
+        if (size && !ringBuffer->consumeFunc(&(ringBuffer->buffer[ringBuffer->head]), size, ringBuffer->data))
           break;
         ringBuffer->head = currentTail;
       }

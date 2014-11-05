@@ -213,6 +213,11 @@ void swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const cha
       sink = &(writers[i].sink);
       if (!(formatter->preformatFunc) || (formatter->preformatFunc(formatter, &sizeNeeded, level, file, function, line, format, argListCopy) && sizeNeeded))
       {
+        if (formatter->preformatFunc)
+        {
+          va_end(argListCopy);
+          va_copy(argListCopy, argList);
+        }
         if (!sink->acquireFunc || !sizeNeeded || (sink->acquireFunc(sink, sizeNeeded, &buffer) && buffer))
         {
           formatter->formatFunc(formatter, sizeNeeded, buffer, level, file, function, line, format, argListCopy);

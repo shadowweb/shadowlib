@@ -20,7 +20,7 @@ static void *swMPSCRingBufferRun(swMPSCRingBuffer *ringBuffer)
       if (ringBuffer->head != currentTail)
       {
         size_t size = (ringBuffer->head < currentTail)? (currentTail - ringBuffer->head) : (ringBuffer->bufferEnd - ringBuffer->head) + (currentTail - ringBuffer->buffer);
-        if (size && !ringBuffer->consumeFunc(currentTail, size, ringBuffer->data))
+        if (size && !ringBuffer->consumeFunc(ringBuffer->head, size, ringBuffer->data))
           break;
         ringBuffer->head = currentTail;
       }
