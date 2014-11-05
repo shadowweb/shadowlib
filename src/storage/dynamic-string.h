@@ -45,12 +45,18 @@ swDynamicString *swDynamicStringNewFromStaticString(const swStaticString *static
 bool swDynamicStringSetFromStaticString(swDynamicString *dynamicStr, const swStaticString *staticStr);
 swDynamicString *swDynamicStringNewFromCString(const char *cStr);
 bool swDynamicStringSetFromCString(swDynamicString *dynamicStr, const char *cStr);
+swDynamicString *swDynamicStringNewFromFormat(const char *format, ...) __attribute__ ((format(printf, 1, 2)));
+bool swDynamicStringSetFromFormat(swDynamicString *dynamicStr, const char *format, ...)  __attribute__ ((format(printf, 2, 3)));
 
 void swDynamicStringClear(swDynamicString *string);
 void swDynamicStringRelease(swDynamicString *string);
 
 bool swDynamicStringAppendStaticString(swDynamicString *dynamicStr, const swStaticString *staticStr);
 bool swDynamicStringAppendCString(swDynamicString *dynamicStr, const char *cStr);
+
+#define SW_TIME_STRING_SIZE  23
+
+bool swDynamicStringAppendTime(swDynamicString *dynamicStr);
 
 // TODO: do the same for buffer with minor changes
 // TODO: implement to and from hex, to and from base64

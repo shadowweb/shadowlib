@@ -1,6 +1,9 @@
 #include "storage/dynamic-string.h"
 
 #include "core/memory.h"
+#include "core/time.h"
+
+#include <stdarg.h>
 
 swDynamicString *swDynamicStringNew(size_t size)
 {
@@ -111,6 +114,78 @@ bool swDynamicStringSetFromCString(swDynamicString *dynamicStr, const char *cStr
   return rtn;
 }
 
+swDynamicString *swDynamicStringNewFromFormat(const char *format, ...)
+{
+  swDynamicString *rtn = NULL;
+  if (format)
+  {
+    va_list argList;
+    va_list argListCopy;
+    va_start(argList, format);
+    va_copy(argListCopy, argList);
+
+    int sizeNeeded = vsnprintf(NULL, 0, format, argList);
+    if (sizeNeeded > 0)
+    {
+      swDynamicString *newString = swDynamicStringNew(sizeNeeded + 1);
+      if (newString)
+      {
+        int sizePrinted = vsnprintf(newString->data, sizeNeeded + 1, format, argListCopy);
+        if (sizePrinted == sizeNeeded)
+        {
+          newString->data[sizeNeeded] = '\0';
+          newString->len = sizeNeeded;
+          rtn = newString;
+        }
+        if (!rtn)
+          swDynamicStringDelete(newString);
+      }
+    }
+    va_end(argListCopy);
+    va_end(argList);
+  }
+  return rtn;
+}
+
+bool swDynamicStringSetFromFormat(swDynamicString *dynamicStr, const char *format, ...)
+{
+  bool rtn = false;
+  if (dynamicStr && format)
+  {
+    va_list argList;
+    va_list argListCopy;
+    va_start(argList, format);
+    va_copy(argListCopy, argList);
+
+    int sizeNeeded = vsnprintf(NULL, 0, format, argList);
+    if (sizeNeeded > 0)
+    {
+      if (dynamicStr->size <= (size_t)sizeNeeded)
+      {
+        char *data = dynamicStr->data;
+        if ((data = swMemoryRealloc(data, sizeNeeded + 1)))
+        {
+          dynamicStr->data = data;
+          dynamicStr->size = sizeNeeded + 1;
+        }
+        if (data)
+        {
+          int sizePrinted = vsnprintf(data, sizeNeeded + 1, format, argListCopy);
+          if (sizePrinted == sizeNeeded)
+          {
+            dynamicStr->data[sizeNeeded] = '\0';
+            dynamicStr->len = sizeNeeded;
+            rtn = true;
+          }
+        }
+      }
+    }
+    va_end(argListCopy);
+    va_end(argList);
+  }
+  return rtn;
+}
+
 void swDynamicStringClear(swDynamicString *string)
 {
   if (string)
@@ -175,6 +250,34 @@ bool swDynamicStringAppendCString(swDynamicString *dynamicStr, const char *cStr)
       dynamicStr->len = newLen;
       data[newLen] = '\0';
       rtn = true;
+    }
+  }
+  return rtn;
+}
+
+bool swDynamicStringAppendTime(swDynamicString *dynamicStr)
+{
+  bool rtn = false;
+  if (dynamicStr && (dynamicStr->size - dynamicStr->len) > SW_TIME_STRING_SIZE)
+  {
+    struct timespec timeValue = {0};
+    if (!clock_gettime(CLOCK_REALTIME, &timeValue))
+    {
+      uint64_t millisec = swTimeNSecToMSec(timeValue.tv_nsec);
+      struct tm brokenDownTime = {0};
+      if (gmtime_r(&(timeValue.tv_sec), &brokenDownTime))
+      {
+        int printedLength = strftime(&(dynamicStr->data[dynamicStr->len]), (dynamicStr->size - dynamicStr->len), "%FT%T", &brokenDownTime);
+        if (printedLength == (SW_TIME_STRING_SIZE - 4))
+        {
+          printedLength += sprintf(&(dynamicStr->data[dynamicStr->len + printedLength]), ".%03lu", millisec);
+          if (printedLength == SW_TIME_STRING_SIZE)
+          {
+            dynamicStr->len += printedLength;
+            rtn = true;
+          }
+        }
+      }
     }
   }
   return rtn;
