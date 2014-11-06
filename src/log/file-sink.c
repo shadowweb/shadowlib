@@ -49,7 +49,13 @@ static void swLogFileSinkClear(swLogSink *sink)
     swLogSinkDataSet(sink, NULL);
     swMPSCRingBufferRelease(&(sinkData->ringBuffer));
     if (sinkData->stream)
+    {
       fclose(sinkData->stream);
+      char tmpFileName[sinkData->baseFileName->len + 20 + 1];
+      snprintf(tmpFileName, sizeof(tmpFileName), "%.*s.%u", (int)(sinkData->baseFileName->len), sinkData->baseFileName->data, sinkData->currentFileCount);
+      // rename it <file name>.<currentFileCount>
+      rename(sinkData->baseFileName->data, tmpFileName);
+    }
     swDynamicStringDelete(sinkData->baseFileName);
     swMemoryFree(sinkData);
   }
