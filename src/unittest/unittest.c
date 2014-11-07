@@ -159,28 +159,14 @@ int swTestMain(int argc, char *argv[])
       break;
   }
 
-
-  for (swTestSuite *suite = suiteBegin; suite != suiteEnd; suite++)
-  {
-    if((suite != &testSuiteGlobal) && (suiteFilterFunc(suite->suiteName)))
-    {
-      totalSuite++;
-      for (uint32_t i = 0; suite->tests[i] != NULL; i++)
-      {
-        swTest *test = suite->tests[i];
-        if (testFilterFunc(test->testName))
-          totalTest++;
-      }
-    }
-  }
-
   uint64_t allSuiteRuntime = getCurrentTime();
   for (swTestSuite *suite = suiteBegin; suite != suiteEnd; suite++)
   {
-    if ((suite != &testSuiteGlobal) && (suiteFilterFunc(suite->suiteName)))
+    if ((suite != &testSuiteGlobal))
     {
       if ((suiteFilterFunc(suite->suiteName)) && !suite->skip)
       {
+        totalSuite++;
         // print suite start
         printfColor(SW_COLOR_ANSI_BLUE, "[ START    ] Suite: '%s'\n", suite->suiteName);
         uint64_t suiteRuntime = getCurrentTime();
@@ -193,6 +179,7 @@ int swTestMain(int argc, char *argv[])
           swTest *test = suite->tests[i];
           if (testFilterFunc(test->testName) && !test->skip)
           {
+            totalTest++;
             printfColor(SW_COLOR_ANSI_BLUE, "%s[ START    ] Test: '%s'\n", testOffset, test->testName);
             if (test->setupFunc)
               swTestAction(suite, test, "[ SETUP    ]", test->setupFunc);
