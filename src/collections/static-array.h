@@ -13,7 +13,7 @@ typedef struct swStaticArray
 } swStaticArray;
 
 #define swStaticArrayDefineEmpty                {.elementSize = 0,    .data = NULL, .count = 0}
-#define swStaticArrayDefine(d, es)              {.elementSize = (es), .data = (d),  .count = sizeof(d)/(es)}
+#define swStaticArrayDefine(d, es)              {.elementSize = (es), .data = (uint8_t *)(d),  .count = sizeof(d)/(es)}
 #define swStaticArrayDefineWithCount(d, es, c)  {.elementSize = (es), .data = (d),  .count = (c)}
 
 #define swStaticArraySetWithCount(d, es, c)     *(swStaticArray[]){{.elementSize = (es), .data = (d),  .count = (c)}}

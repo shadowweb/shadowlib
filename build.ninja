@@ -24,24 +24,31 @@ rule build-openssl
 # unittest library
 build $builddir/src/unittest/unittest-main.o: cc src/unittest/unittest-main.c
 build $builddir/src/unittest/unittest.o:      cc src/unittest/unittest.c
-build $builddir/src/unittest/unittest.a:      ar $builddir/src/unittest/unittest-main.o $builddir/src/unittest/unittest.o
+build $builddir/src/unittest/unittest.a:      ar $builddir/src/unittest/unittest-main.o $
+                                                 $builddir/src/unittest/unittest.o
 
 # unittest test
 build $builddir/src/unittest/unittest-test.o: cc src/unittest/unittest-test.c
-build $builddir/src/unittest/unittest-test:   link $builddir/src/unittest/unittest-test.o $builddir/src/unittest/unittest.a
+build $builddir/src/unittest/unittest-test:   link $builddir/src/unittest/unittest-test.o $
+                                                   $builddir/src/unittest/unittest.a
 
 # core library
 build $builddir/src/core/memory.o:            cc src/core/memory.c
 build $builddir/src/core/benchmark.o:         cc src/core/benchmark.c
 build $builddir/src/core/time.o:              cc src/core/time.c
-build $builddir/src/core/core.a:              ar $builddir/src/core/memory.o $builddir/src/core/benchmark.o $builddir/src/core/time.o
+build $builddir/src/core/core.a:              ar $builddir/src/core/memory.o $
+                                                 $builddir/src/core/benchmark.o $
+                                                 $builddir/src/core/time.o
 
 # core tests
 build $builddir/src/core/stop-watch-test.o:   cc src/core/stop-watch-test.c
-build $builddir/src/core/stop-watch-test:     link $builddir/src/core/stop-watch-test.o $builddir/src/unittest/unittest.a
+build $builddir/src/core/stop-watch-test:     link $builddir/src/core/stop-watch-test.o $
+                                                   $builddir/src/unittest/unittest.a
 
 build $builddir/src/core/benchmark-test.o:    cc src/core/benchmark-test.c
-build $builddir/src/core/benchmark-test:      link $builddir/src/core/benchmark-test.o $builddir/src/unittest/unittest.a $builddir/src/core/core.a
+build $builddir/src/core/benchmark-test:      link $builddir/src/core/benchmark-test.o $
+                                                   $builddir/src/unittest/unittest.a $
+                                                   $builddir/src/core/core.a
 
 # collections library
 build $builddir/src/collections/hash-common.o:          cc src/collections/hash-common.c
@@ -52,38 +59,81 @@ build $builddir/src/collections/murmur-hash3.o:         cc src/collections/murmu
 build $builddir/src/collections/fast-array.o:           cc src/collections/fast-array.c
 build $builddir/src/collections/dynamic-array.o:        cc src/collections/dynamic-array.c
 build $builddir/src/collections/sparse-array.o:         cc src/collections/sparse-array.c
-build $builddir/src/collections/collections.a:          ar $builddir/src/collections/hash-common.o $builddir/src/collections/hash-functions.o $builddir/src/collections/hash-set-linear.o $builddir/src/collections/hash-map-linear.o $builddir/src/collections/murmur-hash3.o $builddir/src/collections/fast-array.o $builddir/src/collections/dynamic-array.o $builddir/src/collections/sparse-array.o
+build $builddir/src/collections/collections.a:          ar $builddir/src/collections/hash-common.o $
+                                                           $builddir/src/collections/hash-functions.o $
+                                                           $builddir/src/collections/hash-set-linear.o $
+                                                           $builddir/src/collections/hash-map-linear.o $
+                                                           $builddir/src/collections/murmur-hash3.o $
+                                                           $builddir/src/collections/fast-array.o $
+                                                           $builddir/src/collections/dynamic-array.o $
+                                                           $builddir/src/collections/sparse-array.o
 
 # collections test
 build $builddir/src/collections/hash-set-linear-test.o: cc src/collections/hash-set-linear-test.c
-build $builddir/src/collections/hash-set-linear-test:   link $builddir/src/collections/hash-set-linear-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/collections/hash-set-linear-test:   link $builddir/src/collections/hash-set-linear-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 build $builddir/src/collections/hash-map-linear-test.o: cc src/collections/hash-map-linear-test.c
-build $builddir/src/collections/hash-map-linear-test:   link $builddir/src/collections/hash-map-linear-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/collections/hash-map-linear-test:   link $builddir/src/collections/hash-map-linear-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 build $builddir/src/collections/fast-array-test.o:      cc src/collections/fast-array-test.c
-build $builddir/src/collections/fast-array-test:        link $builddir/src/collections/fast-array-test.o $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/collections/fast-array-test:        link $builddir/src/collections/fast-array-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 build $builddir/src/collections/dynamic-array-test.o:   cc src/collections/dynamic-array-test.c
-build $builddir/src/collections/dynamic-array-test:     link $builddir/src/collections/dynamic-array-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/collections/dynamic-array-test:     link $builddir/src/collections/dynamic-array-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 build $builddir/src/collections/sparse-array-test.o:    cc src/collections/sparse-array-test.c
-build $builddir/src/collections/sparse-array-test:      link $builddir/src/collections/sparse-array-test.o $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/collections/sparse-array-test:      link $builddir/src/collections/sparse-array-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # storage library
 build $builddir/src/storage/static-string.o:            cc src/storage/static-string.c
 build $builddir/src/storage/dynamic-string.o:           cc src/storage/dynamic-string.c
 build $builddir/src/storage/static-buffer.o:            cc src/storage/static-buffer.c
 build $builddir/src/storage/dynamic-buffer.o:           cc src/storage/dynamic-buffer.c
-build $builddir/src/storage/storage.a:                  ar $builddir/src/storage/static-string.o $builddir/src/storage/dynamic-string.o $builddir/src/storage/static-buffer.o $builddir/src/storage/dynamic-buffer.o
+build $builddir/src/storage/storage.a:                  ar $builddir/src/storage/static-string.o $
+                                                           $builddir/src/storage/dynamic-string.o $
+                                                           $builddir/src/storage/static-buffer.o $
+                                                           $builddir/src/storage/dynamic-buffer.o
 
 # storage test
 build $builddir/src/storage/static-string-test.o:       cc src/storage/static-string-test.c
-build $builddir/src/storage/static-string-test:         link $builddir/src/storage/static-string-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a 
+build $builddir/src/storage/static-string-test:         link $builddir/src/storage/static-string-test.o $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/unittest/unittest.a 
 build $builddir/src/storage/dynamic-string-test.o:      cc src/storage/dynamic-string-test.c
-build $builddir/src/storage/dynamic-string-test:        link $builddir/src/storage/dynamic-string-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a $builddir/src/core/core.a
+build $builddir/src/storage/dynamic-string-test:        link $builddir/src/storage/dynamic-string-test.o $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/unittest/unittest.a $
+                                                             $builddir/src/core/core.a
 build $builddir/src/storage/static-buffer-test.o:       cc src/storage/static-buffer-test.c
-build $builddir/src/storage/static-buffer-test:         link $builddir/src/storage/static-buffer-test.o $builddir/src/storage/storage.a $builddir/src/collections/collections.a $builddir/src/unittest/unittest.a 
+build $builddir/src/storage/static-buffer-test:         link $builddir/src/storage/static-buffer-test.o $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/unittest/unittest.a 
 
 # utils library
 build $builddir/src/utils/file.o:                       cc src/utils/file.c
@@ -102,92 +152,184 @@ build $builddir/src/io/tcp-client.o:                    cc src/io/tcp-client.c
 build $builddir/src/io/tcp-server.o:                    cc src/io/tcp-server.c
 build $builddir/src/io/udp-client.o:                    cc src/io/udp-client.c
 build $builddir/src/io/udp-server.o:                    cc src/io/udp-server.c
-build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $builddir/src/io/edge-timer.o $builddir/src/io/edge-signal.o $builddir/src/io/edge-async.o $builddir/src/io/edge-io.o $builddir/src/io/socket-address.o $builddir/src/io/socket.o $builddir/src/io/socket-io.o $builddir/src/io/tcp-client.o $builddir/src/io/tcp-server.o $builddir/src/io/udp-client.o $builddir/src/io/udp-server.o
+build $builddir/src/io/io.a:                            ar $builddir/src/io/edge-loop.o $
+                                                           $builddir/src/io/edge-timer.o $
+                                                           $builddir/src/io/edge-signal.o $
+                                                           $builddir/src/io/edge-async.o $
+                                                           $builddir/src/io/edge-io.o $
+                                                           $builddir/src/io/socket-address.o $
+                                                           $builddir/src/io/socket.o $
+                                                           $builddir/src/io/socket-io.o $
+                                                           $builddir/src/io/tcp-client.o $
+                                                           $builddir/src/io/tcp-server.o $
+                                                           $builddir/src/io/udp-client.o $
+                                                           $builddir/src/io/udp-server.o
 
 # io test
 build $builddir/src/io/edge-loop-test.o:                cc src/io/edge-loop-test.c
-build $builddir/src/io/edge-loop-test:                  link $builddir/src/io/edge-loop-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/io/edge-loop-test:                  link $builddir/src/io/edge-loop-test.o $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # tcp test
-build $builddir/src/io/tcp-test.o:                       cc src/io/tcp-test.c
-build $builddir/src/io/tcp-test:                         link $builddir/src/io/tcp-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/io/tcp-test.o:                      cc src/io/tcp-test.c
+build $builddir/src/io/tcp-test:                        link $builddir/src/io/tcp-test.o $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # udp test
-build $builddir/src/io/udp-test.o:                       cc src/io/udp-test.c
-build $builddir/src/io/udp-test:                         link $builddir/src/io/udp-test.o $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/io/udp-test.o:                      cc src/io/udp-test.c
+build $builddir/src/io/udp-test:                        link $builddir/src/io/udp-test.o $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # openssl library
 build $buildthirdpartydir/include/openssl $
       $buildthirdpartydir/lib/openssl $
       $buildthirdpartydir/lib/openssl/libssl.a $
       $buildthirdpartydir/lib/openssl/libcrypto.a: $
-                                                         build-openssl third-party/openssl/openssl-1.0.1h.tar.gz
-build openssl:                                           phony $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl
+                                                        build-openssl third-party/openssl/openssl-1.0.1h.tar.gz
+build openssl:                                          phony $buildthirdpartydir/include/openssl $buildthirdpartydir/lib/openssl
 
 # open-ssl
-build $builddir/src/open-ssl/init.o:                     cc src/open-ssl/init.c | openssl
-build $builddir/src/open-ssl/ssl-context.o:              cc src/open-ssl/ssl-context.c | openssl
-build $builddir/src/open-ssl/ssl-certificate.o:          cc src/open-ssl/ssl-certificate.c | openssl
-build $builddir/src/open-ssl/ssl-key.o:                  cc src/open-ssl/ssl-key.c | openssl
-build $builddir/src/open-ssl/ssl.o:                      cc src/open-ssl/ssl.c | openssl
-build $builddir/src/open-ssl/ssl-socket-io.o:            cc src/open-ssl/ssl-socket-io.c | openssl
-build $builddir/src/open-ssl/ssl-client.o:               cc src/open-ssl/ssl-client.c | openssl
-build $builddir/src/open-ssl/ssl-server.o:               cc src/open-ssl/ssl-server.c | openssl
-build $builddir/src/open-ssl/openssl.a:                  ar $builddir/src/open-ssl/init.o $builddir/src/open-ssl/ssl-context.o $builddir/src/open-ssl/ssl-certificate.o $builddir/src/open-ssl/ssl-key.o $builddir/src/open-ssl/ssl.o $builddir/src/open-ssl/ssl-socket-io.o $builddir/src/open-ssl/ssl-client.o $builddir/src/open-ssl/ssl-server.o
+build $builddir/src/open-ssl/init.o:                    cc src/open-ssl/init.c | openssl
+build $builddir/src/open-ssl/ssl-context.o:             cc src/open-ssl/ssl-context.c | openssl
+build $builddir/src/open-ssl/ssl-certificate.o:         cc src/open-ssl/ssl-certificate.c | openssl
+build $builddir/src/open-ssl/ssl-key.o:                 cc src/open-ssl/ssl-key.c | openssl
+build $builddir/src/open-ssl/ssl.o:                     cc src/open-ssl/ssl.c | openssl
+build $builddir/src/open-ssl/ssl-socket-io.o:           cc src/open-ssl/ssl-socket-io.c | openssl
+build $builddir/src/open-ssl/ssl-client.o:              cc src/open-ssl/ssl-client.c | openssl
+build $builddir/src/open-ssl/ssl-server.o:              cc src/open-ssl/ssl-server.c | openssl
+build $builddir/src/open-ssl/openssl.a:                 ar $builddir/src/open-ssl/init.o $
+                                                           $builddir/src/open-ssl/ssl-context.o $
+                                                           $builddir/src/open-ssl/ssl-certificate.o $
+                                                           $builddir/src/open-ssl/ssl-key.o $
+                                                           $builddir/src/open-ssl/ssl.o $
+                                                           $builddir/src/open-ssl/ssl-socket-io.o $
+                                                           $builddir/src/open-ssl/ssl-client.o $
+                                                           $builddir/src/open-ssl/ssl-server.o
 
 # ssl test
-build $builddir/src/open-ssl/ssl-test.o:                 cc src/open-ssl/ssl-test.c
-build $builddir/src/open-ssl/ssl-test:                   link $builddir/src/open-ssl/ssl-test.o $builddir/src/open-ssl/openssl.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a $buildthirdpartydir/lib/openssl/libssl.a $buildthirdpartydir/lib/openssl/libcrypto.a
+build $builddir/src/open-ssl/ssl-test.o:                cc src/open-ssl/ssl-test.c
+build $builddir/src/open-ssl/ssl-test:                  link $builddir/src/open-ssl/ssl-test.o $
+                                                             $builddir/src/open-ssl/openssl.a $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a $
+                                                             $buildthirdpartydir/lib/openssl/libssl.a $
+                                                             $buildthirdpartydir/lib/openssl/libcrypto.a
 
 # command line
-build $builddir/src/command-line/command-line.o:         cc src/command-line/command-line.c
-build $builddir/src/command-line/command-line-data.o:    cc src/command-line/command-line-data.c
-build $builddir/src/command-line/command-line-error.o:   cc src/command-line/command-line-error.c
-build $builddir/src/command-line/command-line-state.o:   cc src/command-line/command-line-state.c
-build $builddir/src/command-line/option-value-pair.o:    cc src/command-line/option-value-pair.c
-build $builddir/src/command-line/option-token.o:         cc src/command-line/option-token.c
-build $builddir/src/command-line/option.o:               cc src/command-line/option.c
-build $builddir/src/command-line/command-line.a:         ar $builddir/src/command-line/command-line.o $builddir/src/command-line/command-line-data.o $builddir/src/command-line/command-line-error.o $builddir/src/command-line/command-line-state.o $builddir/src/command-line/option-value-pair.o $builddir/src/command-line/option-token.o $builddir/src/command-line/option.o
+build $builddir/src/command-line/command-line.o:        cc src/command-line/command-line.c
+build $builddir/src/command-line/command-line-data.o:   cc src/command-line/command-line-data.c
+build $builddir/src/command-line/command-line-error.o:  cc src/command-line/command-line-error.c
+build $builddir/src/command-line/command-line-state.o:  cc src/command-line/command-line-state.c
+build $builddir/src/command-line/option-value-pair.o:   cc src/command-line/option-value-pair.c
+build $builddir/src/command-line/option-token.o:        cc src/command-line/option-token.c
+build $builddir/src/command-line/option.o:              cc src/command-line/option.c
+build $builddir/src/command-line/command-line.a:        ar $builddir/src/command-line/command-line.o $
+                                                           $builddir/src/command-line/command-line-data.o $
+                                                           $builddir/src/command-line/command-line-error.o $
+                                                           $builddir/src/command-line/command-line-state.o $
+                                                           $builddir/src/command-line/option-value-pair.o $
+                                                           $builddir/src/command-line/option-token.o $
+                                                           $builddir/src/command-line/option.o
 
 # command line test
-build $builddir/src/command-line/command-line-test.o:    cc src/command-line/command-line-test.c
-build $builddir/src/command-line/command-line-test:      link $builddir/src/command-line/command-line-test.o $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/command-line/command-line-test.o:   cc src/command-line/command-line-test.c
+build $builddir/src/command-line/command-line-test:     link $builddir/src/command-line/command-line-test.o $
+                                                             $builddir/src/command-line/command-line.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # thread
-build $builddir/src/thread/thread-manager.o:             cc src/thread/thread-manager.c
-build $builddir/src/thread/mpsc-ring-buffer.o:           cc src/thread/mpsc-ring-buffer.c
-build $builddir/src/thread/mpsc-futex-ring-buffer.o:     cc src/thread/mpsc-futex-ring-buffer.c
-build $builddir/src/thread/thread.a:                     ar $builddir/src/thread/thread-manager.o $builddir/src/thread/mpsc-ring-buffer.o $builddir/src/thread/mpsc-futex-ring-buffer.o
+build $builddir/src/thread/thread-manager.o:            cc src/thread/thread-manager.c
+build $builddir/src/thread/mpsc-ring-buffer.o:          cc src/thread/mpsc-ring-buffer.c
+build $builddir/src/thread/mpsc-futex-ring-buffer.o:    cc src/thread/mpsc-futex-ring-buffer.c
+build $builddir/src/thread/threaded-test.o:             cc src/thread/threaded-test.c
+build $builddir/src/thread/thread.a:                    ar $builddir/src/thread/thread-manager.o $
+                                                           $builddir/src/thread/mpsc-ring-buffer.o $
+                                                           $builddir/src/thread/mpsc-futex-ring-buffer.o $
+                                                           $builddir/src/thread/threaded-test.o
 
 # thread unit test
-build $builddir/src/thread/thread-manager-test.o:        cc src/thread/thread-manager-test.c
-build $builddir/src/thread/thread-manager-test:          link $builddir/src/thread/thread-manager-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/thread/thread-manager-test.o:       cc src/thread/thread-manager-test.c
+build $builddir/src/thread/thread-manager-test:         link $builddir/src/thread/thread-manager-test.o $
+                                                             $builddir/src/thread/thread.a $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/command-line/command-line.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # ring buffer test
-build $builddir/src/thread/mpsc-ring-buffer-test.o:      cc src/thread/mpsc-ring-buffer-test.c
-build $builddir/src/thread/mpsc-ring-buffer-test:        link $builddir/src/thread/mpsc-ring-buffer-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/thread/mpsc-ring-buffer-test.o:     cc src/thread/mpsc-ring-buffer-test.c
+build $builddir/src/thread/mpsc-ring-buffer-test:       link $builddir/src/thread/mpsc-ring-buffer-test.o $
+                                                             $builddir/src/thread/thread.a $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/command-line/command-line.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # ring buffer with futex test
-build $builddir/src/thread/mpsc-futex-ring-buffer-test.o: cc src/thread/mpsc-futex-ring-buffer-test.c
-build $builddir/src/thread/mpsc-futex-ring-buffer-test:   link $builddir/src/thread/mpsc-futex-ring-buffer-test.o $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/command-line/command-line.a $builddir/src/collections/collections.a $builddir/src/utils/utils.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/thread/mpsc-futex-ring-buffer-test.o:   cc src/thread/mpsc-futex-ring-buffer-test.c
+build $builddir/src/thread/mpsc-futex-ring-buffer-test:     link $builddir/src/thread/mpsc-futex-ring-buffer-test.o $
+                                                                 $builddir/src/thread/thread.a $
+                                                                 $builddir/src/io/io.a $
+                                                                 $builddir/src/command-line/command-line.a $
+                                                                 $builddir/src/collections/collections.a $
+                                                                 $builddir/src/utils/utils.a $
+                                                                 $builddir/src/storage/storage.a $
+                                                                 $builddir/src/core/core.a $
+                                                                 $builddir/src/unittest/unittest.a
 
 # log
-build $builddir/src/log/log-manager.o:                   cc src/log/log-manager.c
-build $builddir/src/log/stdout-formatter.o:              cc src/log/stdout-formatter.c
-build $builddir/src/log/buffer-formatter.o:              cc src/log/buffer-formatter.c
-build $builddir/src/log/file-sink.o:                     cc src/log/file-sink.c
-build $builddir/src/log/log.a:                           ar $builddir/src/log/log-manager.o $builddir/src/log/stdout-formatter.o $builddir/src/log/buffer-formatter.o $builddir/src/log/file-sink.o
+build $builddir/src/log/log-manager.o:                  cc src/log/log-manager.c
+build $builddir/src/log/stdout-formatter.o:             cc src/log/stdout-formatter.c
+build $builddir/src/log/buffer-formatter.o:             cc src/log/buffer-formatter.c
+build $builddir/src/log/file-sink.o:                    cc src/log/file-sink.c
+build $builddir/src/log/log.a:                          ar $builddir/src/log/log-manager.o $
+                                                           $builddir/src/log/stdout-formatter.o $
+                                                           $builddir/src/log/buffer-formatter.o $
+                                                           $builddir/src/log/file-sink.o
 
 # log unit test
-build $builddir/src/log/log-manager-test.o:              cc src/log/log-manager-test.c
-build $builddir/src/log/log-manager-test:                link $builddir/src/log/log-manager-test.o $builddir/src/log/log.a $builddir/src/thread/thread.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/core/core.a $builddir/src/unittest/unittest.a
+build $builddir/src/log/log-manager-test.o:             cc src/log/log-manager-test.c
+build $builddir/src/log/log-manager-test:               link $builddir/src/log/log-manager-test.o $
+                                                             $builddir/src/log/log.a $
+                                                             $builddir/src/thread/thread.a $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
 
 # init
-build $builddir/src/init/init.o:                         cc src/init/init.c
-build $builddir/src/init/init-io.o:                      cc src/init/init-io.c
-build $builddir/src/init/init-command-line.o:            cc src/init/init-command-line.c
-build $builddir/src/init/init-cpu-timer.o:               cc src/init/init-cpu-timer.c
-build $builddir/src/init/init.a:                         ar $builddir/src/init/init.o $builddir/src/init/init-io.o $builddir/src/init/init-command-line.o $builddir/src/init/init-cpu-timer.o
+build $builddir/src/init/init.o:                        cc src/init/init.c
+build $builddir/src/init/init-io.o:                     cc src/init/init-io.c
+build $builddir/src/init/init-command-line.o:           cc src/init/init-command-line.c
+build $builddir/src/init/init-cpu-timer.o:              cc src/init/init-cpu-timer.c
+build $builddir/src/init/init.a:                        ar $builddir/src/init/init.o $
+                                                           $builddir/src/init/init-io.o $
+                                                           $builddir/src/init/init-command-line.o $
+                                                           $builddir/src/init/init-cpu-timer.o
 
 # tools
 
@@ -196,4 +338,15 @@ build $builddir/src/tools/traffic-generator/traffic-client.o:       cc src/tools
 build $builddir/src/tools/traffic-generator/traffic-server.o:       cc src/tools/traffic-generator/traffic-server.c
 build $builddir/src/tools/traffic-generator/traffic-connection.o:   cc src/tools/traffic-generator/traffic-connection.c
 build $builddir/src/tools/traffic-generator/traffic-main.o:         cc src/tools/traffic-generator/traffic-main.c
-build $builddir/src/tools/traffic-generator/traffic-generator:      link $builddir/src/tools/traffic-generator/traffic-main.o $builddir/src/tools/traffic-generator/traffic-connection.o $builddir/src/tools/traffic-generator/traffic-server.o $builddir/src/tools/traffic-generator/traffic-client.o $builddir/src/init/init.a $builddir/src/command-line/command-line.a $builddir/src/io/io.a $builddir/src/collections/collections.a $builddir/src/storage/storage.a $builddir/src/utils/utils.a $builddir/src/core/core.a
+build $builddir/src/tools/traffic-generator/traffic-generator:      link $builddir/src/tools/traffic-generator/traffic-main.o $
+                                                                         $builddir/src/tools/traffic-generator/traffic-connection.o $
+                                                                         $builddir/src/tools/traffic-generator/traffic-server.o $
+                                                                         $builddir/src/tools/traffic-generator/traffic-client.o $
+                                                                         $builddir/src/init/init.a $
+                                                                         $builddir/src/command-line/command-line.a $
+                                                                         $builddir/src/io/io.a $
+                                                                         $builddir/src/collections/collections.a $
+                                                                         $builddir/src/storage/storage.a $
+                                                                         $builddir/src/utils/utils.a $
+                                                                         $builddir/src/core/core.a
+
