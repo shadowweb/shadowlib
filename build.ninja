@@ -321,6 +321,17 @@ build $builddir/src/log/log-manager-test:               link $builddir/src/log/l
                                                              $builddir/src/core/core.a $
                                                              $builddir/src/unittest/unittest.a
 
+# async writer threaded test
+build $builddir/src/log/async-writer-test.o:            cc src/log/async-writer-test.c
+build $builddir/src/log/async-writer-test:              link $builddir/src/log/async-writer-test.o $
+                                                             $builddir/src/log/log.a $
+                                                             $builddir/src/thread/thread.a $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
+
 # init
 build $builddir/src/init/init.o:                        cc src/init/init.c
 build $builddir/src/init/init-io.o:                     cc src/init/init-io.c

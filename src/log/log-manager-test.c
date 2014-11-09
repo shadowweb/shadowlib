@@ -146,7 +146,7 @@ swTestDeclare(TestLoggingWithAsyncWriter, NULL, NULL, swTestRun)
         swLogSink sink = {NULL};
         swLogFormatter formatter = {NULL};
         swStaticString fileName = swStaticStringDefine("/tmp/LogManagerTest");
-        if (swLogBufferFormatterInit(&formatter) && swLogFileSinkInit(&sink, threadManager, 32*1024 * 10265, 2, &fileName))
+        if (swLogBufferFormatterInit(&formatter) && swLogFileSinkInit(&sink, threadManager, 32*1024*1024, 2, &fileName))
         {
           swLogWriter writer;
           if (swLogWriterInit(&writer, sink, formatter) && swLogManagerWriterAdd(logManager, writer))

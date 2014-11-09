@@ -3,12 +3,14 @@
 #include "core/memory.h"
 #include "storage/dynamic-string.h"
 #include "thread/mpsc-ring-buffer.h"
+#include "thread/mpsc-futex-ring-buffer.h"
 
 #include <unistd.h>
 
 typedef struct swLogFileSinkData
 {
   swMPSCRingBuffer ringBuffer;
+  // swMPSCFutexRingBuffer ringBuffer;
   swDynamicString *baseFileName;
   FILE     *stream;
   size_t    maxFileSize;
@@ -24,6 +26,7 @@ static bool swLogFileSinkAcquire(swLogSink *sink, size_t sizeNeeded, uint8_t **b
   {
     swLogFileSinkData *sinkData = (swLogFileSinkData *)swLogSinkDataGet(sink);
     if (swMPSCRingBufferProduceAcquire(&(sinkData->ringBuffer), buffer, sizeNeeded))
+    // if (swMPSCFutexRingBufferProduceAcquire(&(sinkData->ringBuffer), buffer, sizeNeeded))
       rtn = true;
   }
   return rtn;
@@ -36,6 +39,7 @@ static bool swLogFileSinkRelease(swLogSink *sink, size_t sizeNeeded, uint8_t  *b
   {
     swLogFileSinkData *sinkData = (swLogFileSinkData *)swLogSinkDataGet(sink);
     if (swMPSCRingBufferProduceRelease(&(sinkData->ringBuffer), buffer, sizeNeeded))
+    // if (swMPSCFutexRingBufferProduceRelease(&(sinkData->ringBuffer), buffer, sizeNeeded))
       rtn = true;
   }
   return rtn;
@@ -48,12 +52,12 @@ static void swLogFileSinkClear(swLogSink *sink)
     swLogFileSinkData *sinkData = (swLogFileSinkData *)swLogSinkDataGet(sink);
     swLogSinkDataSet(sink, NULL);
     swMPSCRingBufferRelease(&(sinkData->ringBuffer));
+    // swMPSCFutexRingBufferRelease(&(sinkData->ringBuffer));
     if (sinkData->stream)
     {
       fclose(sinkData->stream);
       char tmpFileName[sinkData->baseFileName->len + 20 + 1];
       snprintf(tmpFileName, sizeof(tmpFileName), "%.*s.%u", (int)(sinkData->baseFileName->len), sinkData->baseFileName->data, sinkData->currentFileCount);
-      // rename it <file name>.<currentFileCount>
       rename(sinkData->baseFileName->data, tmpFileName);
     }
     swDynamicStringDelete(sinkData->baseFileName);
@@ -69,8 +73,6 @@ static bool swLogFileSinkConsume(uint8_t *buffer, size_t size, void *data)
   {
     if (!(sinkData->stream))
     {
-      // open new file <file name>
-      // set currentFileSize to 0
       if ((sinkData->stream = fopen(sinkData->baseFileName->data, "w+")))
       {
         setlinebuf(sinkData->stream);
@@ -79,31 +81,24 @@ static bool swLogFileSinkConsume(uint8_t *buffer, size_t size, void *data)
     }
     if (sinkData->stream)
     {
-      // write buffer
       fwrite((void *)buffer, size, 1, sinkData->stream);
-      // increment currentFileSize
       sinkData->currentFileSize += size;
-      // if current file size >= maxFileSize
       if (sinkData->currentFileSize >= sinkData->maxFileSize)
       {
-        // close file
         fclose(sinkData->stream);
         sinkData->stream = NULL;
         char tmpFileName[sinkData->baseFileName->len + 20 + 1];
         snprintf(tmpFileName, sizeof(tmpFileName), "%.*s.%u", (int)(sinkData->baseFileName->len), sinkData->baseFileName->data, sinkData->currentFileCount);
-        // rename it <file name>.<currentFileCount>
+
         if (!rename(sinkData->baseFileName->data, tmpFileName))
         {
-          // increment currentFileCount
           sinkData->currentFileCount++;
-          // if maxFileCount && currentFileCount > maxFileCount
           if (sinkData->maxFileCount && (sinkData->currentFileCount > sinkData->maxFileCount))
           {
-            // delete <file name>.<currentFileCount - maxFileCount - 1>
-            snprintf(tmpFileName, sizeof(tmpFileName), "%.*s.%u", (int)(sinkData->baseFileName->len), sinkData->baseFileName->data, sinkData->maxFileCount - sinkData->currentFileCount - 1);
+            snprintf(tmpFileName, sizeof(tmpFileName), "%.*s.%u", (int)(sinkData->baseFileName->len), sinkData->baseFileName->data, sinkData->currentFileCount - sinkData->maxFileCount - 1);
             unlink(tmpFileName);
-            rtn = true;
           }
+          rtn = true;
         }
       }
       else
@@ -125,6 +120,7 @@ bool swLogFileSinkInit(swLogSink *sink, swThreadManager *threadManager, size_t m
       if ((sinkData->baseFileName = swDynamicStringNewFromFormat("%.*s.%d.log", (int)(baseFileName->len), (baseFileName->data), getpid())))
       {
         if (swMPSCRingBufferInit(&(sinkData->ringBuffer), threadManager, 1024, swLogFileSinkConsume, sinkData))
+        // if (swMPSCFutexRingBufferInit(&(sinkData->ringBuffer), threadManager, 1024, swLogFileSinkConsume, sinkData))
         {
           memset(sink, 0, sizeof(*sink));
           sink->acquireFunc = swLogFileSinkAcquire;
