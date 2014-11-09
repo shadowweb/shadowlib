@@ -26,13 +26,13 @@ static const size_t acquireBytes      = 64;
 
 bool ringBufferConsumeFunction(uint8_t *buffer, size_t size, void *data)
 {
-  swThreadedTestData *testBenchmarkData = data;
-  swRingBufferTestData *testData = swThreadedTestDataGet(testBenchmarkData);
+  swThreadedTestData *testThreadData = data;
+  swRingBufferTestData *testData = swThreadedTestDataGet(testThreadData);
   if (testData)
   {
     testData->consumedBytesTotal += size;
     if (testData->consumedBytesTotal == testData->acquireBytesTotal)
-      swEdgeAsyncSend(&(testBenchmarkData->killLoop));
+      swEdgeAsyncSend(&(testThreadData->killLoop));
   }
   return true;
 }

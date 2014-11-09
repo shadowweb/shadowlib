@@ -189,8 +189,9 @@ void swLogWriterClear(swLogWriter *writer)
   }
 }
 
-void swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const char *function, int line, const char *format, ...)
+bool swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const char *function, int line, const char *format, ...)
 {
+  bool rtn = false;
   if (logger && logger->manager)
   {
     va_list argList;
@@ -220,13 +221,18 @@ void swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const cha
         }
         if (!sink->acquireFunc || !sizeNeeded || (sink->acquireFunc(sink, sizeNeeded, &buffer) && buffer))
         {
-          formatter->formatFunc(formatter, sizeNeeded, buffer, level, file, function, line, format, argListCopy);
-          if (sink->releaseFunc)
-            sink->releaseFunc(sink, sizeNeeded, buffer);
+          if (formatter->formatFunc(formatter, sizeNeeded, buffer, level, file, function, line, format, argListCopy))
+          {
+            if (sizeNeeded && sink->releaseFunc)
+              rtn = sink->releaseFunc(sink, sizeNeeded, buffer);
+            else
+              rtn = true;
+          }
         }
       }
       va_end(argListCopy);
     }
     va_end(argList);
   }
+  return rtn;
 }

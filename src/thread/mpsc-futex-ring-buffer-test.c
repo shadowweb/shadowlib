@@ -3,44 +3,44 @@
 #include "thread/threaded-test.h"
 #include "thread/mpsc-futex-ring-buffer.h"
 
-typedef struct swRingBufferTestThreadData
+typedef struct swFutexRingBufferTestThreadData
 {
   swMPSCFutexRingBuffer *ringBuffer;
   size_t    bytesAcquired;
   size_t    acquireBytesTotal;
   uint64_t  acquireSuccess;
   uint64_t  acquireFailure;
-} swRingBufferTestThreadData;
+} swFutexRingBufferTestThreadData;
 
-typedef struct swRingBufferTestData
+typedef struct swFutexRingBufferTestData
 {
   swMPSCFutexRingBuffer *ringBuffer;
-  swRingBufferTestThreadData *threadData;
+  swFutexRingBufferTestThreadData *threadData;
   size_t acquireBytesPerThread;
   size_t acquireBytesTotal;
   size_t consumedBytesTotal;
-} swRingBufferTestData;
+} swFutexRingBufferTestData;
 
 static const size_t acquireBytesTotal = 64 * 1024 * 1024;
 static const size_t acquireBytes      = 64;
 
 bool ringBufferConsumeFunction(uint8_t *buffer, size_t size, void *data)
 {
-  swThreadedTestData *testBenchmarkData = data;
-  swRingBufferTestData *testData = swThreadedTestDataGet(testBenchmarkData);
+  swThreadedTestData *testThreadData = data;
+  swFutexRingBufferTestData *testData = swThreadedTestDataGet(testThreadData);
   if (testData)
   {
     testData->consumedBytesTotal += size;
     if (testData->consumedBytesTotal == testData->acquireBytesTotal)
-      swEdgeAsyncSend(&(testBenchmarkData->killLoop));
+      swEdgeAsyncSend(&(testThreadData->killLoop));
   }
   return true;
 }
 
-void swMPSCRingBufferDataSetup(swThreadedTestData *data)
+void swMPSCFutexRingBufferDataSetup(swThreadedTestData *data)
 {
   bool success = false;
-  swRingBufferTestData *testData = swMemoryCalloc(1, sizeof(*testData));
+  swFutexRingBufferTestData *testData = swMemoryCalloc(1, sizeof(*testData));
   if (testData)
   {
     if ((testData->ringBuffer = swMPSCFutexRingBufferNew(&(data->threadManager), 4, ringBufferConsumeFunction, data)))
@@ -48,7 +48,7 @@ void swMPSCRingBufferDataSetup(swThreadedTestData *data)
       testData->acquireBytesPerThread = acquireBytesTotal / data->numThreads;
       testData->acquireBytesTotal = acquireBytesTotal;
       testData->consumedBytesTotal = 0;
-      if ((testData->threadData = swMemoryCalloc(data->numThreads, sizeof(swRingBufferTestThreadData))))
+      if ((testData->threadData = swMemoryCalloc(data->numThreads, sizeof(swFutexRingBufferTestThreadData))))
       {
         for(uint32_t i = 0; i < data->numThreads; i++)
         {
@@ -67,14 +67,14 @@ void swMPSCRingBufferDataSetup(swThreadedTestData *data)
   ASSERT_TRUE(success);
 }
 
-void swMPSCRingBufferDataTeardown(swThreadedTestData *data)
+void swMPSCFutexRingBufferDataTeardown(swThreadedTestData *data)
 {
-  swRingBufferTestData *testData = swThreadedTestDataGet(data);
+  swFutexRingBufferTestData *testData = swThreadedTestDataGet(data);
   if (testData)
   {
     for (uint32_t i = 0; i < data->numThreads; i++)
     {
-      swRingBufferTestThreadData *threadData = &(testData->threadData[i]);
+      swFutexRingBufferTestThreadData *threadData = &(testData->threadData[i]);
       swTestLogLine("Thread %u: bytes acquired = %zu, success/failure attepts = %lu/%lu\n", i, threadData->bytesAcquired, threadData->acquireSuccess, threadData->acquireFailure);
       swTestLogLine("Thread %u: thread time = %lu ns, total time = %lu ns\n", i, data->threadData[i].executionCPUTime, data->threadData[i].executionTotalTime);
     }
@@ -89,21 +89,21 @@ void swMPSCRingBufferDataTeardown(swThreadedTestData *data)
   }
 }
 
-void swMPSCRingBufferThreadDataSetup(swThreadedTestData *data, swThreadedTestThreadData *threadData)
+void swMPSCFutexRingBufferThreadDataSetup(swThreadedTestData *data, swThreadedTestThreadData *threadData)
 {
-  swRingBufferTestData *testData = swThreadedTestDataGet(data);
+  swFutexRingBufferTestData *testData = swThreadedTestDataGet(data);
   swThreadedTestThreadDataSet(threadData, &(testData->threadData[threadData->id]));
 }
 
-void swMPSCRingBufferThreadDataTeardown(swThreadedTestData *data, swThreadedTestThreadData *threadData)
+void swMPSCFutexRingBufferThreadDataTeardown(swThreadedTestData *data, swThreadedTestThreadData *threadData)
 {
   swThreadedTestThreadDataSet(threadData, NULL);
 }
 
-bool swMPSCRingBufferThreadDataRun(swThreadedTestData *data, swThreadedTestThreadData *threadData)
+bool swMPSCFutexRingBufferThreadDataRun(swThreadedTestData *data, swThreadedTestThreadData *threadData)
 {
   bool rtn = true;
-  swRingBufferTestThreadData *localThreadData = swThreadedTestThreadDataGet(threadData);
+  swFutexRingBufferTestThreadData *localThreadData = swThreadedTestThreadDataGet(threadData);
   // struct timespec sleepInterval = { .tv_sec = 0, .tv_nsec = 1000 };
   uint8_t *buffer = NULL;
   while (!threadData->shutdown && localThreadData->bytesAcquired < localThreadData->acquireBytesTotal)
@@ -131,6 +131,6 @@ bool swMPSCRingBufferThreadDataRun(swThreadedTestData *data, swThreadedTestThrea
 
 static uint32_t threadCounts[] = {1, 2, 4, 8, 16};
 
-swThreadedTestDeclare(MPSCRingBuffer, swMPSCRingBufferDataSetup, swMPSCRingBufferDataTeardown,
-                   swMPSCRingBufferThreadDataSetup, swMPSCRingBufferThreadDataTeardown, swMPSCRingBufferThreadDataRun,
+swThreadedTestDeclare(MPSCFutexRingBuffer, swMPSCFutexRingBufferDataSetup, swMPSCFutexRingBufferDataTeardown,
+                   swMPSCFutexRingBufferThreadDataSetup, swMPSCFutexRingBufferThreadDataTeardown, swMPSCFutexRingBufferThreadDataRun,
                    threadCounts);

@@ -159,7 +159,7 @@ typedef struct swLogger
 #define swLoggerDeclareWithLevel(logger, n, l)  static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefineWithLevel(n, l)
 void swLoggerLevelSet(swLogger *logger, swLogLevel level, bool useManagerLevel);
 
-void swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const char *function, int line, const char *format, ...) __attribute__ ((format(printf, 6, 7)));
+bool swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const char *function, int line, const char *format, ...) __attribute__ ((format(printf, 6, 7)));
 
 #define SW_LOG_GENERIC(logger, lvl, file, function, line, format, ...)  \
 _Pragma("GCC diagnostic push") \

@@ -23,12 +23,13 @@ typedef struct swThreadedTestThreadData
 
 typedef struct swThreadedTestData
 {
-  // swDynamicString *testName;
   swThreadManager threadManager;
   swEdgeAsync killLoop;
   swThreadedTestThreadData *threadData;
   void *data;                     // per test data
   uint32_t numThreads;
+  uint32_t expectedEventCount;
+  uint32_t receivedEventCount;
 } swThreadedTestData;
 
 typedef void (*swThreadedTestDataSetupFunc)    (swThreadedTestData *data);
@@ -54,7 +55,6 @@ struct swThreadedTestSuite
   swThreadedTestThreadDataRunFunc      threadRunFunc;
 
   uint64_t unused1;
-  uint64_t unused2;
 };
 
 void swThreadedTestDataSet(swThreadedTestData *testData, void *data);

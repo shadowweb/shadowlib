@@ -120,7 +120,12 @@ void testDoneFunction(swThreadedTestThreadData *threadData, void *returnValue)
 void killLoop(swEdgeAsync *asyncWatcher, eventfd_t eventCount, uint32_t events)
 {
   if (asyncWatcher)
-    swEdgeLoopBreak(asyncWatcher->watcher.loop);
+  {
+    swThreadedTestData *testData = swEdgeWatcherDataGet(asyncWatcher);
+    testData->receivedEventCount += eventCount;
+    if (testData->expectedEventCount == testData->receivedEventCount)
+      swEdgeLoopBreak(asyncWatcher->watcher.loop);
+  }
 }
 
 void swThreadedTestSetup(swTestSuite *suite, swTest *test)
@@ -133,6 +138,8 @@ void swThreadedTestSetup(swTestSuite *suite, swTest *test)
     bool success = false;
     swThreadedTestData *testData = &(testSuiteData->testData);
     testData->numThreads = numberThreads[testSuiteData->currentTest];
+    testData->expectedEventCount = 1;
+    testData->receivedEventCount = 0;
     if ((testData->threadData = swMemoryCalloc(testData->numThreads, sizeof(swThreadedTestThreadData))))
     {
       swEdgeLoop *loop = swEdgeLoopNew();
@@ -144,6 +151,7 @@ void swThreadedTestSetup(swTestSuite *suite, swTest *test)
             testSuiteData->setupFunc(testData);
           if (swEdgeAsyncInit(&(testData->killLoop), killLoop))
           {
+            swEdgeWatcherDataSet(&(testData->killLoop), testData);
             if (swEdgeAsyncStart(&(testData->killLoop), loop))
             {
               uint32_t i = 0;
