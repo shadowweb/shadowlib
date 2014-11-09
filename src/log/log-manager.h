@@ -75,10 +75,7 @@ static inline void *swLogSinkDataGet(swLogSink *sink)
   return NULL;
 }
 
-// TODO: need multithreaded unittest
 bool swLogFileSinkInit(swLogSink *sink, swThreadManager *threadManager, size_t maxFileSize, uint32_t maxFileCount, swStaticString *baseFileName);
-
-// bool swLogSinkInit(swLogSink *sink, swLogSinkAcquireFunction );
 
 typedef struct swLogFormatter swLogFormatter;
 
