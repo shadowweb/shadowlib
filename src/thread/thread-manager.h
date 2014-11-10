@@ -16,10 +16,6 @@
 
 // TODO: implement task pool that acquires the threads from the thread manager
 
-// TODO: I want to use thread manager for logging: single producer vs single consumer case and
-// work my way up to multiple producer vs single consumer; the intention is to utilize lock free
-// concurrency in all the cases; I would also need it for testing of all these scenarios
-
 typedef void *(*swThreadRunFunction)(void *arg);
 typedef void (*swThreadStopFunction)(void *arg);
 typedef void (*swThreadDoneFunction)(void *arg, void *returnValue);
