@@ -212,7 +212,7 @@ bool swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const cha
       buffer = NULL;
       formatter = &(writers[i].formatter);
       sink = &(writers[i].sink);
-      if (!(formatter->preformatFunc) || (formatter->preformatFunc(formatter, &sizeNeeded, level, file, function, line, format, argListCopy) && sizeNeeded))
+      if (!(formatter->preformatFunc) || (formatter->preformatFunc(formatter, &sizeNeeded, level, file, function, line, logger->name.data, format, argListCopy) && sizeNeeded))
       {
         if (formatter->preformatFunc)
         {
@@ -221,7 +221,7 @@ bool swLoggerLog(swLogger *logger, swLogLevel level, const char *file, const cha
         }
         if (!sink->acquireFunc || !sizeNeeded || (sink->acquireFunc(sink, sizeNeeded, &buffer) && buffer))
         {
-          if (formatter->formatFunc(formatter, sizeNeeded, buffer, level, file, function, line, format, argListCopy))
+          if (formatter->formatFunc(formatter, sizeNeeded, buffer, level, file, function, line, logger->name.data, format, argListCopy))
           {
             if (sizeNeeded && sink->releaseFunc)
               rtn = sink->releaseFunc(sink, sizeNeeded, buffer);

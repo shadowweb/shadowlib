@@ -79,9 +79,8 @@ bool swLogFileSinkInit(swLogSink *sink, swThreadManager *threadManager, size_t m
 
 typedef struct swLogFormatter swLogFormatter;
 
-// TODO: add logger name to formatting
-typedef bool (*swLogFormatterPreformatFunction) (swLogFormatter *formatter, size_t *sizeNeeded,                   swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
-typedef bool (*swLogFormatterFormatFunction)    (swLogFormatter *formatter, size_t  sizeNeeded, uint8_t  *buffer, swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList);
+typedef bool (*swLogFormatterPreformatFunction) (swLogFormatter *formatter, size_t *sizeNeeded,                   swLogLevel level, const char *file, const char *function, int line, const char *loggerName, const char *format, va_list argList);
+typedef bool (*swLogFormatterFormatFunction)    (swLogFormatter *formatter, size_t  sizeNeeded, uint8_t  *buffer, swLogLevel level, const char *file, const char *function, int line, const char *loggerName, const char *format, va_list argList);
 typedef void (*swLogFormatterClearFunction)     (swLogFormatter *formatter);
 
 struct swLogFormatter

@@ -10,6 +10,9 @@ typedef struct swFutexRingBufferTestThreadData
   size_t    acquireBytesTotal;
   uint64_t  acquireSuccess;
   uint64_t  acquireFailure;
+  // uint64_t  unused1;
+  // uint64_t  unused2;
+  // uint64_t  unused3;
 } swFutexRingBufferTestThreadData;
 
 typedef struct swFutexRingBufferTestData

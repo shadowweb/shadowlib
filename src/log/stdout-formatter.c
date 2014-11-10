@@ -4,7 +4,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-static bool swLogStdoutFormatterFormat(swLogFormatter *formatter, size_t sizeNeeded, uint8_t *buffer, swLogLevel level, const char *file, const char *function, int line, const char *format, va_list argList)
+static bool swLogStdoutFormatterFormat(swLogFormatter *formatter, size_t sizeNeeded, uint8_t *buffer, swLogLevel level, const char *file, const char *function, int line, const char *loggerName, const char *format, va_list argList)
 {
   bool rtn = false;
   if (formatter)
@@ -16,8 +16,8 @@ static bool swLogStdoutFormatterFormat(swLogFormatter *formatter, size_t sizeNee
       swDynamicString timeString = {.len = 0, .data = timeBuffer, .size = (sizeof(timeBuffer) - 1)};
       if (swDynamicStringAppendTime(&timeString))
       {
-        fprintf(stdout, "%s%s [%ld] [%s] [%s:%d] [%s]%s ",
-                swLogLevelColorGet(level), swLogLevelTextGet(level), tid, timeBuffer, file, line, function, swLogLevelColorGet(swLogLevelNone));
+        fprintf(stdout, "%s%s [%ld] [%s] [%s:%d] [%s] [%s]%s ",
+                swLogLevelColorGet(level), swLogLevelTextGet(level), tid, timeBuffer, file, line, function, loggerName, swLogLevelColorGet(swLogLevelNone));
       }
     }
     else
