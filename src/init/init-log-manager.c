@@ -1,7 +1,7 @@
 #include "init/init-log-manager.h"
 
 #include "command-line/option-category.h"
-#include <storage/dynamic-string.h>
+#include "storage/dynamic-string.h"
 
 bool stdoutWriter = false;
 bool asyncWriter  = false;
@@ -130,8 +130,8 @@ static void swInitLogManagerStop()
   {
     swLogManagerDelete(logManager);
     logManager = NULL;
-    logManagerArrayData[0] = NULL;
   }
+  logManagerArrayData[0] = NULL;
 }
 
 static swInitData logManagerData = {.startFunc = swInitLogManagerStart, .stopFunc = swInitLogManagerStop, .name = "Log Manager"};
