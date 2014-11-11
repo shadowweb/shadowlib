@@ -149,7 +149,7 @@ typedef struct swLogger
   uint64_t unused3;
 } swLogger;
 
-#define swLoggerDefineWithLevel(n, l)   {.name = swStaticStringDefine(n), .manager = NULL, .level = (l),            .magic = SW_LOGGER_MAGIC, .useManagerLevel = false}
+#define swLoggerDefineWithLevel(n, l)   {.name = swStaticStringDefine(n), .manager = NULL, .level = (l),            .magic = SW_LOGGER_MAGIC, .useManagerLevel = true}
 #define swLoggerDefine(n)               {.name = swStaticStringDefine(n), .manager = NULL, .level = swLogLevelNone, .magic = SW_LOGGER_MAGIC, .useManagerLevel = true }
 #define swLoggerDeclare(logger, n)              static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefine(n)
 #define swLoggerDeclareWithLevel(logger, n, l)  static swLogger logger __attribute__ ((unused, section(".logging"))) = swLoggerDefineWithLevel(n, l)

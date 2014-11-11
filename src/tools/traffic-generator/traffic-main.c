@@ -8,6 +8,8 @@
 #include "init/init-command-line.h"
 #include "init/init-cpu-timer.h"
 #include "init/init-io.h"
+#include "init/init-log-manager.h"
+#include "init/init-thread-manager.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,6 +30,7 @@ int main (int argc, char *argv[])
 {
   int rtn = EXIT_FAILURE;
   swEdgeLoop *loop = NULL;
+  swThreadManager *threadManager = NULL;
   srand(time(NULL));
   uint64_t cpuTimerInterval = 1000;
   swInitData *initData[] =
@@ -35,6 +38,8 @@ int main (int argc, char *argv[])
     swInitCommandLineDataGet(&argc, argv, "Traffic Generator Program", NULL),
     swInitIOEdgeLoopDataGet(&loop),
     swInitIOEdgeSignalsDataGet(&loop, SIGINT, SIGHUP, SIGQUIT, SIGTERM, SIGUSR1, SIGUSR2, 0),
+    swInitThreadManagerDataGet(&loop, &threadManager),
+    swInitLogManagerDataGet(&threadManager),
     swTrafficClientDataGet(&loop, &minMessageSize, &maxMessageSize),
     swTrafficServerDataGet(&loop, &minMessageSize, &maxMessageSize),
     swInitCPUTimerGet(&loop, &cpuTimerInterval),
@@ -48,10 +53,9 @@ int main (int argc, char *argv[])
     swInitStop(initData);
   }
 
+  // TODO: modify client and server to log
   // TODO: implement stats module
   /*
-    // verify that all arguments are valid
-    // init logging
     // init stats reporting
   */
 

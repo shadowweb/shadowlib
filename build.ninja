@@ -358,6 +358,8 @@ build $builddir/src/tools/traffic-generator/traffic-generator:      link $buildd
                                                                          $builddir/src/tools/traffic-generator/traffic-server.o $
                                                                          $builddir/src/tools/traffic-generator/traffic-client.o $
                                                                          $builddir/src/init/init.a $
+                                                                         $builddir/src/log/log.a $
+                                                                         $builddir/src/thread/thread.a $
                                                                          $builddir/src/command-line/command-line.a $
                                                                          $builddir/src/io/io.a $
                                                                          $builddir/src/collections/collections.a $

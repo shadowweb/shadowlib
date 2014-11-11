@@ -1,8 +1,12 @@
 #include "init/init.h"
+
+#include "log/log-manager.h"
 #include "utils/colors.h"
 
 #include <stdint.h>
 #include <stdio.h>
+
+swLogger initLogger =  swLoggerDefineWithLevel("Init", swLogLevelInfo);
 
 bool swInitStart (swInitData *data[])
 {
@@ -16,15 +20,15 @@ bool swInitStart (swInitData *data[])
       if (dataPtr->startFunc)
       {
         if (dataPtr->name)
-          printf ("%sInitializing:%s %s\n", SW_COLOR_ANSI_GREEN, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+          SW_LOG_INFO(&initLogger, "%sInitializing:%s %s", SW_COLOR_ANSI_GREEN, SW_COLOR_ANSI_NORMAL, dataPtr->name);
         if (!dataPtr->startFunc())
         {
           if (dataPtr->name)
-            printf ("%sInitialization failure:%s %s\n", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+            SW_LOG_FATAL(&initLogger, "%sInitialization failure:%s %s", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
           break;
         }
         if (dataPtr->name)
-          printf ("%sInitialization successful:%s %s\n", SW_COLOR_ANSI_GREEN, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+          SW_LOG_INFO(&initLogger, "%sInitialization successful:%s %s", SW_COLOR_ANSI_GREEN, SW_COLOR_ANSI_NORMAL, dataPtr->name);
       }
       i++;
     }
@@ -40,10 +44,10 @@ bool swInitStart (swInitData *data[])
           if (dataPtr->stopFunc)
           {
             if (dataPtr->name)
-              printf ("%sTearing down:%s %s\n", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+              SW_LOG_INFO(&initLogger, "%sTearing down:%s %s", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
             dataPtr->stopFunc();
             if (dataPtr->name)
-              printf ("%sTearing down done:%s %s\n", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+              SW_LOG_INFO(&initLogger, "%sTearing down done:%s %s", SW_COLOR_ANSI_RED, SW_COLOR_ANSI_NORMAL, dataPtr->name);
           }
           i--;
         } while (i > 0);
@@ -68,10 +72,10 @@ void swInitStop (swInitData *data[])
         if (dataPtr->stopFunc)
         {
           if (dataPtr->name)
-            printf ("%sTearing down:%s %s\n", SW_COLOR_ANSI_BLUE, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+            SW_LOG_INFO(&initLogger, "%sTearing down:%s %s", SW_COLOR_ANSI_BLUE, SW_COLOR_ANSI_NORMAL, dataPtr->name);
           dataPtr->stopFunc();
           if (dataPtr->name)
-            printf ("%sTearing down done:%s %s\n", SW_COLOR_ANSI_BLUE, SW_COLOR_ANSI_NORMAL, dataPtr->name);
+            SW_LOG_INFO(&initLogger, "%sTearing down done:%s %s", SW_COLOR_ANSI_BLUE, SW_COLOR_ANSI_NORMAL, dataPtr->name);
         }
         i--;
       } while (i > 0);
