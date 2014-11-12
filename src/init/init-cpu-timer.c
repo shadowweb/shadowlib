@@ -2,9 +2,11 @@
 
 #include "core/time.h"
 #include "io/edge-timer.h"
+#include "log/log-manager.h"
 
-#include <stdio.h>
 #include <string.h>
+
+swLoggerDeclareWithLevel(cpuLogger, "CPUUtilization", swLogLevelInfo);
 
 typedef struct swCPUTimerData
 {
@@ -17,7 +19,6 @@ static swCPUTimerData timerData = { .timer = {.watcher = { .fd = -1 } } };
 
 static void swCPUTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
-  // printf ("'%s': sender callback entered\n", __func__);
   if (timer)
   {
     swCPUTimerData *timerData = swEdgeWatcherDataGet(timer);
@@ -25,8 +26,8 @@ static void swCPUTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32
     uint64_t lastCPUTimeStamp = timerData->lastCPUTimeStamp;
     timerData->lastMonotonicTimeStamp = swTimeGet(CLOCK_MONOTONIC_RAW);
     timerData->lastCPUTimeStamp = swTimeGet(CLOCK_PROCESS_CPUTIME_ID);
-    double cpuUtilization = ((double)(timerData->lastCPUTimeStamp - lastCPUTimeStamp)) / ((double)(timerData->lastMonotonicTimeStamp - lastMonotonicTimeStamp));
-    printf ("CPU Utilization: %.2f%%\n", cpuUtilization);
+    double cpuUtilization = ((double)(timerData->lastCPUTimeStamp - lastCPUTimeStamp)) * 100 / ((double)(timerData->lastMonotonicTimeStamp - lastMonotonicTimeStamp));
+    SW_LOG_INFO(&cpuLogger, "CPU Utilization: %.2f%%", cpuUtilization);
   }
 }
 

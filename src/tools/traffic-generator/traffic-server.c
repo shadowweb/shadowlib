@@ -1,10 +1,12 @@
 #include "command-line/option-category.h"
 #include "io/tcp-client.h"
+#include "log/log-manager.h"
 #include "tools/traffic-generator/traffic-server.h"
 #include "tools/traffic-generator/traffic-connection.h"
 
 #include <limits.h>
-#include <stdlib.h>
+
+swLoggerDeclareWithLevel(trafficServerLogger, "TrafficServer", swLogLevelInfo);
 
 static swStaticArray ipAddresses          = swStaticArrayDefineEmpty;
 static swStaticArray ports                = swStaticArrayDefineEmpty;
@@ -133,23 +135,23 @@ static bool swTrafficServerValidate()
 
 static bool onAccept(swTCPServerAcceptor *serverAcceptor)
 {
-  printf("'%s': accepting connection\n", __func__);
+  SW_LOG_INFO(&trafficServerLogger, "accepting connection");
   return true;
 }
 
 static void onStop(swTCPServerAcceptor *serverAcceptor)
 {
-  printf("'%s': stopping\n", __func__);
+  SW_LOG_INFO(&trafficServerLogger, "stopping");
 }
 
 static void onError(swTCPServerAcceptor *serverAcceptor, swSocketIOErrorType errorCode)
 {
-  printf("'%s': error \"%s\"\n", __func__, swSocketIOErrorTextGet(errorCode));
+  SW_LOG_ERROR(&trafficServerLogger, "error \"%s\"", swSocketIOErrorTextGet(errorCode));
 }
 
 static void onServerReadReady(swTCPServer *server)
 {
-  // printf ("'%s': read ready entered\n", __func__);
+  SW_LOG_TRACE(&trafficServerLogger, "read ready entered");
   swSocketReturnType ret = swSocketReturnNone;
   swTrafficConnectionData *serverData = (swTrafficConnectionData *)swTCPServerDataGet(server);
   swStaticBuffer buffer = swStaticBufferDefineWithLength(serverData->receiveBuffer.data, serverData->receiveBuffer.size);
@@ -165,7 +167,7 @@ static void onServerReadReady(swTCPServer *server)
 
 static void onServerWriteReady(swTCPServer *server)
 {
-  // printf ("'%s': write ready entered\n", __func__);
+  SW_LOG_TRACE(&trafficServerLogger, "write ready entered");
   swTrafficConnectionData *serverData = (swTrafficConnectionData *)swTCPServerDataGet(server);
   if (!(serverData->sendInterval) || serverData->retrySend)
     swTrafficConnectionDataSend(serverData, serverData->connection, minMessageSize);
@@ -173,30 +175,30 @@ static void onServerWriteReady(swTCPServer *server)
 
 static bool onServerReadTimeout(swTCPServer *server)
 {
-  printf ("'%s': read timeout\n", __func__);
+  SW_LOG_INFO(&trafficServerLogger, "read timeout");
   return false;
 }
 
 static bool onServerWriteTimeout(swTCPServer *server)
 {
-  printf ("'%s': write timeout\n", __func__);
+  SW_LOG_INFO(&trafficServerLogger, "write timeout");
   return false;
 }
 
 static void onServerError(swTCPServer *server, swSocketIOErrorType errorCode)
 {
-  printf("'%s': error \"%s\"\n", __func__, swSocketIOErrorTextGet(errorCode));
+  SW_LOG_ERROR(&trafficServerLogger, "error \"%s\"", swSocketIOErrorTextGet(errorCode));
 }
 
 static void onServerClose(swTCPServer *server)
 {
-  printf ("'%s': Server close\n", __func__);
+  SW_LOG_INFO(&trafficServerLogger, "server close");
   swTrafficConnectionData *serverData = swTCPServerDataGet(server);
   if (serverData)
   {
     if (serverData->sendInterval)
       swEdgeTimerStop(&(serverData->sendTimer));
-    printf ("'%s': bytesSent = %lu, bytesReceived = %lu\n", __func__, serverData->bytesSent, serverData->bytesReceived);
+    SW_LOG_INFO(&trafficServerLogger, "bytesSent = %lu, bytesReceived = %lu", serverData->bytesSent, serverData->bytesReceived);
     serverData->connection = NULL;
     swTrafficAcceptorData *acceptorData = swTrafficServerStorageGet(serverAcceptorsData, serverData->portPosition);
     if (acceptorData)
@@ -210,7 +212,7 @@ static void onServerClose(swTCPServer *server)
 
 static void onSendTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
-  // printf ("'%s': entered\n", __func__);
+  SW_LOG_TRACE(&trafficServerLogger, "send timer expired");
   if (timer)
   {
     swTrafficConnectionData *serverData = swEdgeWatcherDataGet(timer);
@@ -221,7 +223,7 @@ static void onSendTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint3
 static bool onConnectionSetup(swTCPServerAcceptor *serverAcceptor, swTCPServer *server)
 {
   bool rtn = false;
-  printf("'%s': new connection setup for %p\n", __func__, (void *)server);
+  SW_LOG_INFO(&trafficServerLogger, "new connection setup for %p", (void *)server);
   if (serverAcceptor)
   {
     swTrafficAcceptorData *acceptorData = swTCPServerAcceptorDataGet(serverAcceptor);
@@ -242,7 +244,7 @@ static bool onConnectionSetup(swTCPServerAcceptor *serverAcceptor, swTCPServer *
         swTrafficConnectionData *serverData = NULL;
         if (acceptorData->firstFree < acceptorData->serverConnections.count)
         {
-          // printf ("have free serverData spot %u\n", acceptorData->firstFree);
+          SW_LOG_TRACE(&trafficServerLogger, "have free serverData spot %u", acceptorData->firstFree);
           serverData = connections[acceptorData->firstFree];
           serverData->connection = (swSocketIO *)server;
           acceptorData->firstFree++;
@@ -251,7 +253,7 @@ static bool onConnectionSetup(swTCPServerAcceptor *serverAcceptor, swTCPServer *
         }
         else
         {
-          // printf ("trying to create serverData\n");
+          SW_LOG_TRACE(&trafficServerLogger, "trying to create serverData");
           if ((serverData = swTrafficConnectionDataNew((swSocketIO *)server, onSendTimerCallback, acceptorData->sendInterval, maxMessageSize)))
           {
             if (swDynamicArrayPush(&(acceptorData->serverConnections), &serverData))

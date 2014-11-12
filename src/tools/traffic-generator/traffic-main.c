@@ -53,7 +53,6 @@ int main (int argc, char *argv[])
     swInitStop(initData);
   }
 
-  // TODO: modify client and server to log
   // TODO: implement stats module
   /*
     // init stats reporting

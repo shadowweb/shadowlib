@@ -1,10 +1,12 @@
 #include "command-line/option-category.h"
 #include "io/tcp-client.h"
+#include "log/log-manager.h"
 #include "tools/traffic-generator/traffic-client.h"
 #include "tools/traffic-generator/traffic-connection.h"
 
 #include <limits.h>
-#include <stdlib.h>
+
+swLoggerDeclareWithLevel(trafficClientLogger, "TrafficClient", swLogLevelInfo);
 
 static swStaticArray ipAddresses          = swStaticArrayDefineEmpty;
 static swStaticArray ports                = swStaticArrayDefineEmpty;
@@ -70,7 +72,7 @@ static bool swTrafficClientValidate()
 
 static void onClientConnected(swTCPClient *client)
 {
-  printf("'%s': connected\n", __func__);
+  SW_LOG_INFO(&trafficClientLogger, "connected");
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
   if (!(clientData->sendInterval) || swEdgeTimerStart(&(clientData->sendTimer), client->loop, clientData->sendInterval, clientData->sendInterval, false))
     clientData->retrySend = true;
@@ -133,24 +135,24 @@ static swDynamicArray *swTrafficClientStorageGet(swDynamicArray *connStorage, ui
 
 static void onClientClose(swTCPClient *client)
 {
-  printf("'%s': close\n", __func__);
+  SW_LOG_INFO(&trafficClientLogger, "close");
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
   if (clientData)
   {
     if (clientData->sendInterval)
       swEdgeTimerStop(&(clientData->sendTimer));
-    printf ("'%s': bytesSent = %lu, bytesReceived = %lu\n", __func__, clientData->bytesSent, clientData->bytesReceived);
+    SW_LOG_INFO(&trafficClientLogger, "bytesSent = %lu, bytesReceived = %lu", clientData->bytesSent, clientData->bytesReceived);
   }
 }
 
 static void onClientStop(swTCPClient *client)
 {
-  printf("'%s': stop\n", __func__);
+  SW_LOG_INFO(&trafficClientLogger, "stop");
 }
 
 static void onClientReadReady(swTCPClient *client)
 {
-  // printf ("'%s': read ready entered\n", __func__);
+  SW_LOG_TRACE(&trafficClientLogger, "read ready entered");
   swSocketReturnType ret = swSocketReturnNone;
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
   swStaticBuffer buffer = swStaticBufferDefineWithLength(clientData->receiveBuffer.data, clientData->receiveBuffer.size);
@@ -166,7 +168,7 @@ static void onClientReadReady(swTCPClient *client)
 
 static void onClientWriteReady(swTCPClient *client)
 {
-  // printf ("'%s': write ready entered\n", __func__);
+  SW_LOG_TRACE(&trafficClientLogger, "write ready entered");
   swTrafficConnectionData *clientData = (swTrafficConnectionData *)swTCPClientDataGet(client);
   if (!(clientData->sendInterval) || clientData->retrySend)
     swTrafficConnectionDataSend(clientData, clientData->connection, minMessageSize);
@@ -174,24 +176,24 @@ static void onClientWriteReady(swTCPClient *client)
 
 static bool onClientReadTimeout(swTCPClient *client)
 {
-  printf ("'%s': read timeout\n", __func__);
+  SW_LOG_INFO(&trafficClientLogger, "read timeout");
   return false;
 }
 
 static bool onClientWriteTimeout(swTCPClient *client)
 {
-  printf ("'%s': write timeout\n", __func__);
+  SW_LOG_INFO(&trafficClientLogger, "write timeout");
   return false;
 }
 
 static void onClientError(swTCPClient *client, swSocketIOErrorType errorCode)
 {
-  printf("'%s': error \"%s\"\n", __func__, swSocketIOErrorTextGet(errorCode));
+  SW_LOG_ERROR(&trafficClientLogger, "error \"%s\"", swSocketIOErrorTextGet(errorCode));
 }
 
 static void onSendTimerCallback(swEdgeTimer *timer, uint64_t expiredCount, uint32_t events)
 {
-  // printf ("'%s': sender callback entered\n", __func__);
+  SW_LOG_TRACE(&trafficClientLogger, "sender callback entered");
   if (timer)
   {
     swTrafficConnectionData *clientData = swEdgeWatcherDataGet(timer);
@@ -243,7 +245,7 @@ static bool swTrafficClientCreate(swEdgeLoop *loop, swTrafficConnectionData *con
 
 static void swTrafficClientDestroy(swTCPClient *client)
 {
-  // printf ("'%s': entered\n", __func__);
+  SW_LOG_DEBUG(&trafficClientLogger, "destroying client");
   if (client)
   {
     swTCPClientStop(client);
@@ -255,7 +257,7 @@ static void *trafficClientArrayData[3] = {NULL};
 
 static void swTrafficClientStop()
 {
-  // printf ("'%s': entered\n", __func__);
+  SW_LOG_DEBUG(&trafficClientLogger, "stopping client");
   if (clientConnectionsData)
   {
     uint32_t portCount = clientConnectionsData->count;
