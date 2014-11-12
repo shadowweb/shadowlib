@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-swLogger initLogger =  swLoggerDefineWithLevel("Init", swLogLevelInfo);
+swLoggerDeclareWithLevel(initLogger, "Init", swLogLevelInfo);
 
 bool swInitStart (swInitData *data[])
 {

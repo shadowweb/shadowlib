@@ -170,7 +170,7 @@ _Pragma("GCC diagnostic ignored \"-Waddress\"") \
     else \
     { \
       if (!(logger) || ((logger) && (lvl <= (((swLogger *)(logger))->level)))) \
-        printf("%s%s " file ":%u %s():%s " format "\n", swLogLevelColorGet(lvl), swLogLevelTextGet(lvl), line, function, swLogLevelColorGet(swLogLevelNone), ##__VA_ARGS__); \
+        printf("%s%s " file ":%u %s%s " format "\n", swLogLevelColorGet(lvl), swLogLevelTextGet(lvl), line, function, swLogLevelColorGet(swLogLevelNone), ##__VA_ARGS__); \
     } \
   } \
 _Pragma("GCC diagnostic pop")
