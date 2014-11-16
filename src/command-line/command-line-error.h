@@ -22,6 +22,7 @@ typedef enum swCommandLineErrorCode
   swCommandLineErrorCodeArrayMultivalue,
   swCommandLineErrorCodeParse,
   swCommandLineErrorCodeNoPositional,
+  swCommandLineErrorCodeValueAfterEnumName,
   swCommandLineErrorCodeMax
 } swCommandLineErrorCode;
 

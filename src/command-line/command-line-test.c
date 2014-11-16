@@ -7,25 +7,48 @@
 #include "command-line/option.h"
 #include "command-line/option-category.h"
 
+typedef enum swTestEnum
+{
+  enumValue1  = 1,
+  enumValue2  = 2,
+  enumValue3  = 3,
+  enumValue4  = 4,
+  enumValue5  = 5
+} swTestEnum;
+
+swOptionEnumValueName enumNames[] =
+{
+  { enumValue1, "-one",     "one"   },
+  { enumValue2, "-two",     "two"   },
+  { enumValue3, "-three",   "three" },
+  { enumValue4, "-four",    "four"  },
+  { enumValue5, "-five",    "five"  },
+  { 0,          NULL,       NULL    }
+};
+
 bool            posBool       = false;
 int64_t         posInt        = 0;
 double          posDouble     = 0.0;
 swStaticString  posString     = swStaticStringDefineEmpty;
+int64_t         posEnum       = 0;
 
 swStaticArray posBoolArray    = swStaticArrayDefineEmpty;
 swStaticArray posIntArray     = swStaticArrayDefineEmpty;
 swStaticArray posDoubleArray  = swStaticArrayDefineEmpty;
 swStaticArray posStringArray  = swStaticArrayDefineEmpty;
+swStaticArray posEnumArray    = swStaticArrayDefineEmpty;
 
 swOptionCategoryMainDeclare(mainArgs, "Command Line Test",
   swOptionDeclarePositionalScalar("postest1", "pt1", &posBool,    swOptionValueTypeBool,    false),
   swOptionDeclarePositionalScalar("postest2", "pt2", &posInt,     swOptionValueTypeInt,     false),
   swOptionDeclarePositionalScalar("postest3", "pt3", &posDouble,  swOptionValueTypeDouble,  false),
   swOptionDeclarePositionalScalar("postest4", "pt4", &posString,  swOptionValueTypeString,  false),
+  swOptionDeclarePositionalScalarEnum("postest5", "pt5", &posEnum, &enumNames,  false),
   swOptionDeclarePositionalArray("posarraytest1", "pat1", &posBoolArray,    0, swOptionValueTypeBool,   false),
   swOptionDeclarePositionalArray("posarraytest2", "pat2", &posIntArray,     0, swOptionValueTypeInt,    false),
   swOptionDeclarePositionalArray("posarraytest3", "pat3", &posDoubleArray,  0, swOptionValueTypeDouble, false),
-  swOptionDeclarePositionalArray("posarraytest4", "pat4", &posStringArray,  0, swOptionValueTypeString, false)
+  swOptionDeclarePositionalArray("posarraytest4", "pat4", &posStringArray,  0, swOptionValueTypeString, false),
+  swOptionDeclarePositionalArrayEnum("posarraytest5", "pat5", &posEnumArray, &enumNames,  0, false)
 );
 
 // -------------- Named ---------------
@@ -135,6 +158,31 @@ static void checkDoubleArray(char *name, uint32_t count, ...)
   va_end(argPtr);
 }
 
+static void checkEnum(char *name, int64_t value) __attribute__((unused));
+static void checkEnum(char *name, int64_t value)
+{
+  swStaticString enumName = swStaticStringDefineFromCstr(name);
+  int64_t enumValue = 0;
+  ASSERT_TRUE(swOptionValueGetEnum(&enumName, &enumValue));
+  ASSERT_EQUAL(enumValue, value);
+}
+
+static void checkEnumArray(char *name, uint32_t count, ...) __attribute__((unused));
+static void checkEnumArray(char *name, uint32_t count, ...)
+{
+  swStaticString enumNameArray = swStaticStringDefineFromCstr(name);
+  swStaticArray valueArray = swStaticArrayDefineEmpty;
+  ASSERT_TRUE(swOptionValueGetEnumArray(&enumNameArray, &valueArray));
+  ASSERT_EQUAL(valueArray.count, count);
+  int64_t *enumValues = (int64_t *)valueArray.data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < valueArray.count; i++)
+    ASSERT_EQUAL(enumValues[i], va_arg(argPtr, int64_t));
+  va_end(argPtr);
+}
+
 // -------------- Positional ---------------
 
 static void checkPositionalInt(uint32_t position, int64_t value) __attribute__((unused));
@@ -234,6 +282,29 @@ static void checkPositionalDoubleArray(uint32_t position, uint32_t count, ...)
   va_end(argPtr);
 }
 
+static void checkPositionalEnum(uint32_t position, int64_t value) __attribute__((unused));
+static void checkPositionalEnum(uint32_t position, int64_t value)
+{
+  int64_t enumValue = 0;
+  ASSERT_TRUE(swPositionalOptionValueGetEnum(position, &enumValue));
+  ASSERT_EQUAL(enumValue, value);
+}
+
+static void checkPositionalEnumArray(uint32_t position, uint32_t count, ...) __attribute__((unused));
+static void checkPositionalEnumArray(uint32_t position, uint32_t count, ...)
+{
+  swStaticArray valueArray = swStaticArrayDefineEmpty;
+  ASSERT_TRUE(swPositionalOptionValueGetEnumArray(position, &valueArray));
+  ASSERT_EQUAL(valueArray.count, count);
+  int64_t *enumValues = (int64_t *)valueArray.data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < valueArray.count; i++)
+    ASSERT_EQUAL(enumValues[i], va_arg(argPtr, int64_t));
+  va_end(argPtr);
+}
+
 // -------------- External ---------------
 
 static void checkExternalInt(int64_t *externalValue, int64_t value) __attribute__((unused));
@@ -317,6 +388,24 @@ static void checkExternalDoubleArray(swStaticArray *externalValue, uint32_t coun
   va_end(argPtr);
 }
 
+static void checkExternalEnum(int64_t *externalValue, int64_t value) __attribute__((unused));
+static void checkExternalEnum(int64_t *externalValue, int64_t value)
+{
+  ASSERT_EQUAL(*externalValue, value);
+}
+
+static void checkExternalEnumArray(swStaticArray *externalValue, uint32_t count, ...) __attribute__((unused));
+static void checkExternalEnumArray(swStaticArray *externalValue, uint32_t count, ...)
+{
+  ASSERT_EQUAL(externalValue->count, count);
+  int64_t *enumValues = (int64_t *)externalValue->data;
+
+  va_list argPtr;
+  va_start(argPtr, count);
+  for (uint32_t i = 0; i < externalValue->count; i++)
+    ASSERT_EQUAL(enumValues[i], va_arg(argPtr, int64_t));
+  va_end(argPtr);
+}
 // -------------- ConsumeAfter and Sink ---------------
 
 static void checkConsumeAfterStringArray(uint32_t count, ...) __attribute__((unused));
@@ -382,11 +471,13 @@ bool            namedBool       = false;
 int64_t         namedInt        = 0;
 double          namedDouble     = 0.0;
 swStaticString  namedString     = swStaticStringDefineEmpty;
+int64_t         namedEnum       = 0;
 
 swStaticArray namedBoolArray    = swStaticArrayDefineEmpty;
 swStaticArray namedIntArray     = swStaticArrayDefineEmpty;
 swStaticArray namedDoubleArray  = swStaticArrayDefineEmpty;
 swStaticArray namedStringArray  = swStaticArrayDefineEmpty;
+swStaticArray namedEnumArray    = swStaticArrayDefineEmpty;
 
 swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
   swOptionDeclareScalar("bool-special|bs|bsalias", "bool special name description", "bool", NULL, swOptionValueTypeBool, false),
@@ -394,18 +485,22 @@ swOptionCategoryModuleDeclare(basicTestArgs, "Basic Test Arguments",
   swOptionDeclareScalar("int-name",     "int name description",     "int",    &namedInt,    swOptionValueTypeInt,     false),
   swOptionDeclareScalar("double-name",  "double name description",  "double", &namedDouble, swOptionValueTypeDouble,  false),
   swOptionDeclareScalar("string-name",  "string name description",  "string", &namedString, swOptionValueTypeString,  false),
+  swOptionDeclareScalarEnum("enum-name|en", "enum name description","enum",   &namedEnum,   &enumNames,               false),
   swOptionDeclareArray("bool-name-array",   "bool name array description",    "bool",   &namedBoolArray,    0, swOptionValueTypeBool,   swOptionArrayTypeSimple, false),
   swOptionDeclareArray("int-name-array",    "int name array description",     "int",    &namedIntArray,     0, swOptionValueTypeInt,    swOptionArrayTypeSimple, false),
   swOptionDeclareArray("double-name-array", "double name array description",  "double", &namedDoubleArray,  0, swOptionValueTypeDouble, swOptionArrayTypeSimple, false),
   swOptionDeclareArray("string-name-array", "string name array description",  "string", &namedStringArray,  0, swOptionValueTypeString, swOptionArrayTypeSimple, false),
+  swOptionDeclareArrayEnum("enum-name-array|ena", "enum name array description", "enum",&namedEnumArray,   &enumNames,  0,              swOptionArrayTypeSimple, false),
   swOptionDeclareArray("bool-name-array-mv",   "bool name multivalue array description",    "bool",   NULL, 0, swOptionValueTypeBool,   swOptionArrayTypeMultiValue, false),
   swOptionDeclareArray("int-name-array-mv",    "int name multivalue array description",     "int",    NULL, 0, swOptionValueTypeInt,    swOptionArrayTypeMultiValue, false),
   swOptionDeclareArray("double-name-array-mv", "double name multivalue array description",  "double", NULL, 0, swOptionValueTypeDouble, swOptionArrayTypeMultiValue, false),
   swOptionDeclareArray("string-name-array-mv", "string name multivalue array description",  "string", NULL, 0, swOptionValueTypeString, swOptionArrayTypeMultiValue, false),
+  swOptionDeclareArrayEnum("enum-name-array-mv|enamv", "enum name multivalue array description", "enum",   NULL, &enumNames,  0,        swOptionArrayTypeMultiValue, false),
   swOptionDeclareArray("bool-name-array-cs",   "bool name comma separated array description",    "bool",   NULL, 0, swOptionValueTypeBool,   swOptionArrayTypeCommaSeparated, false),
   swOptionDeclareArray("int-name-array-cs",    "int name comma separated array description",     "int",    NULL, 0, swOptionValueTypeInt,    swOptionArrayTypeCommaSeparated, false),
   swOptionDeclareArray("double-name-array-cs", "double name comma separated array description",  "double", NULL, 0, swOptionValueTypeDouble, swOptionArrayTypeCommaSeparated, false),
   swOptionDeclareArray("string-name-array-cs", "string name comma separated array description",  "string", NULL, 0, swOptionValueTypeString, swOptionArrayTypeCommaSeparated, false),
+  swOptionDeclareArrayEnum("enum-name-array-cs|enacs", "enum name comma separated array description", "enum", NULL, &enumNames,  0,          swOptionArrayTypeCommaSeparated, false),
   swOptionDeclarePrefixScalar("bp", "prefix bool",    "bool",   NULL, swOptionValueTypeBool,    false),
   swOptionDeclarePrefixScalar("ip", "prefix int",     "int",    NULL, swOptionValueTypeInt,     false),
   swOptionDeclarePrefixScalar("dp", "prefix double",  "bool",   NULL, swOptionValueTypeDouble,  false),
@@ -443,6 +538,11 @@ static void basicTestCheck()
   checkExternalDouble(&namedDouble, 13.13);
   checkExternalDoubleArray(&namedDoubleArray, 3, 13.131, 13.132, 13.133);
 
+  checkEnum("enum-name", enumValue1);
+  checkEnumArray("enum-name-array", 3, enumValue1, enumValue2, enumValue3);
+  checkExternalEnum(&namedEnum, enumValue1);
+  checkExternalEnumArray(&namedEnumArray, 3, enumValue1, enumValue2, enumValue3);
+
   checkInt("ip", 2);
   checkIntArray("iap", 3, 1, 2, 3);
 
@@ -468,25 +568,29 @@ static void basicTestCheck()
 
 swTestDeclare(BasicTest, NULL, NULL, swTestRun)
 {
-  int argc = 41;
+  int argc = 45;
   const char *argv[] = {
     program_invocation_name,
     "--int-name=1",
     "--bool-name=false",
     "--string-name=bla-bla",
     "--double-name=13.13",
+    "--enum-name-one",
     "--int-name-array=1",
     "--bool-name-array=false",
     "--string-name-array=bla-bla1",
     "--double-name-array=13.131",
+    "--enum-name-array=one",
     "--int-name-array=2",
     "--bool-name-array=true",
     "--string-name-array=bla-bla2",
     "--double-name-array=13.132",
+    "--enum-name-array=two",
     "--int-name-array=3",
     "--bool-name-array=false",
     "--string-name-array=bla-bla3",
     "--double-name-array=13.133",
+    "--enum-name-array=three",
     "--nobool-special",
     "--nobs",
     "--nobsalias",
@@ -514,6 +618,101 @@ swTestDeclare(BasicTest, NULL, NULL, swTestRun)
   };
 
   return testFramework(argc, argv, basicTestCheck);
+}
+
+static void enumTest1Check()
+{
+  checkEnum("enum-name", enumValue1);
+  checkEnum("en", enumValue1);
+}
+
+swTestDeclare(EnumTest1, NULL, NULL, swTestRun)
+{
+  int argc = 2;
+  const char *argv[] = {
+    program_invocation_name,
+    "--en-one"
+  };
+
+  return testFramework(argc, argv, enumTest1Check);
+}
+
+static void enumTest2Check()
+{
+  checkEnum("enum-name", enumValue2);
+  checkEnum("en", enumValue2);
+}
+
+swTestDeclare(EnumTest2, NULL, NULL, swTestRun)
+{
+  int argc = 3;
+  const char *argv[] = {
+    program_invocation_name,
+    "--en-one",
+    "--en-two"
+  };
+
+  return testFramework(argc, argv, enumTest2Check);
+}
+
+static void enumTest3Check()
+{
+  checkEnum("enum-name", enumValue3);
+  checkEnum("en", enumValue3);
+}
+
+swTestDeclare(EnumTest3, NULL, NULL, swTestRun)
+{
+  int argc = 4;
+  const char *argv[] = {
+    program_invocation_name,
+    "--en-one",
+    "--en-two",
+    "--enum-name-three",
+  };
+
+  return testFramework(argc, argv, enumTest3Check);
+}
+
+static void enumTest4Check()
+{
+  checkEnum("enum-name", enumValue4);
+  checkEnum("en", enumValue4);
+}
+
+swTestDeclare(EnumTest4, NULL, NULL, swTestRun)
+{
+  int argc = 5;
+  const char *argv[] = {
+    program_invocation_name,
+    "--en-one",
+    "--en-two",
+    "--enum-name-three",
+    "--en=four"
+  };
+
+  return testFramework(argc, argv, enumTest4Check);
+}
+
+static void enumTest5Check()
+{
+  checkEnum("enum-name", enumValue5);
+  checkEnum("en", enumValue5);
+}
+
+swTestDeclare(EnumTest5, NULL, NULL, swTestRun)
+{
+  int argc = 6;
+  const char *argv[] = {
+    program_invocation_name,
+    "--en-one",
+    "--en-two",
+    "--enum-name-three",
+    "--en=four",
+    "--enum-name=five"
+  };
+
+  return testFramework(argc, argv, enumTest5Check);
 }
 
 static void groupingTest1Check()
@@ -670,11 +869,12 @@ static void multiValueTestCheck()
   checkIntArray("int-name-array-mv", 3, 1, 2, 3);
   checkDoubleArray("double-name-array-mv", 3, 13.131, 13.132, 13.133);
   checkStringArray("string-name-array-mv", 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkEnumArray("enamv", 3, enumValue1, enumValue2, enumValue3);
 }
 
 swTestDeclare(MultiValueTest, NULL, NULL, swTestRun)
 {
-  int argc = 18;
+  int argc = 22;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-mv",
@@ -693,6 +893,10 @@ swTestDeclare(MultiValueTest, NULL, NULL, swTestRun)
     "bla-bla1",
     "bla-bla2",
     "bla-bla3",
+    "--enum-name-array-mv",
+    "one",
+    "two",
+    "three",
     "--"
   };
 
@@ -705,11 +909,12 @@ static void commaSeparatedValueTestCheck()
   checkIntArray("int-name-array-cs", 3, 1, 2, 3);
   checkDoubleArray("double-name-array-cs", 3, 13.131, 13.132, 13.133);
   checkStringArray("string-name-array-cs", 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkEnumArray("enum-name-array-cs", 3, enumValue1, enumValue2, enumValue3);
 }
 
 swTestDeclare(CommaSeparatedValueTest1, NULL, NULL, swTestRun)
 {
-  int argc = 9;
+  int argc = 11;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -720,6 +925,8 @@ swTestDeclare(CommaSeparatedValueTest1, NULL, NULL, swTestRun)
     "13.131,13.132,13.133",
     "--string-name-array-cs",
     "bla-bla1,bla-bla2,bla-bla3",
+    "--enum-name-array-cs",
+    "one,two,three",
   };
 
   return testFramework(argc, argv, commaSeparatedValueTestCheck);
@@ -727,13 +934,14 @@ swTestDeclare(CommaSeparatedValueTest1, NULL, NULL, swTestRun)
 
 swTestDeclare(CommaSeparatedValueTest2, NULL, NULL, swTestRun)
 {
-  int argc = 5;
+  int argc = 6;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs=true,false,true",
     "--int-name-array-cs=1,2,3",
     "--double-name-array-cs=13.131,13.132,13.133",
     "--string-name-array-cs=bla-bla1,bla-bla2,bla-bla3",
+    "--enum-name-array-cs=one,two,three"
   };
 
   return testFramework(argc, argv, commaSeparatedValueTestCheck);
@@ -754,11 +962,13 @@ static void positionalValueTestCheck()
   checkExternalDouble(&posDouble, 13.13);
   checkPositionalString(3, "bla-bla");
   checkExternalString(&posString, "bla-bla");
+  checkPositionalEnum(4, enumValue1);
+  checkExternalEnum(&posEnum, enumValue1);
 }
 
 swTestDeclare(PositionalValueTest1, NULL, NULL, swTestRun)
 {
-  int argc = 13;
+  int argc = 14;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -772,7 +982,8 @@ swTestDeclare(PositionalValueTest1, NULL, NULL, swTestRun)
     "false",
     "13",
     "13.13",
-    "bla-bla"
+    "bla-bla",
+    "one"
   };
 
   return testFramework(argc, argv, positionalValueTestCheck);
@@ -780,7 +991,7 @@ swTestDeclare(PositionalValueTest1, NULL, NULL, swTestRun)
 
 swTestDeclare(PositionalValueTest2, NULL, NULL, swTestRun)
 {
-  int argc = 14;
+  int argc = 15;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -795,7 +1006,8 @@ swTestDeclare(PositionalValueTest2, NULL, NULL, swTestRun)
     "false",
     "13",
     "13.13",
-    "bla-bla"
+    "bla-bla",
+    "one"
   };
 
   return testFramework(argc, argv, positionalValueTestCheck);
@@ -803,7 +1015,7 @@ swTestDeclare(PositionalValueTest2, NULL, NULL, swTestRun)
 
 swTestDeclare(PositionalValueTest3, NULL, NULL, swTestRun)
 {
-  int argc = 13;
+  int argc = 14;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -817,7 +1029,8 @@ swTestDeclare(PositionalValueTest3, NULL, NULL, swTestRun)
     "13.13",
     "--string-name-array-cs",
     "bla-bla1,bla-bla2,bla-bla3",
-    "bla-bla"
+    "bla-bla",
+    "one"
   };
 
   return testFramework(argc, argv, positionalValueTestCheck);
@@ -838,21 +1051,24 @@ static void positionalArrayValueTestCheck()
   checkExternalDouble(&posDouble, 13.13);
   checkPositionalString(3, "bla-bla");
   checkExternalString(&posString, "bla-bla");
+  checkPositionalEnum(4, enumValue1);
+  checkExternalEnum(&posEnum, enumValue1);
 
-  checkPositionalBoolArray(4, 3, true, false, true);
+  checkPositionalBoolArray(5, 3, true, false, true);
   checkExternalBoolArray(&posBoolArray, 3, true, false, true);
-  checkPositionalIntArray(5, 3, 1, 2, 3);
+  checkPositionalIntArray(6, 3, 1, 2, 3);
   checkExternalIntArray(&posIntArray, 3, 1, 2, 3);
-  checkPositionalDoubleArray(6, 3, 13.131, 13.132, 13.133);
+  checkPositionalDoubleArray(7, 3, 13.131, 13.132, 13.133);
   checkExternalDoubleArray(&posDoubleArray, 3, 13.131, 13.132, 13.133);
-  checkPositionalStringArray(7, 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkPositionalStringArray(8, 3, "bla-bla1", "bla-bla2", "bla-bla3");
   checkExternalStringArray(&posStringArray, 3, "bla-bla1", "bla-bla2", "bla-bla3");
-
+  checkPositionalEnumArray(9, 3, enumValue1, enumValue2, enumValue3);
+  checkExternalEnumArray(&posEnumArray, 3, enumValue1, enumValue2, enumValue3);
 }
 
 swTestDeclare(PositionalValueTest4, NULL, NULL, swTestRun)
 {
-  int argc = 17;
+  int argc = 19;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -867,10 +1083,12 @@ swTestDeclare(PositionalValueTest4, NULL, NULL, swTestRun)
     "13",
     "13.13",
     "bla-bla",
+    "one",
     "true,false,true",
     "1,2,3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three"
   };
 
   return testFramework(argc, argv, positionalArrayValueTestCheck);
@@ -878,7 +1096,7 @@ swTestDeclare(PositionalValueTest4, NULL, NULL, swTestRun)
 
 swTestDeclare(PositionalValueTest5, NULL, NULL, swTestRun)
 {
-  int argc = 18;
+  int argc = 20;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -894,10 +1112,12 @@ swTestDeclare(PositionalValueTest5, NULL, NULL, swTestRun)
     "13",
     "13.13",
     "bla-bla",
+    "one",
     "true,false,true",
     "1,2,3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three"
   };
 
   return testFramework(argc, argv, positionalArrayValueTestCheck);
@@ -905,7 +1125,7 @@ swTestDeclare(PositionalValueTest5, NULL, NULL, swTestRun)
 
 swTestDeclare(PositionalValueTest6, NULL, NULL, swTestRun)
 {
-  int argc = 17;
+  int argc = 19;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -916,6 +1136,7 @@ swTestDeclare(PositionalValueTest6, NULL, NULL, swTestRun)
     "1,2,3",
     "13.13",
     "bla-bla",
+    "one",
     "--double-name-array-cs",
     "13.131,13.132,13.133",
     "true,false,true",
@@ -924,6 +1145,7 @@ swTestDeclare(PositionalValueTest6, NULL, NULL, swTestRun)
     "bla-bla1,bla-bla2,bla-bla3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three"
   };
 
   return testFramework(argc, argv, positionalArrayValueTestCheck);
@@ -939,16 +1161,18 @@ static void consumeAfterArrayValueTestCheck()
   checkPositionalInt(1, 13);
   checkPositionalDouble(2, 13.13);
   checkPositionalString(3, "bla-bla");
-  checkPositionalBoolArray(4, 3, true, false, true);
-  checkPositionalIntArray(5, 3, 1, 2, 3);
-  checkPositionalDoubleArray(6, 3, 13.131, 13.132, 13.133);
-  checkPositionalStringArray(7, 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkPositionalEnum(4, enumValue1);
+  checkPositionalBoolArray(5, 3, true, false, true);
+  checkPositionalIntArray(6, 3, 1, 2, 3);
+  checkPositionalDoubleArray(7, 3, 13.131, 13.132, 13.133);
+  checkPositionalStringArray(8, 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkPositionalEnumArray(9, 3, enumValue1, enumValue2, enumValue3);
   checkConsumeAfterStringArray(3, "bla1", "bla2", "bla3");
 }
 
 swTestDeclare(ConsumeAfterValueTest1, NULL, NULL, swTestRun)
 {
-  int argc = 20;
+  int argc = 22;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -963,10 +1187,12 @@ swTestDeclare(ConsumeAfterValueTest1, NULL, NULL, swTestRun)
     "13",
     "13.13",
     "bla-bla",
+    "one",
     "true,false,true",
     "1,2,3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three",
     "bla1",
     "bla2",
     "bla3",
@@ -977,7 +1203,7 @@ swTestDeclare(ConsumeAfterValueTest1, NULL, NULL, swTestRun)
 
 swTestDeclare(ConsumeAfterValueTest2, NULL, NULL, swTestRun)
 {
-  int argc = 21;
+  int argc = 23;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -993,10 +1219,12 @@ swTestDeclare(ConsumeAfterValueTest2, NULL, NULL, swTestRun)
     "13",
     "13.13",
     "bla-bla",
+    "one",
     "true,false,true",
     "1,2,3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three",
     "bla1",
     "bla2",
     "bla3",
@@ -1007,7 +1235,7 @@ swTestDeclare(ConsumeAfterValueTest2, NULL, NULL, swTestRun)
 
 swTestDeclare(ConsumeAfterValueTest3, NULL, NULL, swTestRun)
 {
-  int argc = 20;
+  int argc = 22;
   const char *argv[] = {
     program_invocation_name,
     "--bool-name-array-cs",
@@ -1018,6 +1246,7 @@ swTestDeclare(ConsumeAfterValueTest3, NULL, NULL, swTestRun)
     "1,2,3",
     "13.13",
     "bla-bla",
+    "one",
     "--double-name-array-cs",
     "13.131,13.132,13.133",
     "true,false,true",
@@ -1026,6 +1255,7 @@ swTestDeclare(ConsumeAfterValueTest3, NULL, NULL, swTestRun)
     "bla-bla1,bla-bla2,bla-bla3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three",
     "bla1",
     "bla2",
     "bla3",
@@ -1044,17 +1274,19 @@ static void sinkArrayValueTestCheck()
   checkPositionalInt(1, 13);
   checkPositionalDouble(2, 13.13);
   checkPositionalString(3, "bla-bla");
-  checkPositionalBoolArray(4, 3, true, false, true);
-  checkPositionalIntArray(5, 3, 1, 2, 3);
-  checkPositionalDoubleArray(6, 3, 13.131, 13.132, 13.133);
-  checkPositionalStringArray(7, 3, "bla-bla1", "bla-bla2", "bla-bla3");
+  checkPositionalEnum(4, enumValue1);
+  checkPositionalBoolArray(5, 3, true, false, true);
+  checkPositionalIntArray(6, 3, 1, 2, 3);
+  checkPositionalDoubleArray(7, 3, 13.131, 13.132, 13.133);
+  checkPositionalStringArray(8, 3, "bla-bla1", "bla-bla2", "bla-bla3");
   checkConsumeAfterStringArray(3, "bla1", "bla2", "bla3");
+  checkPositionalEnumArray(9, 3, enumValue1, enumValue2, enumValue3);
   checkSinkStringArray(4, "--bla1", "--bla2", "--bla3", "--bla4");
 }
 
 swTestDeclare(SinkValueTest, NULL, NULL, swTestRun)
 {
-  int argc = 24;
+  int argc = 26;
   const char *argv[] = {
     program_invocation_name,
     "--bla1",
@@ -1067,6 +1299,7 @@ swTestDeclare(SinkValueTest, NULL, NULL, swTestRun)
     "1,2,3",
     "13.13",
     "bla-bla",
+    "one",
     "--bla3",
     "--double-name-array-cs",
     "13.131,13.132,13.133",
@@ -1077,6 +1310,7 @@ swTestDeclare(SinkValueTest, NULL, NULL, swTestRun)
     "bla-bla1,bla-bla2,bla-bla3",
     "13.131,13.132,13.133",
     "bla-bla1,bla-bla2,bla-bla3",
+    "one,two,three",
     "bla1",
     "bla2",
     "bla3",
@@ -1115,6 +1349,7 @@ swTestDeclare(PrintHelpTest, NULL, NULL, swTestRun)
 
 swTestSuiteStructDeclare(CommandLineSimpleTest, NULL, NULL, swTestRun,
                          &BasicTest,
+                         &EnumTest1, &EnumTest2, &EnumTest3, &EnumTest4, &EnumTest5,
                          &GroupingTest1, &GroupingTest2, &GroupingTest3,
                          &BoolValueTest1, &BoolValueTest2, &BoolValueTest3, &BoolValueTest4, &BoolValueTest5, &BoolValueTest6,
                          &MultiValueTest, &CommaSeparatedValueTest1, &CommaSeparatedValueTest2,

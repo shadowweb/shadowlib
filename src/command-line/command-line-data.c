@@ -44,6 +44,10 @@ void swCommandLineDataDelete(swCommandLineData *commandLineData)
       swFastArrayClear(&(commandLineData->requiredValues));
     if (commandLineData->namedValues)
       swHashMapLinearDelete(commandLineData->namedValues);
+    if (commandLineData->enumNames)
+      swHashMapLinearDelete(commandLineData->enumNames);
+    if (commandLineData->enumValues)
+      swHashMapLinearDelete(commandLineData->enumValues);
 
     swDynamicArrayRelease(&(commandLineData->consumeAfterValue));
     swDynamicArrayRelease(&(commandLineData->sinkValue));
@@ -75,7 +79,9 @@ swCommandLineData *swCommandLineDataNew(uint32_t argumentCount)
           (swFastArrayInit(&(commandLineDataNew->positionalValues), sizeof(swOptionValuePair), argumentCount)))
       {
         if ((commandLineDataNew->namedValues    = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
-            (commandLineDataNew->prefixedValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)))
+            (commandLineDataNew->prefixedValues = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, NULL, NULL)) &&
+            (commandLineDataNew->enumNames      = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, (swHashKeyDeleteFunction)swDynamicStringDelete, NULL)) &&
+            (commandLineDataNew->enumValues     = swHashMapLinearNew((swHashKeyHashFunction)swStaticStringHash, (swHashKeyEqualFunction)swStaticStringEqual, (swHashKeyDeleteFunction)swDynamicStringDelete, NULL)))
         {
           // defaults to pointer comparison
           if (swFastArrayInit(&(commandLineDataNew->requiredValues), sizeof(swOptionValuePair), argumentCount))
@@ -169,6 +175,91 @@ static bool swCommandLineDataSetOptionAliases(swCommandLineData *commandLineData
   return rtn;
 }
 
+static bool _addEnumToHashMap(swHashMapLinear *map, swStaticString *optionName, const char *name, int64_t *enumValue, swStaticString **insertStringPtr)
+{
+  bool rtn = false;
+  if (name)
+  {
+    swDynamicString *insertString = swDynamicStringNewFromFormat("%.*s%s", (int)(optionName->len), optionName->data, name);
+    if (insertString)
+    {
+      if (!(optionName->len) && swHashMapLinearValueGet(map, (swStaticString *)insertString, NULL))
+      {
+        swDynamicStringDelete(insertString);
+        rtn = true;
+      }
+      else if (swHashMapLinearInsert(map, (swStaticString *)insertString, enumValue))
+      {
+        if (insertStringPtr)
+          *insertStringPtr = (swStaticString *)insertString;
+        rtn = true;
+      }
+      else
+        swDynamicStringDelete(insertString);
+    }
+  }
+  else
+    rtn = true;
+  return rtn;
+}
+
+static bool _addEnumOptions(swCommandLineData *commandLineData, swStaticString *optionName, swOptionValuePair *valuePair)
+{
+  bool rtn = false;
+  swOptionEnumValueName *enumSpecs = &((*(valuePair->option->enumNames))[0]);
+  if (enumSpecs)
+  {
+    while (enumSpecs->optionName || enumSpecs->valueName)
+    {
+      swStaticString *enumName = NULL;
+      if (_addEnumToHashMap(commandLineData->enumNames, optionName, enumSpecs->optionName, &(enumSpecs->value), &enumName) &&
+          _addEnumToHashMap(commandLineData->enumValues, optionName, enumSpecs->valueName, &(enumSpecs->value), NULL) &&
+          (!enumName || swHashMapLinearInsert(commandLineData->namedValues, enumName, valuePair)))
+        enumSpecs++;
+      else
+        break;
+    }
+    if (!enumSpecs->optionName && !enumSpecs->valueName && enumSpecs != &((*(valuePair->option->enumNames))[0]))
+      rtn = true;
+  }
+  return rtn;
+}
+
+static bool _addOptionAliases(swCommandLineData *commandLineData, swOptionValuePair *valuePair)
+{
+  bool rtn = false;
+  swOption *option = valuePair->option;
+
+  uint32_t optionNamesCount = 1;
+  swStaticString *optionNames = &(option->name);
+  if (option->aliases.count)
+  {
+    optionNamesCount = option->aliases.count;
+    optionNames = (swStaticString *)(option->aliases.data);
+  }
+  uint32_t j = 0;
+  while (j < optionNamesCount)
+  {
+    if (swHashMapLinearInsert(commandLineData->namedValues, &(optionNames[j]), valuePair))
+    {
+      if (!option->isPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(optionNames[j]), valuePair))
+      {
+        if (option->valueType != swOptionValueTypeEnum || _addEnumOptions(commandLineData, &(optionNames[j]), valuePair))
+        {
+          j++;
+          continue;
+        }
+      }
+    }
+    break;
+  }
+  if (j == optionNamesCount)
+    rtn = true;
+  else
+    swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
+  return rtn;
+}
+
 static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
 {
   bool rtn = false;
@@ -180,38 +271,29 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
       uint32_t i = 0;
       while (i < commandLineData->normalValues.count)
       {
-        swOption *option = valuePairs[i].option;
-
-        uint32_t optionNamesCount = 1;
-        swStaticString *optionNames = &(option->name);
-        if (option->aliases.count)
-        {
-          optionNamesCount = option->aliases.count;
-          optionNames = (swStaticString *)(option->aliases.data);
-        }
-        uint32_t j = 0;
-        while (j < optionNamesCount)
-        {
-          if (swHashMapLinearInsert(commandLineData->namedValues, &(optionNames[j]), &(valuePairs[i])))
-          {
-            if (!option->isPrefix || swHashMapLinearInsert(commandLineData->prefixedValues, &(optionNames[j]), &(valuePairs[i])))
-            {
-              j++;
-              continue;
-            }
-          }
-          break;
-        }
-        if (j == optionNamesCount)
-        {
+        if (_addOptionAliases(commandLineData, &(valuePairs[i])))
           i++;
-          continue;
-        }
-        swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
-        break;
+        else
+          break;
       }
       if (i == commandLineData->normalValues.count)
-        rtn = true;
+      {
+        valuePairs = (swOptionValuePair *)(commandLineData->positionalValues.storage);
+        if (valuePairs)
+        {
+          i = 0;
+          while (i < commandLineData->positionalValues.count)
+          {
+            swOption *option = valuePairs[i].option;
+            if (option->valueType != swOptionValueTypeEnum || _addEnumOptions(commandLineData, &(option->name), &(valuePairs[i])))
+              i++;
+            else
+              break;
+          }
+          if (i == commandLineData->positionalValues.count)
+            rtn = true;
+        }
+      }
     }
   }
   return rtn;

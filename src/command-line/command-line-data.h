@@ -18,9 +18,11 @@ typedef struct swCommandLineData
   swDynamicArray      sinkValue;
   swDynamicArray      consumeAfterValue;
 
-  swHashMapLinear    *namedValues;        // hash of swOption:name => swOptionValuePair
+  swHashMapLinear    *namedValues;        // hash map of swOption:name => swOptionValuePair
   swFastArray         requiredValues;     // array of pointers to required swOptionValuePair
-  swHashMapLinear    *prefixedValues;     // set of prefixed swOptionValuePair
+  swHashMapLinear    *prefixedValues;     // hash map of prefixed swOptionValuePair
+  swHashMapLinear    *enumNames;          // hash map of enum option names
+  swHashMapLinear    *enumValues;         // hash map of enum option values (prefixed by option name to prevent name collisions)
   swDynamicString     programNameShort;
   swDynamicString     programNameLong;
   swDynamicString     argumentsString;

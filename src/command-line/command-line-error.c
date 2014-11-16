@@ -5,20 +5,21 @@
 
 static const char *swCommandLineErrorCodeText[] __attribute__((unused)) =
 {
-  [swCommandLineErrorCodeInvalidInput]    = "Invalid Input",
-  [swCommandLineErrorCodeInternal]        = "Internal Error",
-  [swCommandLineErrorCodeMainCategory]    = "Only one main category is allowed",
-  [swCommandLineErrorCodeOptionType]      = "Option type validation failed",
-  [swCommandLineErrorCodeValueType]       = "Invalid value type",
-  [swCommandLineErrorCodeArrayType]       = "Invalid array type for scalar option",
-  [swCommandLineErrorCodePrefixOption]    = "Invalid prefix option",
-  [swCommandLineErrorCodeInvalidDefault]  = "Invalid default value specified for option",
-  [swCommandLineErrorCodeRealPath]        = "Failed to find real path for this executable",
-  [swCommandLineErrorCodeRequiredValue]   = "Missing required value for option",
-  [swCommandLineErrorCodeArrayValueCount] = "Wrong number of values for array value count",
-  [swCommandLineErrorCodeArrayMultivalue] = "Invalid way to specify multivalue array value",
-  [swCommandLineErrorCodeParse]           = "Failed to parse option value",
-  [swCommandLineErrorCodeNoPositional]    = "No positional arguments expected",
+  [swCommandLineErrorCodeInvalidInput]       = "Invalid Input",
+  [swCommandLineErrorCodeInternal]           = "Internal Error",
+  [swCommandLineErrorCodeMainCategory]       = "Only one main category is allowed",
+  [swCommandLineErrorCodeOptionType]         = "Option type validation failed",
+  [swCommandLineErrorCodeValueType]          = "Invalid value type",
+  [swCommandLineErrorCodeArrayType]          = "Invalid array type for scalar option",
+  [swCommandLineErrorCodePrefixOption]       = "Invalid prefix option",
+  [swCommandLineErrorCodeInvalidDefault]     = "Invalid default value specified for option",
+  [swCommandLineErrorCodeRealPath]           = "Failed to find real path for this executable",
+  [swCommandLineErrorCodeRequiredValue]      = "Missing required value for option",
+  [swCommandLineErrorCodeArrayValueCount]    = "Wrong number of values for array value count",
+  [swCommandLineErrorCodeArrayMultivalue]    = "Invalid way to specify multivalue array value",
+  [swCommandLineErrorCodeParse]              = "Failed to parse option value",
+  [swCommandLineErrorCodeNoPositional]       = "No positional arguments expected",
+  [swCommandLineErrorCodeValueAfterEnumName] = "Enum option name specifies value, no value allowed",
 };
 
 void swCommandLineErrorSet(swCommandLineErrorData *errorData, swCommandLineErrorCode errorCode, swDynamicString **errorString)

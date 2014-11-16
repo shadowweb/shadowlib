@@ -173,6 +173,11 @@ bool swOptionValueGetString(swStaticString *name, swStaticString *value)
   swOptionValueGetImplement(name, value, swOptionValueTypeString);
 }
 
+bool swOptionValueGetEnum(swStaticString *name, int64_t *value)
+{
+  swOptionValueGetImplement(name, value, swOptionValueTypeEnum);
+}
+
 static swStaticArray *swOptionValueGetArrayInternal(swStaticString *name, swOptionValueType type)
 {
   if (commandLineDataGlobal && name)
@@ -220,6 +225,11 @@ bool swOptionValueGetDoubleArray(swStaticString *name, swStaticArray *value)
 bool swOptionValueGetStringArray(swStaticString *name, swStaticArray *value)
 {
   swOptionValueGetArrayImplement(name, value, swOptionValueTypeString);
+}
+
+bool swOptionValueGetEnumArray(swStaticString *name, swStaticArray *value)
+{
+  swOptionValueGetArrayImplement(name, value, swOptionValueTypeEnum);
 }
 
 static void *swPositionalOptionValueGetInternal(uint32_t position, swOptionValueType type)
@@ -271,6 +281,11 @@ bool swPositionalOptionValueGetString (uint32_t position, swStaticString *value)
   swPositionalOptionValueGetImplement(position, value, swOptionValueTypeString);
 }
 
+bool swPositionalOptionValueGetEnum (uint32_t position, int64_t *value)
+{
+  swPositionalOptionValueGetImplement(position, value, swOptionValueTypeEnum);
+}
+
 static swStaticArray *swPositionalOptionValueGetArrayInternal(uint32_t position, swOptionValueType type)
 {
   if (commandLineDataGlobal)
@@ -318,6 +333,11 @@ bool swPositionalOptionValueGetDoubleArray(uint32_t position, swStaticArray *val
 bool swPositionalOptionValueGetStringArray(uint32_t position, swStaticArray *value)
 {
   swPositionalOptionValueGetArrayImplement(position, value, swOptionValueTypeString);
+}
+
+bool swPositionalOptionValueGetEnumArray(uint32_t position, swStaticArray *value)
+{
+  swPositionalOptionValueGetArrayImplement(position, value, swOptionValueTypeEnum);
 }
 
 bool swSinkOptionValueGet(swStaticArray *value)

@@ -50,6 +50,7 @@ bool swOptionValuePairSetExternal(swOptionValuePair *pair)
             *(bool *)(option->external) = *(bool *)(pair->value.data);
             break;
           case swOptionValueTypeInt:
+          case swOptionValueTypeEnum:
             *(int64_t *)(option->external) = *(int64_t *)(pair->value.data);
             break;
           case swOptionValueTypeDouble:

@@ -45,7 +45,7 @@ static bool swCommandLineStateScanPositional(swCommandLineState *state)
     {
       swOptionToken *token = &state->tokens[state->currentArg];
       swOption *option = pair->option;
-      if (swOptionCallParser(option, &(token->full), &(pair->value)))
+      if (swOptionCallParser(option, &(token->full), &(pair->value), state->clData->enumValues, &(option->name)))
       {
         state->currentArg++;
         state->currentPositional++;
@@ -105,6 +105,18 @@ static bool swCommandLineStateScanSink(swCommandLineState *state)
   return rtn;
 }
 
+static bool swCommandLineStateExtractEnumName(swCommandLineState *state, swOptionToken *token, swOption *option)
+{
+  bool rtn = false;
+  if (option->valueType == swOptionValueTypeEnum)
+  {
+    int64_t *value = NULL;
+    if (swHashMapLinearValueGet(state->clData->enumNames, &(token->name), (void **)&value))
+      rtn = swOptionValuePairValueSet(&(token->namePair->value), *value, option->isArray);
+  }
+  return rtn;
+}
+
 bool swCommandLineStateScanArguments(swCommandLineState *state)
 {
   bool rtn = false;
@@ -117,21 +129,31 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
       if (token->namePair)
       {
         bool isMultiValueArray = token->namePair->option->isArray && token->namePair->option->arrayType == swOptionArrayTypeMultiValue;
+        swOption *option = token->namePair->option;
         if (token->hasValue)
         {
-          swOption *option = token->namePair->option;
           if (!isMultiValueArray)
           {
-            if (swOptionCallParser(option, &(token->value), &(token->namePair->value)))
+            if (option->valueType != swOptionValueTypeEnum || !swHashMapLinearValueGet(state->clData->enumNames, &(token->name), NULL))
             {
-              state->currentArg++;
-              rtn = true;
+              if (swOptionCallParser(option, &(token->value), &(token->namePair->value), state->clData->enumValues, &(token->name)))
+              {
+                state->currentArg++;
+                rtn = true;
+              }
+              else
+                swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
             }
             else
-              swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeParse);
+              swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeValueAfterEnumName);
           }
           else
             swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeArrayMultivalue);
+        }
+        else if (swCommandLineStateExtractEnumName(state, token, option))
+        {
+          state->currentArg++;
+          rtn = true;
         }
         else
         {
@@ -141,8 +163,7 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
             state->currentArg++;
             do
             {
-              swOption *option = token->namePair->option;
-              if (swOptionCallParser(option, &(nextToken->value), &(token->namePair->value)))
+              if (swOptionCallParser(option, &(nextToken->value), &(token->namePair->value), state->clData->enumValues, &(token->name)))
               {
                 state->currentArg++;
                 rtn = true;
@@ -161,15 +182,15 @@ bool swCommandLineStateScanArguments(swCommandLineState *state)
             }
             while (nextToken && !nextToken->hasName && !nextToken->hasDashDashOnly);
           }
-          else if (token->namePair->option->valueType == swOptionValueTypeBool && token->namePair->option->arrayType == swOptionArrayTypeSimple)
+          else if (option->valueType == swOptionValueTypeBool && option->arrayType == swOptionArrayTypeSimple)
           {
-            if (swOptionValuePairValueSet(&(token->namePair->value), trueValue, token->namePair->option->isArray))
+            if (swOptionValuePairValueSet(&(token->namePair->value), trueValue, option->isArray))
             {
               state->currentArg++;
               rtn = true;
             }
             else
-              swCommandLineErrorDataSet(&(state->clData->errorData), token->namePair->option, NULL, swCommandLineErrorCodeInternal);
+              swCommandLineErrorDataSet(&(state->clData->errorData), option, NULL, swCommandLineErrorCodeInternal);
           }
         }
       }

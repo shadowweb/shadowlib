@@ -2,6 +2,7 @@
 #define SW_COMMANDLINE_OPTION_H
 
 #include "collections/dynamic-array.h"
+#include "collections/hash-map-linear.h"
 #include "collections/static-array.h"
 #include "storage/static-string.h"
 
@@ -12,6 +13,7 @@ typedef enum swOptionValueType
   swOptionValueTypeString,
   swOptionValueTypeInt,  // 64 bits
   swOptionValueTypeDouble,
+  swOptionValueTypeEnum,
   swOptionValueTypeMax,
 } swOptionValueType;
 
@@ -30,8 +32,14 @@ typedef enum swOptionArrayType
 // TODO: add custom validator
 // TODO: add custom parser
 
-// TODO: add enums
 // TODO: add bit vectors
+
+typedef struct swOptionEnumValueName
+{
+  int64_t value;
+  const char *optionName;
+  const char *valueName;
+} swOptionEnumValueName;
 
 typedef struct swOption
 {
@@ -46,6 +54,7 @@ typedef struct swOption
                                   // swOptionValueTypeInt     => int64_t *
                                   // swOptionValueTypeDouble  => double *
 
+  swOptionEnumValueName (*enumNames)[];
   uint16_t valueCount;            // for Array, 0 unlimited count
   swOptionValueType valueType   : 3;
   // array option input:
@@ -67,13 +76,14 @@ typedef struct swOption
   unsigned isPositional : 1;
 } swOption;
 
-#define swOptionDeclare(n, d, vd, def, e, vc, vt, at, a, r, p, pos)  \
+#define swOptionDeclare(n, d, vd, def, e, en, vc, vt, at, a, r, p, pos)  \
 {                                                                    \
   .name = n,                                                         \
   .description = d,                                                  \
   .valueDescription = vd,                                            \
   .defaultValue = def,                                               \
   .external = (e),                                                   \
+  .enumNames = (en),                                                 \
   .valueCount = (vc),                                                \
   .valueType = (vt),                                                 \
   .arrayType = (at),                                                 \
@@ -83,26 +93,38 @@ typedef struct swOption
   .isPositional = (pos)                                              \
 }
 
-#define swOptionDeclareScalar(n, d, vd, e, vt, r)                            swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, 0, vt, swOptionArrayTypeSimple, false, r, false, false)
-#define swOptionDeclareScalarWithDefault(n, d, vd, def, e, vt, r)            swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, 0, vt, swOptionArrayTypeSimple, false, r, false, false)
+#define swOptionDeclareScalar(n, d, vd, e, vt, r)                            swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, NULL, 0, vt, swOptionArrayTypeSimple, false, r, false, false)
+#define swOptionDeclareScalarWithDefault(n, d, vd, def, e, vt, r)            swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, NULL, 0, vt, swOptionArrayTypeSimple, false, r, false, false)
 
-#define swOptionDeclareArray(n, d, vd, e, vc, vt, at, r)                     swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, vc, vt, at, true, r, false, false)
-#define swOptionDeclareArrayWithDefault(n, d, vd, def, e, vc, vt, at, r)     swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, vc, vt, at, true, r, false, false)
+#define swOptionDeclareScalarEnum(n, d, vd, e, en, r)                        swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, en, 0, swOptionValueTypeEnum, swOptionArrayTypeSimple, false, r, false, false)
+#define swOptionDeclareScalarEnumWithDefault(n, d, vd, def, e, en, r)        swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, en, 0, swOptionValueTypeEnum, swOptionArrayTypeSimple, false, r, false, false)
 
-#define swOptionDeclarePrefixScalar(n, d, vd, e, vt, r)                      swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, 0, vt, swOptionArrayTypeSimple, false, r, true, false)
-#define swOptionDeclarePrefixScalarWithDefault(n, d, vd, def, e, vt, r)      swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, 0, vt, swOptionArrayTypeSimple, false, r, true, false)
+#define swOptionDeclareArray(n, d, vd, e, vc, vt, at, r)                     swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, NULL, vc, vt, at, true, r, false, false)
+#define swOptionDeclareArrayWithDefault(n, d, vd, def, e, vc, vt, at, r)     swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, NULL, vc, vt, at, true, r, false, false)
 
-#define swOptionDeclarePrefixArray(n, d, vd, e, vc, vt, r)                   swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, vc, vt, swOptionArrayTypeSimple, true, r, true, false)
-#define swOptionDeclarePrefixArrayWithDefault(n, d, vd, def, e, vc, vt, r)   swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, vc, vt, swOptionArrayTypeSimple, true, r, true, false)
+#define swOptionDeclareArrayEnum(n, d, vd, e, en, vc, at, r)                 swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, en, vc, swOptionValueTypeEnum, at, true, r, false, false)
+#define swOptionDeclareArrayEnumWithDefault(n, d, vd, def, e, en, vc, at, r) swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, en, vc, swOptionValueTypeEnum, at, true, r, false, false)
 
-#define swOptionDeclarePositionalScalar(d, vd, e, vt, r)                     swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, e, 0, vt, swOptionArrayTypeSimple, false, r, false, true)
-#define swOptionDeclarePositionalScalarWithDefault(d, vd, def, e, vt, r)     swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, e, 0, vt, swOptionArrayTypeSimple, false, r, false, true)
+#define swOptionDeclarePrefixScalar(n, d, vd, e, vt, r)                      swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, NULL, 0, vt, swOptionArrayTypeSimple, false, r, true, false)
+#define swOptionDeclarePrefixScalarWithDefault(n, d, vd, def, e, vt, r)      swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, NULL, 0, vt, swOptionArrayTypeSimple, false, r, true, false)
 
-#define swOptionDeclarePositionalArray(d, vd, e, vc, vt, r)                  swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, e, vc, vt, swOptionArrayTypeCommaSeparated, true, r, false, true)
-#define swOptionDeclarePositionalArrayWithDefault(d, vd, def, e, vc, vt, r)  swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, e, vc, vt, swOptionArrayTypeCommaSeparated, true, r, false, true)
+#define swOptionDeclarePrefixArray(n, d, vd, e, vc, vt, r)                   swOptionDeclare(swStaticStringDefine(n), d, vd, swStaticArrayDefineEmpty, e, NULL, vc, vt, swOptionArrayTypeSimple, true, r, true, false)
+#define swOptionDeclarePrefixArrayWithDefault(n, d, vd, def, e, vc, vt, r)   swOptionDeclare(swStaticStringDefine(n), d, vd,                      def, e, NULL, vc, vt, swOptionArrayTypeSimple, true, r, true, false)
+
+#define swOptionDeclarePositionalScalar(d, vd, e, vt, r)                     swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, e, NULL, 0, vt, swOptionArrayTypeSimple, false, r, false, true)
+#define swOptionDeclarePositionalScalarWithDefault(d, vd, def, e, vt, r)     swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, e, NULL, 0, vt, swOptionArrayTypeSimple, false, r, false, true)
+
+#define swOptionDeclarePositionalScalarEnum(d, vd, e, en, r)                 swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, e, en, 0, swOptionValueTypeEnum, swOptionArrayTypeSimple, false, r, false, true)
+#define swOptionDeclarePositionalScalarEnumWithDefault(d, vd, def, e, en, r) swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, e, en, 0, swOptionValueTypeEnum, swOptionArrayTypeSimple, false, r, false, true)
+
+#define swOptionDeclarePositionalArray(d, vd, e, vc, vt, r)                  swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, e, NULL, vc, vt, swOptionArrayTypeCommaSeparated, true, r, false, true)
+#define swOptionDeclarePositionalArrayWithDefault(d, vd, def, e, vc, vt, r)  swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, e, NULL, vc, vt, swOptionArrayTypeCommaSeparated, true, r, false, true)
+
+#define swOptionDeclarePositionalArrayEnum(d, vd, e, en, vc, r)                 swOptionDeclare(swStaticStringDefineEmpty, d, vd, swStaticArrayDefineEmpty, e, en, vc, swOptionValueTypeEnum, swOptionArrayTypeCommaSeparated, true, r, false, true)
+#define swOptionDeclarePositionalArrayEnumWithDefault(d, vd, def, e, en, vc, r) swOptionDeclare(swStaticStringDefineEmpty, d, vd,                      def, e, en, vc, swOptionValueTypeEnum, swOptionArrayTypeCommaSeparated, true, r, false, true)
 
 bool swOptionValidateDefaultValue(swOption *option);
-bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamicArray *valueArray);
+bool swOptionCallParser(swOption *option, swStaticString *valueString, swDynamicArray *valueArray, swHashMapLinear *valueNames, swStaticString *nameString);
 size_t swOptionValueTypeSizeGet(swOptionValueType type);
 char *swOptionValueTypeNameGet(swOptionValueType type);
 void swOptionPrint(swOption *option);
