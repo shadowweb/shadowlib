@@ -13,11 +13,22 @@ int64_t asyncWriterMaxFileCount = 0;
 swStaticString  asyncWriterDir   = swStaticStringDefineEmpty;
 swStaticString  asyncWriterFile  = swStaticStringDefineEmpty;
 
-swOptionCategoryModuleDeclare(swLogManagerOptions, "Log Manager Options",
-  swOptionDeclareScalar("log-level",    "Log level",
-    NULL,   &logLevel,              swOptionValueTypeInt, false),
+swOptionEnumValueName logLevelEnum[] =
+{
+  { swLogLevelFatal,    "-fatal",   "fatal"   },
+  { swLogLevelError,    "-error",   "error"   },
+  { swLogLevelWarning,  "-warning", "warning" },
+  { swLogLevelInfo,     "-info",    "info"    },
+  { swLogLevelDebug,    "-debug",   "debug"   },
+  { swLogLevelTrace,    "-trace",   "trace"   },
+  { 0,                  NULL,       NULL      }
+};
 
-    swOptionDeclareScalar("log-stdout",        "Set up log manager with stdout writer",
+swOptionCategoryModuleDeclare(swLogManagerOptions, "Log Manager Options",
+  swOptionDeclareScalarEnum("log-level",    "Log level",
+    NULL,   &logLevel,              &logLevelEnum,        false),
+
+  swOptionDeclareScalar("log-stdout",        "Set up log manager with stdout writer",
     NULL,   &stdoutWriter,          swOptionValueTypeBool, false),
   swOptionDeclareScalar("log-async",         "Set up log manager with asynchronous writer",
     NULL,   &asyncWriter,           swOptionValueTypeBool, false),
