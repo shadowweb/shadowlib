@@ -3,7 +3,8 @@ buildthirdpartydir = $builddir/build-third-party
 cc = gcc
 ar = ar
 cflags = -funsigned-char -g -Wall -Werror -std=gnu11 -Wextra -Wno-deprecated -Wno-unused-parameter -m64 -D_REENTRANT -DREENTRANT -D_GNU_SOURCE -pthread -Isrc -I${buildthirdpartydir}/include
-ldflags = -pthread
+# -finstrument-functions -finstrument-functions-exclude-file-list=murmur-hash3
+ldflags = -pthread -B dynamic
 openssldep = $buildithirdpartydir/include/openssl $buildithirdpartydir/lib/openssl
 
 rule cc
@@ -16,6 +17,9 @@ rule ar
 
 rule link
     command = $cc $ldflags $in -o $out -lrt -ldl
+
+rule so
+    command = $cc -shared $in -o $out
 
 rule build-openssl
     command = third-party/openssl/build-openssl.sh $in
@@ -367,3 +371,7 @@ build $builddir/src/tools/traffic-generator/traffic-generator:      link $buildd
                                                                          $builddir/src/utils/utils.a $
                                                                          $builddir/src/core/core.a
 
+# trace
+build $builddir/src/tools/trace/trace.o:                cc src/tools/trace/trace.c
+                                                        cflags = $cflags -fpic
+build $builddir/src/tools/trace/trace.so:               so $builddir/src/tools/trace/trace.o
