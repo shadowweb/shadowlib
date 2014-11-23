@@ -458,6 +458,7 @@ bool swHashMapLinearIteratorInit(swHashMapLinearIterator *iter, swHashMapLinear 
   {
     iter->map = map;
     iter->position = SW_HASH_ITER_END_POSITION;
+    rtn = true;
   }
   return rtn;
 }

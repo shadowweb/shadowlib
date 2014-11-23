@@ -5,7 +5,7 @@
 #include "core/memory.h"
 
 #define swDynamicArrayGetNextFreePtr(d) (d->data + (d->count * d->elementSize))
-#define swDynamicArrayGetPositionPtr(d, p) (d->data + (p * d->elementSize))
+#define swDynamicArrayGetPositionPtr(d, p) (d->data + ((p) * d->elementSize))
 
 swDynamicArray *swDynamicArrayNew(size_t elementSize, uint32_t size)
 {
@@ -214,3 +214,16 @@ bool swDynamicArrayPop(swDynamicArray *dynamicArray, void *element)
   }
   return rtn;
 }
+
+bool swDynamicArrayPeek(swDynamicArray *dynamicArray, void *element)
+{
+  bool rtn = false;
+  if (dynamicArray && element && dynamicArray->count)
+  {
+    uint8_t *startPtr = swDynamicArrayGetPositionPtr(dynamicArray, dynamicArray->count - 1);
+    memcpy(element, startPtr, dynamicArray->elementSize);
+    rtn = true;
+  }
+  return rtn;
+}
+

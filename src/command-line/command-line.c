@@ -7,7 +7,7 @@
 static swCommandLineData *commandLineDataGlobal = NULL;
 
 swOptionCategoryModuleDeclare(optionCategoryGlobal, "CommandLine",
-  swOptionDeclareScalar("h|help", "Print command line help", NULL, NULL, swOptionValueTypeBool, false)
+  swOptionDeclareScalar("h|?|help", "Print command line help", NULL, NULL, swOptionValueTypeBool, false)
 );
 
 // Possible formats:

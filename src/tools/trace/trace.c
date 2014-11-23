@@ -13,47 +13,96 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static size_t fileSizeIncrement = 4096;
-static off_t currentFileOffset = 0;
-static char *memoryPtr = NULL;
-static char *memoryCurrentPtr = NULL;
-static char *memoryEndPtr = NULL;
-static int fd = -1;
+static pthread_key_t traceKey;
 static bool traceEnabled = false;
-
+static size_t fileSizeIncrement = 4096;
 extern const char *__progname;
 
-void __attribute__ ((no_instrument_function)) traceFileUnmap()
+typedef struct swTrace
 {
-  if ((fd > -1) && memoryPtr)
+  off_t currentFileOffset;
+  char *memoryPtr;
+  char *memoryCurrentPtr;
+  char *memoryEndPtr;
+  int fd;
+  bool traceEnabled;
+} swTrace;
+
+void __attribute__ ((no_instrument_function)) traceFileUnmap(swTrace *traceData)
+{
+  if (traceData && (traceData->fd > -1) && traceData->memoryPtr)
   {
-    msync (memoryPtr, fileSizeIncrement, MS_SYNC);
-    munmap ((void *)memoryPtr, fileSizeIncrement);
-    memoryPtr = memoryCurrentPtr = memoryEndPtr = NULL;
-    traceEnabled = false;
+    msync (traceData->memoryPtr, fileSizeIncrement, MS_SYNC);
+    munmap ((void *)(traceData->memoryPtr), fileSizeIncrement);
+    traceData->memoryPtr = traceData->memoryCurrentPtr = traceData->memoryEndPtr = NULL;
+    traceData->traceEnabled = false;
   }
 }
 
-void __attribute__ ((no_instrument_function)) traceFileMap()
+
+void __attribute__ ((no_instrument_function)) traceFileMap(swTrace *traceData)
 {
-  if ((fd > -1) && !memoryPtr)
+  if (traceData && (traceData->fd > -1) && !traceData->memoryPtr)
   {
-    if (ftruncate(fd, (currentFileOffset + fileSizeIncrement)) == 0 )
+    if (ftruncate(traceData->fd, (traceData->currentFileOffset + fileSizeIncrement)) == 0 )
     {
-      if ((memoryPtr = (char *)mmap(NULL, fileSizeIncrement, (PROT_WRITE), MAP_SHARED, fd, currentFileOffset)) != MAP_FAILED)
+      if ((traceData->memoryPtr = (char *)mmap(NULL, fileSizeIncrement, (PROT_WRITE), MAP_SHARED, traceData->fd, traceData->currentFileOffset)) != MAP_FAILED)
       {
-        memoryCurrentPtr = memoryPtr;
-        memoryEndPtr = memoryCurrentPtr + fileSizeIncrement;
-        currentFileOffset += fileSizeIncrement;
-        traceEnabled = true;
+        traceData->memoryCurrentPtr = traceData->memoryPtr;
+        traceData->memoryEndPtr = traceData->memoryCurrentPtr + fileSizeIncrement;
+        traceData->currentFileOffset += fileSizeIncrement;
+        traceData->traceEnabled = true;
       }
       else
         fprintf(stderr, "Failed mmap with error %s\n", strerror(errno));
     }
     else
     {
-      close(fd);
-      fd = -1;
+      close(traceData->fd);
+      traceData->fd = -1;
+    }
+  }
+}
+
+swTrace * __attribute__ ((no_instrument_function)) traceDataCreate()
+{
+  swTrace *traceData = malloc(sizeof(swTrace));
+  if (traceData)
+  {
+    traceData->currentFileOffset = 0;
+    traceData->memoryPtr = traceData->memoryCurrentPtr = traceData->memoryEndPtr = NULL;
+    traceData->fd = -1;
+    traceData->traceEnabled = false;
+    pid_t threadId = (pid_t)syscall(SYS_gettid);
+    char tracePath[PATH_MAX];
+    snprintf(tracePath, PATH_MAX, "./%s.TRACE.%u", __progname, threadId);
+    traceData->fd = open(tracePath, (O_CREAT | O_RDWR | O_TRUNC), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+    if (traceData->fd > -1)
+      pthread_setspecific(traceKey, traceData);
+    else
+    {
+      free(traceData);
+      traceData = NULL;
+    }
+  }
+  return traceData;
+}
+
+
+void __attribute__ ((no_instrument_function)) traceDataDelete(void *data)
+{
+  swTrace *traceData = (swTrace *)data;
+  if (traceData)
+  {
+    if (traceData->fd > -1)
+    {
+      off_t currentFileSize = traceData->currentFileOffset - (off_t)(traceData->memoryEndPtr - traceData->memoryCurrentPtr);
+      traceFileUnmap(traceData);
+      if (ftruncate(traceData->fd, currentFileSize) < 0)
+        fprintf (stderr, "failed to trancate trace file to the right size\n");
+      close(traceData->fd);
+      traceData->fd = -1;
+      free(traceData);
     }
   }
 }
@@ -62,15 +111,14 @@ void __attribute__ ((constructor,no_instrument_function)) traceBegin (void)
 {
   // fprintf(stderr, "%s: enter\n", __func__);
   // create binary file and map it to memory
-  fileSizeIncrement = (size_t)getpagesize() * 1024;
+  // WARNING: for the processes with a large number of threads this multiplier should be small to prevent
+  //          the threads from chewing up too much memory for tracing
+  fileSizeIncrement = (size_t)getpagesize() * 8;
   struct stat traceStat = { .st_ino = 0 };
   if (stat("./TRACE", &traceStat) == 0)
   {
-    char tracePath[PATH_MAX];
-    snprintf(tracePath, PATH_MAX, "./%s.TRACE", __progname);
-    fd = open(tracePath, (O_CREAT | O_RDWR | O_TRUNC), (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-    if (fd > -1)
-      traceFileMap();
+    pthread_key_create(&traceKey, traceDataDelete);
+    traceEnabled = true;
   }
   // fprintf(stderr, "%s: exit\n", __func__);
 }
@@ -79,36 +127,43 @@ void __attribute__ ((destructor,no_instrument_function)) traceEnd (void)
 {
   // fprintf(stderr, "%s: enter\n", __func__);
   // do msync and unmap and close file, truncate file to the correct file size
-  if (fd > -1)
+  if (traceEnabled)
   {
-    off_t currentFileSize = currentFileOffset - (off_t)(memoryEndPtr - memoryCurrentPtr);
-    traceFileUnmap();
-    if (ftruncate(fd, currentFileSize) < 0)
-      fprintf (stderr, "failed to trancate trace file to the right size\n");
-    close(fd);
-    fd = -1;
+    swTrace *traceData = (swTrace *)pthread_getspecific(traceKey);
+    if (traceData)
+    {
+      pthread_setspecific(traceKey, NULL);
+      traceDataDelete(traceData);
+    }
+    pthread_key_delete(traceKey);
+    traceEnabled = false;
   }
-  // fprintf(stderr, "%s: exit\n", __func__);
 }
 
 void __attribute__ ((no_instrument_function)) __cyg_profile_func_enter (void *func, void *caller)
 {
   // write thread id  and func pointer into the next place in the mapped memory
   // when reached the end, sync, unmap, truncate file to the new size, and map to the new region in the file
-  if (traceEnabled && memoryPtr)
+  if (traceEnabled)
   {
-    if (!func)
-      fprintf (stderr, "Enter with NULL function pointer\n");
-    long int threadId = (long int)syscall(SYS_gettid);
-    *(long int *)memoryCurrentPtr = threadId;
-    memoryCurrentPtr += sizeof(threadId);
-    unsigned long pointer = (unsigned long)(func);
-    *(unsigned long *)memoryCurrentPtr = pointer;
-    memoryCurrentPtr += sizeof(pointer);
-    if (memoryCurrentPtr == memoryEndPtr)
+    swTrace *traceData = (swTrace *)pthread_getspecific(traceKey);
+    if (!traceData)
     {
-      traceFileUnmap();
-      traceFileMap();
+      traceData = traceDataCreate();
+      traceFileMap(traceData);
+    }
+    if (traceData && traceData->traceEnabled && traceData->memoryPtr)
+    {
+      if (!func)
+        fprintf (stderr, "Enter with NULL function pointer\n");
+      unsigned long pointer = (unsigned long)(func);
+      *(unsigned long *)traceData->memoryCurrentPtr = pointer;
+      traceData->memoryCurrentPtr += sizeof(pointer);
+      if (traceData->memoryCurrentPtr == traceData->memoryEndPtr)
+      {
+        traceFileUnmap(traceData);
+        traceFileMap(traceData);
+      }
     }
   }
 }
@@ -117,21 +172,22 @@ void __attribute__ ((no_instrument_function)) __cyg_profile_func_exit (void *fun
 {
   //  put 1 in the first bit of func and write thread id and func pointer into the next place in the mapped memory
   // when reached the end, sync, unmap, truncate file to the new size, and map to the new region in the file
-  if (traceEnabled && memoryPtr)
+  if (traceEnabled)
   {
-    if (!func)
-      fprintf (stderr, "Exit with NULL function pointer\n");
-    long int threadId = (long int)syscall(SYS_gettid);
-    *(long int *)memoryCurrentPtr = threadId;
-    memoryCurrentPtr += sizeof(threadId);
-    unsigned long pointer = (unsigned long)(func);
-    pointer |= 0x8000000000000000UL;
-    *(unsigned long *)memoryCurrentPtr = pointer;
-    memoryCurrentPtr += sizeof(pointer);
-    if (memoryCurrentPtr == memoryEndPtr)
+    swTrace *traceData = (swTrace *)pthread_getspecific(traceKey);
+    if (traceData && traceData->traceEnabled && traceData->memoryPtr)
     {
-      traceFileUnmap();
-      traceFileMap();
+      if (!func)
+        fprintf (stderr, "Exit with NULL function pointer\n");
+      unsigned long pointer = (unsigned long)(func);
+      pointer |= 0x8000000000000000UL;
+      *(unsigned long *)traceData->memoryCurrentPtr = pointer;
+      traceData->memoryCurrentPtr += sizeof(pointer);
+      if (traceData->memoryCurrentPtr == traceData->memoryEndPtr)
+      {
+        traceFileUnmap(traceData);
+        traceFileMap(traceData);
+      }
     }
   }
 }

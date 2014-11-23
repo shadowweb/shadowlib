@@ -38,5 +38,6 @@ bool swDynamicArraySet(swDynamicArray *dynamicArray, uint32_t position, void *el
 void *swDynamicArrayGet(swDynamicArray *dynamicArray, uint32_t position);
 bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element);
 bool swDynamicArrayPop(swDynamicArray *dynamicArray, void *element);
+bool swDynamicArrayPeek(swDynamicArray *dynamicArray, void *element);
 
 #endif // SW_COLLECTIONS_DYNAMICARRAY_H

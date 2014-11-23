@@ -272,9 +272,17 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
       while (i < commandLineData->normalValues.count)
       {
         if (_addOptionAliases(commandLineData, &(valuePairs[i])))
-          i++;
-        else
-          break;
+        {
+          swOption *option = valuePairs[i].option;
+          if (!option->isRequired || swFastArrayPush(commandLineData->requiredValues, &(valuePairs[i])))
+          {
+            i++;
+            continue;
+          }
+          else
+            swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
+        }
+        break;
       }
       if (i == commandLineData->normalValues.count)
       {
@@ -286,9 +294,16 @@ static bool swCommandLineDataProcessOptions(swCommandLineData *commandLineData)
           {
             swOption *option = valuePairs[i].option;
             if (option->valueType != swOptionValueTypeEnum || _addEnumOptions(commandLineData, &(option->name), &(valuePairs[i])))
-              i++;
-            else
-              break;
+            {
+              if (!option->isRequired || swFastArrayPush(commandLineData->requiredValues, &(valuePairs[i])))
+              {
+                i++;
+                continue;
+              }
+              else
+                swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
+            }
+            break;
           }
           if (i == commandLineData->positionalValues.count)
             rtn = true;
@@ -306,17 +321,13 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
   {
     // validate type
     bool typeValid = false;
-    swOptionValuePair *valuePairPtr = NULL;
     if (option->isPositional)
     {
       if (!option->name.len && (!option->isArray || option->arrayType == swOptionArrayTypeCommaSeparated))
       {
         swOptionValuePair valuePair = swOptionValuePairInit(option);
         if (swFastArrayPush(commandLineData->positionalValues, valuePair))
-        {
-          valuePairPtr = swFastArrayGetExistingPtr(commandLineData->positionalValues, (commandLineData->positionalValues.count - 1), swOptionValuePair);
           typeValid = true;
-        }
       }
     }
     else
@@ -325,10 +336,7 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
       {
         swOptionValuePair valuePair = swOptionValuePairInit(option);
         if (swFastArrayPush(commandLineData->normalValues, valuePair))
-        {
-          valuePairPtr = swFastArrayGetExistingPtr(commandLineData->normalValues, (commandLineData->normalValues.count - 1), swOptionValuePair);
           typeValid = true;
-        }
       }
     }
     if (typeValid)
@@ -344,12 +352,7 @@ static bool swCommandLineDataValidateOption(swCommandLineData *commandLineData, 
           {
             // validate default value
             if (swOptionValidateDefaultValue(option))
-            {
-              if (!option->isRequired || swFastArrayPush(commandLineData->requiredValues, valuePairPtr))
-                rtn = true;
-              else
-                swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInternal);
-            }
+              rtn = true;
             else
               swCommandLineErrorDataSet(&(commandLineData->errorData), option, NULL, swCommandLineErrorCodeInvalidDefault);
           }

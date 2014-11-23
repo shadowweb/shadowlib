@@ -52,3 +52,15 @@ bool swFileRealPath(const char *fileName, swDynamicString *resolvedFileName)
   }
   return rtn;
 }
+
+size_t swFileGetSize(const char *fileName)
+{
+  size_t rtn = 0;
+  if (fileName)
+  {
+    struct stat st;
+    if (stat(fileName, &st) == 0)
+      rtn = st.st_size;
+  }
+  return rtn;
+}
