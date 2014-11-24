@@ -13,7 +13,7 @@ typedef struct swCallTree
   uint32_t repeatCount;
 } swCallTree;
 
-typedef void swCallTreeWalkCB(uint64_t funcAddress, uint32_t repeatCount, uint32_t level, void *data);
+typedef void swCallTreeWalkCB(swCallTree *subTree, uint32_t level, void *data);
 
 swCallTree *swCallTreeNew(uint64_t funcAddress);
 void swCallTreeDelete(swCallTree *tree);

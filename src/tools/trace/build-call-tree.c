@@ -1,4 +1,5 @@
 #include "collections/call-tree.h"
+#include "collections/hash-set-linear.h"
 #include "command-line/option-category.h"
 #include "command-line/command-line.h"
 #include "core/memory.h"
@@ -74,9 +75,15 @@ swBuildCallTreeThreadData *swBuildCallTreeThreadDataNew(pid_t threadId)
 
 #define SW_FUNCTION_END    0x8000000000000000UL
 static swHashMapLinear *threadMap = NULL;
+static swHashSetLinear *functions = NULL;
 
 static void swBuildCallTreeStop()
 {
+  if (functions)
+  {
+    swHashSetLinearDelete(functions);
+    functions = NULL;
+  }
   if (threadMap)
   {
     swHashMapLinearDelete(threadMap);
@@ -90,6 +97,16 @@ static uint32_t swBuildCallTreeThreadDataKeyHash(pid_t *key)
 }
 
 static inline bool swBuildCallTreeThreadDataKeyEqual(pid_t *key1, pid_t *key2)
+{
+  return (*key1 == *key2);
+}
+
+static uint32_t swBuildCallTreeFunctionHash(uint64_t *key)
+{
+  return swMurmurHash3_32(key, sizeof(*key));
+}
+
+static inline bool swBuildCallTreeFunctionEqual(uint64_t *key1, uint64_t *key2)
 {
   return (*key1 == *key2);
 }
@@ -171,6 +188,7 @@ static bool swBuildCallTreeProcessThreadFile(int64_t threadId)
               size_t mapSize = (size_t)getpagesize() * 1024;
               char *dataAddressesEnd = NULL;
               uint64_t *currentAddress = NULL;
+              uint64_t lastAddr = 0;
               while (mapOffset < (off_t)fileSize)
               {
                 mapSize = ((fileSize >= (mapOffset + mapSize))? mapSize : (fileSize - mapOffset));
@@ -183,15 +201,13 @@ static bool swBuildCallTreeProcessThreadFile(int64_t threadId)
                   {
                     uint64_t addr = (*currentAddress) & (~SW_FUNCTION_END);
                     bool end = (((*currentAddress) & SW_FUNCTION_END) != 0 );
-                    // TODO: if address turns out to be 0x0, treat it as the end of the input,
-                    //       the reason for it is that we can't expect the thread to terminate properly and
-                    //       cleanup its thread specific data when running trace
                     if (swBuildCallTreeThreadDataAppend(threadData, addr, end))
                       currentAddress++;
                     else
                     {
                       SW_LOG_ERROR(&buildCallTreeLogger, "thread %lu: failed to append %s address 0x%lX to the tree; offset = 0x%lX", threadId, ((end)? "END" : "START"), addr,
                         mapOffset + (uint64_t)currentAddress - (uint64_t)dataAddressesStart);
+                      lastAddr = addr;
                       break;
                     }
                   }
@@ -209,7 +225,10 @@ static bool swBuildCallTreeProcessThreadFile(int64_t threadId)
                   break;
                 }
               }
-              if (mapOffset == (off_t)fileSize)
+              // if NULL address is encountered, we are done
+              // the reason for it is that we can't expect the thread to terminate properly and
+              // cleanup its thread specific data when running trace
+              if (mapOffset == (off_t)fileSize || !lastAddr)
                 rtn = true;
             }
             else
@@ -231,32 +250,66 @@ static bool swBuildCallTreeStart()
 
   if (inputFileName.len && threadIdList.count)
   {
-    if ((threadMap = swHashMapLinearNew((swHashKeyHashFunction)swBuildCallTreeThreadDataKeyHash, (swHashKeyEqualFunction)swBuildCallTreeThreadDataKeyEqual, NULL, (swHashValueDeleteFunction)swBuildCallTreeThreadDataDelete)))
+    if ((functions = swHashSetLinearNew((swHashKeyHashFunction)swBuildCallTreeFunctionHash, (swHashKeyEqualFunction)swBuildCallTreeFunctionEqual, NULL)))
     {
-      int64_t *threadIds = (int64_t *)threadIdList.data;
-      uint32_t i = 0;
-      for(; i < threadIdList.count; i++)
+      if ((threadMap = swHashMapLinearNew((swHashKeyHashFunction)swBuildCallTreeThreadDataKeyHash, (swHashKeyEqualFunction)swBuildCallTreeThreadDataKeyEqual, NULL, (swHashValueDeleteFunction)swBuildCallTreeThreadDataDelete)))
       {
-        if (!swBuildCallTreeProcessThreadFile(threadIds[i]))
-          break;
+        int64_t *threadIds = (int64_t *)threadIdList.data;
+        uint32_t i = 0;
+        for(; i < threadIdList.count; i++)
+        {
+          if (!swBuildCallTreeProcessThreadFile(threadIds[i]))
+            break;
+        }
+        if (i == threadIdList.count)
+          rtn = true;
+        else
+        {
+          swHashMapLinearDelete(threadMap);
+          threadMap = 0;
+        }
       }
-      if (i == threadIdList.count)
-        rtn = true;
-      else
+      if (!rtn)
       {
-        swHashMapLinearDelete(threadMap);
-        threadMap = 0;
+        swHashSetLinearDelete(functions);
+        functions = NULL;
       }
     }
   }
   return rtn;
 }
 
-static void swBuildCallTreePrintFunction(uint64_t funcAddress, uint32_t repeatCount, uint32_t level, void *data)
+static void swBuildCallTreePrintFunction(swCallTree *node, uint32_t level, void *data)
 {
   FILE *out = (FILE *)data;
-  fprintf(out, "%u %#lx %u\n", level, funcAddress, repeatCount);
+  fprintf(out, "%u %#lx %u\n", level, node->funcAddress, node->repeatCount);
+  swHashSetLinearInsert(functions, &(node->funcAddress));
 }
+
+static bool swBuildCallTreeFunctionPrint()
+{
+  bool rtn = false;
+  swHashSetLinearIterator iter;
+  if (swHashSetLinearIteratorInit(&iter, functions))
+  {
+    swDynamicString *functionFile = swDynamicStringNewFromFormat("%.*s.addr", (int)(inputFileName.len), inputFileName.data);
+    if (functionFile)
+    {
+      FILE *outStream = fopen(functionFile->data, "w");
+      if (outStream)
+      {
+        uint64_t *functionAddress = NULL;
+        while ((functionAddress = swHashSetLinearIteratorNext(&iter)))
+          fprintf(outStream, "%#lx\n", *functionAddress);
+        fclose(outStream);
+        rtn = true;
+      }
+      swDynamicStringDelete(functionFile);
+    }
+  }
+  return rtn;
+}
+
 
 static bool swBuildCallTreePrint(pid_t threadId, swCallTree *callTree)
 {
@@ -289,6 +342,8 @@ static bool swBuildCallTreeProcess()
     swBuildCallTreeThreadData *threadData = NULL;
     while(rtn && swHashMapLinearIteratorNext(&iter, (void **)&threadData))
       rtn = swBuildCallTreePrint(threadData->threadId, threadData->callTree);
+    if (rtn)
+      rtn = swBuildCallTreeFunctionPrint();
   }
   return rtn;
 }

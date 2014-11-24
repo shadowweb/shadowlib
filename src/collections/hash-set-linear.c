@@ -387,6 +387,7 @@ bool swHashSetLinearIteratorInit(swHashSetLinearIterator *iter, swHashSetLinear 
   {
     iter->set = set;
     iter->position = SW_HASH_ITER_END_POSITION;
+    rtn = true;
   }
   return rtn;
 }

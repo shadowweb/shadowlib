@@ -91,7 +91,7 @@ int swCallTreeCompare(swCallTree *node1, swCallTree *node2, bool skipRepeat)
 
 static void swCallTreeWalkNode(swCallTree *node, swCallTreeWalkCB *walkCB, void *data, uint32_t level)
 {
-  walkCB(node->funcAddress, node->repeatCount, level, data);
+  walkCB(node, level, data);
   for (uint32_t i = 0; i < node->count; i++)
     swCallTreeWalkNode(&(node->children[i]), walkCB, data, level + 1);
 }
@@ -103,7 +103,7 @@ void swCallTreeWalk(swCallTree *root, swCallTreeWalkCB *walkCB, void *data)
     uint32_t level = 0;
     if (!(root->funcAddress & SW_CALLTREE_ROOT_FLAG))
     {
-      walkCB(root->funcAddress, root->repeatCount, level, data);
+      walkCB(root, level, data);
       level++;
     }
     for (uint32_t i = 0; i < root->count; i++)
