@@ -21,5 +21,35 @@ From this point on we can run executables in three different ways:
 * with `LD_PRELOAD=build/src/tools/trace/trace.so` but without turning tracing on yet
 * with `LD_PRELOAD=build/src/tools/trace/trace.so` and with empty `TRACE` file in the running directory
 
-Only the last option will produce trace output in the file `<program name>.TRACE`. Once this file is generated, it will be processed in later steps.
+Only the last option will produce trace output in the files `<program name>.TRACE.<thread id>`. These generated files will be processed in later steps.
+
+Post Process Instructions
+-------------------------
+
+To generate function address call tree run run run run:
+
+```
+build/src/tools/trace/build-call-tree -input-file <program name>.TRACE --input-threads=<comma separated list of thread ids> --log-stdout
+```
+
+In this step for each thread id mentioned in the list the tool will try to find a file with the following name `<program name>.TRACE.<thread id>`, read it, and generate call tree output with function addresses in file `<program name>.TRACE.<thread id>.out`. Additionally, it will also generate file `<program name>.TRACE.addr` which will contain a list of all unique functions addresses it has encountered when analyzing input files.
+
+The next step is to generate function address to symbol mapping. This is done using the original executable file and the list of function addresses generated in the previous step by running the following command:
+
+```
+src/tools/trace/get-symbols.pl -e <executable name> -i <program name>.TRACE.addr -o <program name>.TRACE.symbols
+```
+
+The last step is to generate call tree for each thread output that we are interested in. This can be done by running the following command:
+
+```
+src/tools/trace/print-call-tree.pl -i <program name>.TRACE.<thread id>.out -s <program name>.TRACE.symbols -o <program name>.TRACE.<thread id>.tree
+```
+The generated tree file can be examined now as it contains a fairily good representation of user space function calls.
+
+Future Work
+-----------
+
+The intention is to have a tree file viewer which supports collapsing and expanding call tree levels. Also, for big executables the tree might be pretty big and therefore it might be better to convert all tool outputs to binary format.
+
 
