@@ -374,9 +374,15 @@ build $builddir/src/tools/traffic-generator/traffic-generator:      link $buildd
                                                                          $builddir/src/core/core.a
 
 # trace
+# trace library with malloc
 build $builddir/src/tools/trace/trace.o:                cc src/tools/trace/trace.c
                                                         cflags = $cflags -fpic
 build $builddir/src/tools/trace/trace.so:               so $builddir/src/tools/trace/trace.o
+
+# trace library without malloc
+build $builddir/src/tools/trace/trace-no-malloc.o:      cc src/tools/trace/trace-no-malloc.c
+                                                        cflags = $cflags -fpic
+build $builddir/src/tools/trace/trace-no-malloc.so:     so $builddir/src/tools/trace/trace-no-malloc.o
 
 build $builddir/src/tools/trace/build-call-tree.o:      cc src/tools/trace/build-call-tree.c
 build $builddir/src/tools/trace/build-call-tree:        link $builddir/src/tools/trace/build-call-tree.o $
