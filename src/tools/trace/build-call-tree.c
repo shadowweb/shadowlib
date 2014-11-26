@@ -120,6 +120,44 @@ static bool swBuildCallTreeThreadDataAppend(swBuildCallTreeThreadData *threadDat
     if (end)
     {
       swCallTree *lastChild = NULL;
+      if (swDynamicArrayPeek(threadData->callStack, &lastChild) && lastChild)
+      {
+        if (functionAddress == lastChild->funcAddress)
+        {
+          swDynamicArrayPop(threadData->callStack, &lastChild);
+          if (swDynamicArrayPeek(threadData->callStack, &currentParent) && currentParent)
+          {
+            if (currentParent->count > 1)
+            {
+              if (swCallTreeCompare(&(currentParent->children[currentParent->count - 2]), lastChild, true) == 0)
+              {
+                currentParent->count--;
+                currentParent->children[currentParent->count - 1].repeatCount++;
+                swCallTreeDelete(lastChild);
+              }
+              rtn = true;
+            }
+            else
+              rtn = true;
+          }
+          else
+            SW_LOG_ERROR(&buildCallTreeLogger, "Failed to find current parent on the stack: lastChild = %p, currentParent = %p", (void *)lastChild, (void *)currentParent);
+        }
+        else
+        {
+          SW_LOG_ERROR(&buildCallTreeLogger, "threadId %u: lastChild = %p, currentParent = %p, function address mismatch 0x%lx != 0x%lx",
+                        threadData->threadId, (void *)lastChild, (void *)currentParent, functionAddress, lastChild->funcAddress);
+          // WARNING: this is a hack; I just need to see how misalligned everything is going to be after I added
+          if (swCallTreeAddNext(lastChild, functionAddress))
+            rtn = true;
+          else
+            SW_LOG_ERROR(&buildCallTreeLogger, "Failed to add bad function call: lastChild = %p, function = 0x%lx", (void *)lastChild, functionAddress);
+        }
+      }
+      else
+        SW_LOG_ERROR(&buildCallTreeLogger, "Stack is empty: lastChild = %p", (void *)lastChild);
+
+      /*
       if (swDynamicArrayPop(threadData->callStack, &lastChild) && lastChild && swDynamicArrayPeek(threadData->callStack, &currentParent) && currentParent)
       {
         if (functionAddress == lastChild->funcAddress)
@@ -138,11 +176,14 @@ static bool swBuildCallTreeThreadDataAppend(swBuildCallTreeThreadData *threadDat
             rtn = true;
         }
         else
-          SW_LOG_ERROR(&buildCallTreeLogger, "lastChild = %p, currentParent = %p, function address mismatch 0x%lX != 0x%lX",
-                        (void *)lastChild, (void *)currentParent, functionAddress, lastChild->funcAddress);
+        {
+          SW_LOG_ERROR(&buildCallTreeLogger, "threadId %u: lastChild = %p, currentParent = %p, function address mismatch 0x%lX != 0x%lX",
+                        threadData->threadId, (void *)lastChild, (void *)currentParent, functionAddress, lastChild->funcAddress);
+        }
       }
       else
         SW_LOG_ERROR(&buildCallTreeLogger, "lastChild = %p, currentParent = %p", (void *)lastChild, (void *)currentParent);
+      */
     }
     else
     {

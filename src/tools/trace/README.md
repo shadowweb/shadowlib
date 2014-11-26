@@ -26,26 +26,13 @@ Only the last option will produce trace output in the files `<program name>.TRAC
 Post Process Instructions
 -------------------------
 
-To generate function address call tree run run run run:
+After mucking around for a while and realizing that this was not a good setup I came up with the following post-processing step:
 
 ```
-build/src/tools/trace/build-call-tree -input-file <program name>.TRACE --input-threads=<comma separated list of thread ids> --log-stdout
+src/tools/trace/print-call-tree.pl -e <executable name> -i <program name>.TRACE -t <shadowlib dir>
 ```
 
-In this step for each thread id mentioned in the list the tool will try to find a file with the following name `<program name>.TRACE.<thread id>`, read it, and generate call tree output with function addresses in file `<program name>.TRACE.<thread id>.out`. Additionally, it will also generate file `<program name>.TRACE.addr` which will contain a list of all unique functions addresses it has encountered when analyzing input files.
-
-The next step is to generate function address to symbol mapping. This is done using the original executable file and the list of function addresses generated in the previous step by running the following command:
-
-```
-src/tools/trace/get-symbols.pl -e <executable name> -i <program name>.TRACE.addr -o <program name>.TRACE.symbols
-```
-
-The last step is to generate call tree for each thread output that we are interested in. This can be done by running the following command:
-
-```
-src/tools/trace/print-call-tree.pl -i <program name>.TRACE.<thread id>.out -s <program name>.TRACE.symbols -o <program name>.TRACE.<thread id>.tree
-```
-The generated tree file can be examined now as it contains a fairily good representation of user space function calls.
+The reason it needs shadowlib is because it needs to know where to find `build/src/tools/trace/build-call-tree` for one of the post-processing steps.
 
 Future Work
 -----------
