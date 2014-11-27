@@ -145,8 +145,8 @@ static bool swBuildCallTreeThreadDataAppend(swBuildCallTreeThreadData *threadDat
         }
         else
         {
-          SW_LOG_ERROR(&buildCallTreeLogger, "threadId %u: lastChild = %p, currentParent = %p, function address mismatch 0x%lx != 0x%lx",
-                        threadData->threadId, (void *)lastChild, (void *)currentParent, functionAddress, lastChild->funcAddress);
+          SW_LOG_ERROR(&buildCallTreeLogger, "threadId %u: lastChild = %p, function address mismatch 0x%lx != 0x%lx",
+                        threadData->threadId, (void *)lastChild, functionAddress, lastChild->funcAddress);
           // WARNING: this is a hack; I just need to see how misalligned everything is going to be after I added
           if (swCallTreeAddNext(lastChild, functionAddress))
             rtn = true;
@@ -156,34 +156,6 @@ static bool swBuildCallTreeThreadDataAppend(swBuildCallTreeThreadData *threadDat
       }
       else
         SW_LOG_ERROR(&buildCallTreeLogger, "Stack is empty: lastChild = %p", (void *)lastChild);
-
-      /*
-      if (swDynamicArrayPop(threadData->callStack, &lastChild) && lastChild && swDynamicArrayPeek(threadData->callStack, &currentParent) && currentParent)
-      {
-        if (functionAddress == lastChild->funcAddress)
-        {
-          if (currentParent->count > 1)
-          {
-            if (swCallTreeCompare(&(currentParent->children[currentParent->count - 2]), lastChild, true) == 0)
-            {
-              currentParent->count--;
-              currentParent->children[currentParent->count - 1].repeatCount++;
-              swCallTreeDelete(lastChild);
-            }
-            rtn = true;
-          }
-          else
-            rtn = true;
-        }
-        else
-        {
-          SW_LOG_ERROR(&buildCallTreeLogger, "threadId %u: lastChild = %p, currentParent = %p, function address mismatch 0x%lX != 0x%lX",
-                        threadData->threadId, (void *)lastChild, (void *)currentParent, functionAddress, lastChild->funcAddress);
-        }
-      }
-      else
-        SW_LOG_ERROR(&buildCallTreeLogger, "lastChild = %p, currentParent = %p", (void *)lastChild, (void *)currentParent);
-      */
     }
     else
     {
@@ -214,6 +186,7 @@ static bool swBuildCallTreeProcessThreadFile(int64_t threadId)
     swDynamicString *threadFile = swDynamicStringNewFromFormat("%.*s.%lu", (int)(inputFileName.len), inputFileName.data, (uint64_t)threadId);
     if (threadFile)
     {
+      SW_LOG_INFO(&buildCallTreeLogger, "Processing thread file '%.*s'", (int)(threadFile->len), threadFile->data);
       size_t fileSize = swFileGetSize(threadFile->data);
       if (fileSize)
       {
@@ -277,6 +250,11 @@ static bool swBuildCallTreeProcessThreadFile(int64_t threadId)
           }
           close(fd);
         }
+      }
+      else
+      {
+        SW_LOG_WARNING(&buildCallTreeLogger, "thread file '%.*s' is empty", (int)(threadFile->len), threadFile->data);
+        rtn = true;
       }
       swDynamicStringDelete(threadFile);
     }
@@ -413,6 +391,5 @@ int main (int argc, char *argv[])
       rtn = EXIT_SUCCESS;
     swInitStop(initData);
   }
-
   return rtn;
 }
