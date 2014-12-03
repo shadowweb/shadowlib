@@ -72,7 +72,7 @@ void *swThreadedTestThreadDataGet(swThreadedTestThreadData *benchmarkThreadData)
     .threadSetupFunc = threadSetup, \
     .threadTeardownFunc = threadTeardown, \
     .threadRunFunc = threadRun, \
-    .threadCounts = swStaticArrayDefine(tc, sizeof(uint32_t)) \
+    .threadCounts = swStaticArrayDefine(tc, uint32_t) \
   }
 
 #endif  // SW_THREAD_THREADEDTEST_H

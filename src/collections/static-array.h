@@ -12,13 +12,15 @@ typedef struct swStaticArray
   uint32_t count;
 } swStaticArray;
 
-#define swStaticArrayDefineEmpty                {.elementSize = 0,    .data = NULL, .count = 0}
-#define swStaticArrayDefine(d, es)              {.elementSize = (es), .data = (uint8_t *)(d),  .count = sizeof(d)/(es)}
-#define swStaticArrayDefineWithCount(d, es, c)  {.elementSize = (es), .data = (d),  .count = (c)}
+#define swStaticArrayDefineEmpty                {.elementSize = 0,         .data = NULL,           .count = 0}
+// #define swStaticArrayDefine(d, es)              {.elementSize = (es), .data = (uint8_t *)(d),  .count = sizeof(d)/(es)}
+#define swStaticArrayDefine(d, t)               {.elementSize = sizeof(t), .data = (uint8_t *)(d), .count = sizeof(d)/sizeof(t)}
+// #define swStaticArrayDefineWithCount(d, es, c)  {.elementSize = (es), .data = (d),  .count = (c)}
+#define swStaticArrayDefineWithCount(d, t, c)   {.elementSize = sizeof(t), .data = (uint8_t *)(d), .count = (c)}
 
-#define swStaticArraySetWithCount(d, es, c)     *(swStaticArray[]){{.elementSize = (es), .data = (d),  .count = (c)}}
-#define swStaticArraySet(d, es)                 *(swStaticArray[]){{.elementSize = (es), .data = (d),  .count = sizeof(d)/(es)}}
-#define swStaticArraySetEmpty                   *(swStaticArray[]){{.elementSize = 0,    .data = NULL, .count = 0}}
+#define swStaticArraySetWithCount(d, t, c)      *(swStaticArray[]){{.elementSize = sizeof(t), .data = (uint8_t *)(d), .count = (c)}}
+#define swStaticArraySet(d, t)                  *(swStaticArray[]){{.elementSize = sizeof(t), .data = (uint8_t *)(d), .count = sizeof(d)/sizeof(t)}}
+#define swStaticArraySetEmpty                   *(swStaticArray[]){{.elementSize = 0,         .data = NULL,           .count = 0}}
 
 #define swStaticArrayData(a)              (a).data
 #define swStaticArrayCount(a)             (a).count
