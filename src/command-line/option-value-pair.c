@@ -11,8 +11,8 @@ bool swOptionValuePairSetDefaults(swOptionValuePair *pair)
   bool rtn = false;
   if (pair)
   {
-    if (pair->option->defaultValue.count && !pair->value.count)
-      rtn = swDynamicArraySetFromStaticArray(&(pair->value), &(pair->option->defaultValue));
+    if (pair->option->defaultValue && !pair->value.count)
+      rtn = swDynamicArraySetFromStaticArray(&(pair->value), pair->option->defaultValue);
     else
       rtn = true;
   }

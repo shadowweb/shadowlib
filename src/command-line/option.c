@@ -21,10 +21,13 @@ bool swOptionValidateDefaultValue(swOption *option)
   bool rtn = false;
   if (option)
   {
-    if (option->defaultValue.count)
+    if (option->defaultValue)
     {
-      if ((!option->isArray && (option->defaultValue.count == 1)) || (!option->valueCount || option->defaultValue.count == option->valueCount))
-        rtn = (option->defaultValue.elementSize == valueSizes[option->valueType]);
+      if (option->defaultValue->count)
+      {
+        if ((!option->isArray && (option->defaultValue->count == 1)) || (!option->valueCount || option->defaultValue->count == option->valueCount))
+          rtn = (option->defaultValue->elementSize == valueSizes[option->valueType]);
+      }
     }
     else
       rtn = true;
