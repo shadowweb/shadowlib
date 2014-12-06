@@ -73,6 +73,9 @@ swSocketReturnType swSocketReconnect(swSocket *sock);
 swSocketReturnType swSocketRead(swSocket *sock, swStaticBuffer *buffer, ssize_t *bytesRead);
 swSocketReturnType swSocketWrite(swSocket *sock, swStaticBuffer *buffer, ssize_t *bytesWritten);
 
+swSocketReturnType swSocketReadSplice(swSocket *sock, int pipefd[2], size_t len, ssize_t *bytesRead);
+swSocketReturnType swSocketWriteSplice(swSocket *sock, int pipefd[2], size_t len, ssize_t *bytesWritten);
+
 swSocketReturnType swSocketSend(swSocket *sock, swStaticBuffer *buffer, ssize_t *bytesWritten);
 swSocketReturnType swSocketSendTo(swSocket *sock, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten);
 swSocketReturnType swSocketSendMsg(swSocket *sock, struct msghdr *msg);
@@ -86,4 +89,4 @@ bool swSocketIsConnected(swSocket *sock, int *returnError);
 void swSocketClose(swSocket *sock);
 void swSocketDelete(swSocket *sock);
 
-#endif // SW_IO_SOCKET_H
+#endif  // SW_IO_SOCKET_H

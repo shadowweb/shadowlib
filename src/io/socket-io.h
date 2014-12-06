@@ -107,4 +107,7 @@ swSocketReturnType swSocketIOWrite(swSocketIO *io, swStaticBuffer *buffer, ssize
 swSocketReturnType swSocketIOReadFrom (swSocketIO *io, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesRead);
 swSocketReturnType swSocketIOWriteTo  (swSocketIO *io, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten);
 
-#endif // SW_IO_SOCKETIO_H
+swSocketReturnType swSocketIOReadSplice  (swSocketIO *io, int pipefd[2], size_t len, ssize_t *bytesRead);
+swSocketReturnType swSocketIOWriteSplice (swSocketIO *io, int pipefd[2], size_t len, ssize_t *bytesWritten);
+
+#endif  // SW_IO_SOCKETIO_H

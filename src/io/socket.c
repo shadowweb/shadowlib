@@ -337,6 +337,48 @@ swSocketReturnType swSocketWrite(swSocket *sock, swStaticBuffer *buffer, ssize_t
   return rtn;
 }
 
+swSocketReturnType swSocketReadSplice(swSocket *sock, int pipefd[2], size_t len, ssize_t *bytesRead)
+{
+  swSocketReturnType rtn = swSocketReturnNone;
+  if (sock && len && (sock->fd >= 0) && pipefd[1] >= 0)
+  {
+    ssize_t ret = splice(sock->fd, NULL, pipefd[1], NULL, len, SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+    if (ret > 0)
+    {
+      rtn = swSocketReturnOK;
+      if (bytesRead)
+        *bytesRead = ret;
+    }
+    else if (ret == 0)
+      rtn = swSocketReturnClose;
+    else if (errno == EAGAIN || errno == EWOULDBLOCK)
+      rtn = swSocketReturnNotReady;
+    else
+      rtn = swSocketReturnError;
+  }
+  return rtn;
+}
+
+swSocketReturnType swSocketWriteSplice(swSocket *sock, int pipefd[2], size_t len, ssize_t *bytesWritten)
+{
+  swSocketReturnType rtn = swSocketReturnNone;
+  if (sock && len && (sock->fd >= 0) && pipefd[0] >= 0)
+  {
+    ssize_t ret = splice(pipefd[0], NULL, sock->fd, NULL, len, SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+    if (ret >= 0)
+    {
+      rtn = swSocketReturnOK;
+      if (bytesWritten)
+        *bytesWritten = ret;
+    }
+    else if (errno == EAGAIN || errno == EWOULDBLOCK)
+      rtn = swSocketReturnNotReady;
+    else
+      rtn = swSocketReturnError;
+  }
+  return rtn;
+}
+
 swSocketReturnType swSocketSend(swSocket *sock, swStaticBuffer *buffer, ssize_t *bytesWritten)
 {
   swSocketReturnType rtn = swSocketReturnNone;

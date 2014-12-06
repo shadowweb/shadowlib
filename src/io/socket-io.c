@@ -264,3 +264,40 @@ swSocketReturnType swSocketIOWriteTo(swSocketIO *io, swStaticBuffer *buffer, swS
   }
   return rtn;
 }
+
+swSocketReturnType swSocketIOReadSplice  (swSocketIO *io, int pipefd[2], size_t len, ssize_t *bytesRead)
+{
+  swSocketReturnType rtn = swSocketReturnNone;
+  if (io)
+  {
+    if ((rtn = swSocketReadSplice((swSocket *)io, pipefd, len, bytesRead)) == swSocketReturnOK)
+      swEdgeWatcherPendingSet((swEdgeWatcher *)&(io->ioEvent), swEdgeEventRead);
+    else if (rtn == swSocketReturnNotReady)
+    {
+      if (!swEdgeTimerStart(&(io->readTimer), io->loop, io->readTimeout, io->readTimeout, false))
+        swSocketIOClose(io, swSocketIOErrorOtherError);
+    }
+    else
+      swSocketIOClose(io, ((rtn == swSocketReturnClose)? swSocketIOErrorSocketClose : swSocketIOErrorSocketError));
+  }
+  return rtn;
+
+}
+
+swSocketReturnType swSocketIOWriteSplice (swSocketIO *io, int pipefd[2], size_t len, ssize_t *bytesWritten)
+{
+  swSocketReturnType rtn = swSocketReturnNone;
+  if (io)
+  {
+    if ((rtn = swSocketWriteSplice((swSocket *)io, pipefd, len, bytesWritten)) == swSocketReturnOK)
+      swEdgeWatcherPendingSet((swEdgeWatcher *)&(io->ioEvent), swEdgeEventWrite);
+    else if (rtn == swSocketReturnNotReady)
+    {
+      if (!swEdgeTimerStart(&(io->writeTimer), io->loop, io->writeTimeout, io->writeTimeout, false))
+        swSocketIOClose(io, swSocketIOErrorOtherError);
+    }
+    else
+      swSocketIOClose(io, ((rtn == swSocketReturnClose ) ? swSocketIOErrorSocketClose : swSocketIOErrorSocketError));
+  }
+  return rtn;
+}
