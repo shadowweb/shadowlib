@@ -53,6 +53,8 @@ void swDynamicBufferRelease(swDynamicBuffer *buffer);
 bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStaticBuffer *staticBuf);
 bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size);
 
+bool swDynamicBufferEnsureCapacity(swDynamicBuffer *dynamicBuf, size_t size);
+
 
 // TODO: implement to and from hex, to and from base64
 

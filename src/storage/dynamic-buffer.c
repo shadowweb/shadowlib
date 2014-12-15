@@ -158,7 +158,6 @@ bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStat
     }
   }
   return rtn;
-
 }
 
 bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size)
@@ -184,6 +183,26 @@ bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf,
     }
   }
   return rtn;
+}
 
+bool swDynamicBufferEnsureCapacity(swDynamicBuffer *dynamicBuf, size_t size)
+{
+  bool rtn = false;
+  if (dynamicBuf && size)
+  {
+    if (dynamicBuf->size < size)
+    {
+      char *data = dynamicBuf->data;
+      if ((data = swMemoryRealloc(data, size)))
+      {
+        dynamicBuf->data = data;
+        dynamicBuf->size = size;
+        rtn = true;
+      }
+    }
+    else
+      rtn = true;
+  }
+  return rtn;
 }
 
