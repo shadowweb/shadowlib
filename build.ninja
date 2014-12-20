@@ -64,6 +64,7 @@ build $builddir/src/collections/murmur-hash3.o:         cc src/collections/murmu
 build $builddir/src/collections/fast-array.o:           cc src/collections/fast-array.c
 build $builddir/src/collections/dynamic-array.o:        cc src/collections/dynamic-array.c
 build $builddir/src/collections/sparse-array.o:         cc src/collections/sparse-array.c
+build $builddir/src/collections/lpm.o:                  cc src/collections/lpm.c
 build $builddir/src/collections/collections.a:          ar $builddir/src/collections/call-tree.o $
                                                            $builddir/src/collections/hash-common.o $
                                                            $builddir/src/collections/hash-functions.o $
@@ -72,9 +73,10 @@ build $builddir/src/collections/collections.a:          ar $builddir/src/collect
                                                            $builddir/src/collections/murmur-hash3.o $
                                                            $builddir/src/collections/fast-array.o $
                                                            $builddir/src/collections/dynamic-array.o $
-                                                           $builddir/src/collections/sparse-array.o
+                                                           $builddir/src/collections/sparse-array.o $
+                                                           $builddir/src/collections/lpm.o
 
-# collections test
+# collections tests
 build $builddir/src/collections/hash-set-linear-test.o: cc src/collections/hash-set-linear-test.c
 build $builddir/src/collections/hash-set-linear-test:   link $builddir/src/collections/hash-set-linear-test.o $
                                                              $builddir/src/collections/collections.a $
@@ -113,6 +115,14 @@ build $builddir/src/collections/sparse-array-test:      link $builddir/src/colle
                                                              $builddir/src/core/core.a $
                                                              $builddir/src/unittest/unittest.a
 
+build $builddir/src/collections/lpm-test.o:             cc src/collections/lpm-test.c
+build $builddir/src/collections/lpm-test:               link $builddir/src/collections/lpm-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
+
 # storage library
 build $builddir/src/storage/static-string.o:            cc src/storage/static-string.c
 build $builddir/src/storage/dynamic-string.o:           cc src/storage/dynamic-string.c
@@ -143,7 +153,9 @@ build $builddir/src/storage/static-buffer-test:         link $builddir/src/stora
 
 # utils library
 build $builddir/src/utils/file.o:                       cc src/utils/file.c
-build $builddir/src/utils/utils.a:                      ar $builddir/src/utils/file.o
+build $builddir/src/utils/random.o:                     cc src/utils/random.c
+build $builddir/src/utils/utils.a:                      ar $builddir/src/utils/file.o $
+                                                           $builddir/src/utils/random.o
 
 # io library
 build $builddir/src/io/edge-loop.o:                     cc src/io/edge-loop.c
