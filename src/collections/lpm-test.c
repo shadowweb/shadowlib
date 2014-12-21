@@ -4,9 +4,10 @@
 
 #include "unittest/unittest.h"
 
-static uint64_t ipCount = 4194304;   // 4 * 1024 * 1024
+// static uint64_t ipCount = 4194304;   // 4 * 1024 * 1024
 // static uint64_t ipCount = 1048576;      // 1 * 1024 * 10924
 // static uint64_t ipCount = 2097152;      // 2 * 1024 * 1024
+static uint64_t ipCount = 524288;
 
 typedef struct swLPMTestData
 {
@@ -68,12 +69,10 @@ swLPMTestData *swLPMTestDataNew(size_t prefixBytes)
                   if (emptyBytes)
                     memset(&prefix->prefixBytes[usedBytes], 0, emptyBytes);
                   uint8_t lastByteBitCount = (uint8_t)(prefix->len & 7);
-                  // printf("Last byte bit count = %u\n", lastByteBitCount);
                   if (lastByteBitCount)
                   {
                     uint8_t mask = ~((1 << (8 - lastByteBitCount)) - 1);
                     prefix->prefixBytes[usedBytes - 1] &= mask;
-                    // printf("Last bit mask = 0x%x\n", mask);
                   }
                   swLPMPrefix *storedPrefix = NULL;
                   if (!swLPMFind(lpm, prefix, &storedPrefix))
@@ -132,51 +131,51 @@ void teardownAddresses(swTestSuite *suite)
   swLPMTestDataDelete(testData);
 }
 
-void setupTestWithFactor(swTest *test, uint8_t factor)
+void setupInsertTestWithFactor(swTest *test, uint8_t factor)
 {
   swLPM *lpm = swLPMNew(factor);
   ASSERT_NOT_NULL(lpm);
   swTestDataSet(test, lpm);
 }
 
-void setupTestFactorOne(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorOne(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 1);
+  setupInsertTestWithFactor(test, 1);
 }
 
-void setupTestFactorTwo(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorTwo(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 2);
+  setupInsertTestWithFactor(test, 2);
 }
 
-void setupTestFactorThree(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorThree(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 3);
+  setupInsertTestWithFactor(test, 3);
 }
 
-void setupTestFactorFour(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorFour(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 4);
+  setupInsertTestWithFactor(test, 4);
 }
 
-void setupTestFactorFive(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorFive(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 5);
+  setupInsertTestWithFactor(test, 5);
 }
 
-void setupTestFactorSix(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorSix(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 6);
+  setupInsertTestWithFactor(test, 6);
 }
 
-void setupTestFactorSeven(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorSeven(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 7);
+  setupInsertTestWithFactor(test, 7);
 }
 
-void setupTestFactorEight(swTestSuite *suite, swTest *test)
+void setupInsertTestFactorEight(swTestSuite *suite, swTest *test)
 {
-  setupTestWithFactor(test, 8);
+  setupInsertTestWithFactor(test, 8);
 }
 
 void teardownTest(swTestSuite *suite, swTest *test)
@@ -210,66 +209,344 @@ static inline bool insertTestWithFactor(swTestSuite *suite, swTest *test)
       if (storedPrefix)
       {
         testData->duplicatesFound++;
-        ASSERT_TRUE(swLPMPrefixEqual(prefix, storedPrefix));
+        // ASSERT_TRUE(swLPMPrefixEqual(prefix, storedPrefix));
       }
       else
         break;
     }
     buffer += testData->prefixSize;
   }
+  ASSERT_EQUAL(lpm->count, ipCount);
+  if ((buffer == bufferEnd) && (lpm->count == ipCount))
+    rtn = true;
+  return rtn;
+}
+
+swTestDeclare(InsertFactorOneTest, setupInsertTestFactorOne, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorTwoTest, setupInsertTestFactorTwo, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorThreeTest, setupInsertTestFactorThree, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorFourTest, setupInsertTestFactorFour, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorFiveTest, setupInsertTestFactorFive, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorSixTest, setupInsertTestFactorSix, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorSevenTest, setupInsertTestFactorSeven, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+swTestDeclare(InsertFactorEightTest, setupInsertTestFactorEight, teardownTest, swTestRun)
+{
+  return insertTestWithFactor(suite, test);
+}
+
+void setupTestWithInsertWithFactor(swTestSuite *suite, swTest *test, uint8_t factor)
+{
+  swLPM *lpm = swLPMNew(factor);
+  ASSERT_NOT_NULL(lpm);
+  swTestDataSet(test, lpm);
+  ASSERT_TRUE(insertTestWithFactor(suite, test));
+}
+
+void setupTestWithInsertFactorOne(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 1);
+}
+
+void setupTestWitInsertFactorTwo(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 2);
+}
+
+void setupTestWithInsertFactorThree(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 3);
+}
+
+void setupTestWithInsertFactorFour(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 4);
+}
+
+void setupTestWithInsertFactorFive(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 5);
+}
+
+void setupTestWithInsertFactorSix(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 6);
+}
+
+void setupTestWithInsertFactorSeven(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 7);
+}
+
+void setupTestWithInsertFactorEight(swTestSuite *suite, swTest *test)
+{
+  setupTestWithInsertWithFactor(suite, test, 8);
+}
+
+static inline bool findTestWithFactor(swTestSuite *suite, swTest *test)
+{
+  bool rtn = false;
+  swLPMTestData *testData = swTestSuiteDataGet(suite);
+  ASSERT_NOT_NULL(testData);
+  swLPM *lpm = swTestDataGet(test);
+  ASSERT_NOT_NULL(lpm);
+  uint8_t *buffer = (uint8_t *)(testData->prefixes.data);
+  uint8_t *bufferEnd = buffer + (ipCount * testData->prefixSize);
+  swLPMPrefix *prefix = NULL;
+  swLPMPrefix *storedPrefix = NULL;
+  bool found = false;
+  while(buffer < bufferEnd)
+  {
+    found = false;
+    storedPrefix = NULL;
+    prefix = (swLPMPrefix *)buffer;
+    if (swLPMFind(lpm, prefix, &storedPrefix))
+    {
+      if (storedPrefix)
+        ASSERT_TRUE((found = (prefix == storedPrefix)));
+    }
+    if (found)
+      buffer += testData->prefixSize;
+    else
+      break;
+  }
   if (buffer == bufferEnd)
     rtn = true;
   return rtn;
 }
 
-swTestDeclare(InsertFactorOneTest, setupTestFactorOne, teardownTest, swTestRun)
+swTestDeclare(FindFactorOneTest, setupTestWithInsertFactorOne, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorTwoTest, setupTestFactorTwo, teardownTest, swTestRun)
+swTestDeclare(FindFactorTwoTest, setupTestWitInsertFactorTwo, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorThreeTest, setupTestFactorThree, teardownTest, swTestRun)
+swTestDeclare(FindFactorThreeTest, setupTestWithInsertFactorThree, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorFourTest, setupTestFactorFour, teardownTest, swTestRun)
+swTestDeclare(FindFactorFourTest, setupTestWithInsertFactorFour, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorFiveTest, setupTestFactorFive, teardownTest, swTestRun)
+swTestDeclare(FindFactorFiveTest, setupTestWithInsertFactorFive, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorSixTest, setupTestFactorSix, teardownTest, swTestRun)
+swTestDeclare(FindFactorSixTest, setupTestWithInsertFactorSix, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorSevenTest, setupTestFactorSeven, teardownTest, swTestRun)
+swTestDeclare(FindFactorSevenTest, setupTestWithInsertFactorSeven, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
 }
 
-swTestDeclare(InsertFactorEightTest, setupTestFactorEight, teardownTest, swTestRun)
+swTestDeclare(FindFactorEightTest, setupTestWithInsertFactorEight, teardownTest, swTestRun)
 {
-  return insertTestWithFactor(suite, test);
+  return findTestWithFactor(suite, test);
+}
+
+static inline bool matchTestWithFactor(swTestSuite *suite, swTest *test)
+{
+  bool rtn = false;
+  swLPMTestData *testData = swTestSuiteDataGet(suite);
+  ASSERT_NOT_NULL(testData);
+  swLPM *lpm = swTestDataGet(test);
+  ASSERT_NOT_NULL(lpm);
+  uint8_t *buffer = (uint8_t *)(testData->prefixes.data);
+  uint8_t *bufferEnd = buffer + (ipCount * testData->prefixSize);
+  swLPMPrefix *storedPrefix = NULL;
+  swStaticBuffer ipValue = swStaticBufferDefineEmpty;
+  bool found = false;
+  size_t dataSize = testData->prefixSize - sizeof(swLPMPrefix);
+  while(buffer < bufferEnd)
+  {
+    found = false;
+    storedPrefix = NULL;
+    ipValue = swStaticBufferSetWithLength((char *)(buffer + sizeof(swLPMPrefix)), dataSize);
+    if (swLPMMatch(lpm, &ipValue, &storedPrefix))
+    {
+      if (storedPrefix)
+        found = true;
+    }
+    if (found)
+      buffer += testData->prefixSize;
+    else
+      break;
+  }
+  if (buffer == bufferEnd)
+    rtn = true;
+  return rtn;
+}
+
+swTestDeclare(MatchFactorOneTest, setupTestWithInsertFactorOne, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorTwoTest, setupTestWitInsertFactorTwo, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorThreeTest, setupTestWithInsertFactorThree, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorFourTest, setupTestWithInsertFactorFour, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorFiveTest, setupTestWithInsertFactorFive, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorSixTest, setupTestWithInsertFactorSix, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorSevenTest, setupTestWithInsertFactorSeven, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+swTestDeclare(MatchFactorEightTest, setupTestWithInsertFactorEight, teardownTest, swTestRun)
+{
+  return matchTestWithFactor(suite, test);
+}
+
+static inline bool removeTestWithFactor(swTestSuite *suite, swTest *test)
+{
+  bool rtn = false;
+  swLPMTestData *testData = swTestSuiteDataGet(suite);
+  ASSERT_NOT_NULL(testData);
+  swLPM *lpm = swTestDataGet(test);
+  ASSERT_NOT_NULL(lpm);
+  uint8_t *buffer = (uint8_t *)(testData->prefixes.data);
+  uint8_t *bufferEnd = buffer + (ipCount * testData->prefixSize);
+  swLPMPrefix *prefix = NULL;
+  swLPMPrefix *storedPrefix = NULL;
+  bool found = false;
+  uint64_t prevCount = lpm->count;
+  while(buffer < bufferEnd)
+  {
+    found = false;
+    storedPrefix = NULL;
+    prefix = (swLPMPrefix *)buffer;
+    if (swLPMRemove(lpm, prefix, &storedPrefix))
+    {
+      ASSERT_EQUAL(--prevCount, lpm->count);
+      if (storedPrefix)
+        ASSERT_TRUE((found = (prefix == storedPrefix)));
+    }
+    if (found)
+      buffer += testData->prefixSize;
+    else
+      break;
+  }
+  if (buffer == bufferEnd)
+    rtn = true;
+  return rtn;
+}
+
+swTestDeclare(RemoveFactorOneTest, setupTestWithInsertFactorOne, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorTwoTest, setupTestWitInsertFactorTwo, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorThreeTest, setupTestWithInsertFactorThree, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorFourTest, setupTestWithInsertFactorFour, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorFiveTest, setupTestWithInsertFactorFive, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorSixTest, setupTestWithInsertFactorSix, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorSevenTest, setupTestWithInsertFactorSeven, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
+}
+
+swTestDeclare(RemoveFactorEightTest, setupTestWithInsertFactorEight, teardownTest, swTestRun)
+{
+  return removeTestWithFactor(suite, test);
 }
 
 swTestSuiteStructDeclare(LPMIPv4TestSuite, setupIPv4Addresses, teardownAddresses, swTestRun,
-  &InsertFactorOneTest, &InsertFactorTwoTest, &InsertFactorThreeTest, &InsertFactorFourTest,
-  &InsertFactorFiveTest, &InsertFactorSixTest, &InsertFactorSevenTest, &InsertFactorEightTest
+  &InsertFactorOneTest,  &InsertFactorTwoTest, &InsertFactorThreeTest, &InsertFactorFourTest,
+  &InsertFactorFiveTest, &InsertFactorSixTest, &InsertFactorSevenTest, &InsertFactorEightTest,
+  &FindFactorOneTest,  &FindFactorTwoTest, &FindFactorThreeTest, &FindFactorFourTest,
+  &FindFactorFiveTest, &FindFactorSixTest, &FindFactorSevenTest, &FindFactorEightTest,
+  &MatchFactorOneTest,  &MatchFactorTwoTest, &MatchFactorThreeTest, &MatchFactorFourTest,
+  &MatchFactorFiveTest, &MatchFactorSixTest, &MatchFactorSevenTest, &MatchFactorEightTest,
+  &RemoveFactorOneTest,  &RemoveFactorTwoTest, &RemoveFactorThreeTest, &RemoveFactorFourTest,
+  &RemoveFactorFiveTest, &RemoveFactorSixTest, &RemoveFactorSevenTest, &RemoveFactorEightTest
 );
 
 swTestSuiteStructDeclare(LPMIPv6TestSuite, setupIPv6Addresses, teardownAddresses, swTestRun,
-  &InsertFactorOneTest, &InsertFactorTwoTest, &InsertFactorThreeTest, &InsertFactorFourTest,
-  &InsertFactorFiveTest, &InsertFactorSixTest, &InsertFactorSevenTest, &InsertFactorEightTest
+  &InsertFactorOneTest,  &InsertFactorTwoTest, &InsertFactorThreeTest, &InsertFactorFourTest,
+  &InsertFactorFiveTest, &InsertFactorSixTest, &InsertFactorSevenTest, &InsertFactorEightTest,
+  &FindFactorOneTest,  &FindFactorTwoTest, &FindFactorThreeTest, &FindFactorFourTest,
+  &FindFactorFiveTest, &FindFactorSixTest, &FindFactorSevenTest, &FindFactorEightTest,
+  &MatchFactorOneTest,  &MatchFactorTwoTest, &MatchFactorThreeTest, &MatchFactorFourTest,
+  &MatchFactorFiveTest, &MatchFactorSixTest, &MatchFactorSevenTest, &MatchFactorEightTest,
+  &RemoveFactorOneTest,  &RemoveFactorTwoTest, &RemoveFactorThreeTest, &RemoveFactorFourTest,
+  &RemoveFactorFiveTest, &RemoveFactorSixTest, &RemoveFactorSevenTest, &RemoveFactorEightTest
 );
-
-// TODO: test match and removal

@@ -11,7 +11,7 @@ typedef struct swStaticBuffer
   char *data;
 } swStaticBuffer;
 
-#define swStaticBufferDefineEempty                    {.len = 0, .data = NULL}
+#define swStaticBufferDefineEmpty                     {.len = 0, .data = NULL}
 #define swStaticBufferDefine(buf)                     {.len = sizeof(buf), .data = buf}
 #define swStaticBufferDefineWithLength(str, length)   {.len = length, .data = str}
 #define swStaticBufferSetWithLength(buf, length)      *(swStaticBuffer[]){{.len = length, .data = buf}}

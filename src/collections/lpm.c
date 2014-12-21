@@ -76,7 +76,6 @@ void swLPMDelete(swLPM *lpm)
   }
 }
 
-// #define SW_LPM_PREFIX_BYTES(x)  (((x)->len >> 3) + (((x)->len & 7) > 0))
 #define SW_LPM_PREFIX_BYTES_FROM_LEN(l)  (((l) >> 3) + (((l) & 7) > 0))
 
 static inline bool _getSlice(uint8_t *data, size_t totalBytes, size_t totalBits, uint16_t startPosition, uint8_t factor, uint8_t *value)
@@ -119,8 +118,6 @@ static inline bool swLPMPrefixGetSlice(swLPMPrefix *prefix, uint16_t startPositi
 static bool swLPMNodeInsert(swLPM *lpm, swLPMNode *node, swLPMPrefix *prefix, swLPMPrefix **foundPrefix, uint16_t offset)
 {
   bool rtn = false;
-  // printf("Inserting node prefix for offset %u: ", offset);
-  // swLPMPrefixPrint(prefix);
   swLPMNode *currentNode = node;
   uint16_t i = offset;
   while ((i < prefix->len) && currentNode)
@@ -132,18 +129,15 @@ static bool swLPMNodeInsert(swLPM *lpm, swLPMNode *node, swLPMPrefix *prefix, sw
     {
       uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
       uint32_t elementCount = (2 << prefixPosition);
-      // printf ("\tslice value = %u, i = %u, prefix position = %u, elementCount = %u, final = %d\n", value, i, prefixPosition, elementCount, final);
       if (!currentNode->prefix[prefixPosition])
         currentNode->prefix[prefixPosition] = swMemoryCalloc(elementCount, sizeof(swLPMPrefix *));
       swLPMPrefix **prefixArray = currentNode->prefix[prefixPosition];
       if ((success = (prefixArray != NULL)))
       {
-        // printf ("\tprefixArray = %p\n", prefixArray);
         swLPMPrefix *storedPrefix = prefixArray[value];
         if (storedPrefix)
         {
           bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
-          // printf ("\tstoredPrefix = %p, final = %d\n", storedPrefix, storedPrefixFinal);
           storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
 
           if (final)
@@ -151,7 +145,6 @@ static bool swLPMNodeInsert(swLPM *lpm, swLPMNode *node, swLPMPrefix *prefix, sw
             // fail insertion; the same prefix is already found
             if (storedPrefixFinal)
             {
-              // printf("Failed inserting the same prefix as existing one\n");
               if (foundPrefix)
                 *foundPrefix = storedPrefix;
               break;
@@ -161,12 +154,9 @@ static bool swLPMNodeInsert(swLPM *lpm, swLPMNode *node, swLPMPrefix *prefix, sw
               currentNode->nodes[value] = swLPMNodeNew(lpm->nodeCount, lpm->factor);
             if ((success = swLPMNodeInsert(lpm, currentNode->nodes[value], storedPrefix, NULL, i + lpm->factor)))
             {
-              // printf("-- Inserted after eviction!!\n");
               prefixArray[value] = SW_LPM_PREFIX_SET_FLAG(prefix, !final);
               rtn = true;
             }
-            else
-              printf ("1: Failed while moving stored prefix down the tree\n");
           }
           else
           {
@@ -183,36 +173,26 @@ static bool swLPMNodeInsert(swLPM *lpm, swLPMNode *node, swLPMPrefix *prefix, sw
                 prefixArray[value] = NULL;
                 currentNode = currentNode->nodes[value];
               }
-              else
-                printf ("2: Failed while moving stored prefix down the tree\n");
             }
           }
         }
         else
         {
-          // printf ("\tno storedPrefix\n");
           if (!final && currentNode->nodes[value])
             currentNode = currentNode->nodes[value];
           else
           {
             // store current prefix here
-            // printf("-- Inserted without eviction: final = %d!!\n", final);
             prefixArray[value] = SW_LPM_PREFIX_SET_FLAG(prefix, !final);
             rtn = true;
           }
         }
       }
-      else
-        printf ("Failed to create prefix array for position %u\n", prefixPosition);
     }
-    else
-      printf ("Failed to get slice\n");
     if (rtn || !success)
       break;
     i += lpm->factor;
   }
-  // printf("Done inserting node prefix at offset %u: ", i);
-  // swLPMPrefixPrint(prefix);
   return rtn;
 }
 
@@ -221,8 +201,6 @@ bool swLPMInsert(swLPM *lpm, swLPMPrefix *prefix, swLPMPrefix **foundPrefix)
   bool rtn = false;
   if (lpm && prefix)
   {
-    // printf("Inserting prefix: ");
-    // swLPMPrefixPrint(prefix);
     if ((rtn = swLPMNodeInsert(lpm, &(lpm->rootNode), prefix, foundPrefix, 0)))
       lpm->count++;
   }
@@ -502,7 +480,6 @@ static bool swLPMNodeValidate(swLPMNode *node, uint64_t *count, swLPMPrefix **pr
                 // current prefix should be greate than the previous one
                 if (swLPMPrefixCompare(currentPrefix, *prevPrefix) < 1)
                 {
-                  printf("Failed comparison\n");
                   rtn = false;
                   break;
                 }
@@ -511,7 +488,6 @@ static bool swLPMNodeValidate(swLPMNode *node, uint64_t *count, swLPMPrefix **pr
               // and the node pointer in this position of the node array should be NULL
               if (!isFinal && ((j < (factor - 1)) || node->nodes[i]))
               {
-                printf("Failed not final check\n");
                 rtn = false;
                 break;
               }
