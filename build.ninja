@@ -77,6 +77,12 @@ build $builddir/src/collections/collections.a:          ar $builddir/src/collect
                                                            $builddir/src/collections/lpm.o
 
 # collections tests
+build $builddir/src/collections/bit-map-test.o:         cc src/collections/bit-map-test.c
+build $builddir/src/collections/bit-map-test:           link $builddir/src/collections/bit-map-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
+
 build $builddir/src/collections/hash-set-linear-test.o: cc src/collections/hash-set-linear-test.c
 build $builddir/src/collections/hash-set-linear-test:   link $builddir/src/collections/hash-set-linear-test.o $
                                                              $builddir/src/collections/collections.a $
