@@ -193,6 +193,8 @@ static inline void swBitMapDelete(swBitMap *map)
     swMemoryFree(map);
 }
 
-// TODO: add functions to find position of the first set bit and the first clear bit
+bool swBitMapFindFirstSet(swBitMap *map, uint16_t *position);
+// TODO: add functions to find position of the first clear bit
+bool swBitMapFindFirstClear(swBitMap *map, uint16_t *position);
 
 #endif  // SW_COLLECTIONS_BITMAP_H

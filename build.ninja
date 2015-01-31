@@ -55,6 +55,7 @@ build $builddir/src/core/benchmark-test:      link $builddir/src/core/benchmark-
                                                    $builddir/src/core/core.a
 
 # collections library
+build $builddir/src/collections/bit-map.o:              cc src/collections/bit-map.c
 build $builddir/src/collections/call-tree.o:            cc src/collections/call-tree.c
 build $builddir/src/collections/hash-common.o:          cc src/collections/hash-common.c
 build $builddir/src/collections/hash-functions.o:       cc src/collections/hash-functions.c
@@ -65,7 +66,8 @@ build $builddir/src/collections/fast-array.o:           cc src/collections/fast-
 build $builddir/src/collections/dynamic-array.o:        cc src/collections/dynamic-array.c
 build $builddir/src/collections/sparse-array.o:         cc src/collections/sparse-array.c
 build $builddir/src/collections/lpm.o:                  cc src/collections/lpm.c
-build $builddir/src/collections/collections.a:          ar $builddir/src/collections/call-tree.o $
+build $builddir/src/collections/collections.a:          ar $builddir/src/collections/bit-map.o $
+                                                           $builddir/src/collections/call-tree.o $
                                                            $builddir/src/collections/hash-common.o $
                                                            $builddir/src/collections/hash-functions.o $
                                                            $builddir/src/collections/hash-set-linear.o $
