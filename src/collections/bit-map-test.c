@@ -96,7 +96,7 @@ swTestSuiteStructDeclare(BitMapBasicSuite, NULL, NULL, swTestRun,
                          &SmallTest, &MediumTest, &LargeTest);
 
 
-bool testFindFirst(uint16_t bitSize)
+bool testFindFirstSet(uint16_t bitSize)
 {
   bool rtn = false;
   swTestLogLine("Testing find first set for size %u\n", bitSize);
@@ -128,40 +128,114 @@ bool testFindFirst(uint16_t bitSize)
   return rtn;
 }
 
-swTestDeclare(SmallBitFindTest, NULL, NULL, swTestRun)
+swTestDeclare(SmallBitFindSetTest, NULL, NULL, swTestRun)
 {
   bool rtn = true;
   for (uint16_t i = 1; i <= sizeof(uint32_t) * 8; i++)
   {
-    rtn = testFindFirst(i);
+    rtn = testFindFirstSet(i);
     if (!rtn)
       break;
   }
   return rtn;
 }
 
-swTestDeclare(MediumBitFindTest, NULL, NULL, swTestRun)
+swTestDeclare(MediumBitFindSetTest, NULL, NULL, swTestRun)
 {
   bool rtn = true;
   uint16_t startBitSize = sizeof(uint32_t) * 8 + 1;
   uint16_t endBitSize = startBitSize + sizeof(uint64_t) * 8;
   for (uint16_t i = startBitSize; i < endBitSize; i++)
   {
-    rtn = testFindFirst(i);
+    rtn = testFindFirstSet(i);
     if (!rtn)
       break;
   }
   return rtn;
 }
 
-swTestDeclare(LargeBitFindTest, NULL, NULL, swTestRun)
+swTestDeclare(LargeBitFindSetTest, NULL, NULL, swTestRun)
 {
   bool rtn = true;
   uint16_t startBitSize = (sizeof(uint32_t) + sizeof(uint64_t)) * 8 + 1;
   uint16_t endBitSize = startBitSize + sizeof(uint64_t) * 8 * 10;
   for (uint16_t i = startBitSize; i < endBitSize; i++)
   {
-    rtn = testFindFirst(i);
+    rtn = testFindFirstSet(i);
+    if (!rtn)
+      break;
+  }
+  return rtn;
+}
+
+bool testFindFirstClear(uint16_t bitSize)
+{
+  bool rtn = false;
+  swTestLogLine("Testing find first clear for size %u\n", bitSize);
+  swBitMap *map = swBitMapNew(bitSize);
+  if (map)
+  {
+    swBitMapSetAll(map);
+
+    uint16_t position = 0;
+    for (uint16_t j = 0; j < bitSize; j++)
+    {
+      swBitMapClear(map, j);
+      ASSERT_TRUE(swBitMapFindFirstClear(map, &position));
+      ASSERT_EQUAL(position, j);
+      swBitMapSet(map, j);
+      ASSERT_FALSE(swBitMapFindFirstClear(map, &position));
+    }
+
+    swBitMapClearAll(map);
+    for (uint16_t j = 0; j < bitSize; j++)
+    {
+      ASSERT_TRUE(swBitMapFindFirstClear(map, &position));
+      ASSERT_EQUAL(position, j);
+      swBitMapSet(map, j);
+    }
+    ASSERT_FALSE(swBitMapFindFirstClear(map, &position));
+
+    swBitMapDelete(map);
+    rtn = true;
+  }
+  return rtn;
+}
+
+swTestDeclare(SmallBitFindClearTest, NULL, NULL, swTestRun)
+{
+  bool rtn = true;
+  for (uint16_t i = 1; i <= sizeof(uint32_t) * 8; i++)
+  {
+    rtn = testFindFirstClear(i);
+    if (!rtn)
+      break;
+  }
+  return rtn;
+}
+
+swTestDeclare(MediumBitFindClearTest, NULL, NULL, swTestRun)
+{
+  bool rtn = true;
+  uint16_t startBitSize = sizeof(uint32_t) * 8 + 1;
+  uint16_t endBitSize = startBitSize + sizeof(uint64_t) * 8;
+  for (uint16_t i = startBitSize; i < endBitSize; i++)
+  {
+    rtn = testFindFirstClear(i);
+    if (!rtn)
+      break;
+  }
+  return rtn;
+}
+
+swTestDeclare(LargeBitFindClearTest, NULL, NULL, swTestRun)
+{
+  bool rtn = true;
+  uint16_t startBitSize = (sizeof(uint32_t) + sizeof(uint64_t)) * 8 + 1;
+  uint16_t endBitSize = startBitSize + sizeof(uint64_t) * 8 * 10;
+  for (uint16_t i = startBitSize; i < endBitSize; i++)
+  {
+    rtn = testFindFirstClear(i);
     if (!rtn)
       break;
   }
@@ -169,4 +243,5 @@ swTestDeclare(LargeBitFindTest, NULL, NULL, swTestRun)
 }
 
 swTestSuiteStructDeclare(BitMapFindFirstSuite, NULL, NULL, swTestRun,
-                         &SmallBitFindTest, &MediumBitFindTest, &LargeBitFindTest);
+                         &SmallBitFindSetTest, &MediumBitFindSetTest, &LargeBitFindSetTest,
+                         &SmallBitFindClearTest, &MediumBitFindClearTest, &LargeBitFindClearTest );

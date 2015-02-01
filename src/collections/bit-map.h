@@ -79,7 +79,7 @@ static inline void swBitMapClear(swBitMap *map, uint16_t bitPosition)
     // be decremented; so we take the bit value and do "> 0" comparison that gives us the value
     // to correctly subtract from the bitCount
     map->bitCount -= ((map->bytes[bytePosition] & bitMask) > 0);
-    map->bytes[(bitPosition >> 3)] &= ~bitMask;
+    map->bytes[bytePosition] &= ~bitMask;
   }
 }
 
@@ -194,7 +194,6 @@ static inline void swBitMapDelete(swBitMap *map)
 }
 
 bool swBitMapFindFirstSet(swBitMap *map, uint16_t *position);
-// TODO: add functions to find position of the first clear bit
 bool swBitMapFindFirstClear(swBitMap *map, uint16_t *position);
 
 #endif  // SW_COLLECTIONS_BITMAP_H
