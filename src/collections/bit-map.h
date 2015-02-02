@@ -60,11 +60,11 @@ static inline bool swBitMapLongIntGetFirstClear(swBitMapLongInt map, uint32_t st
   return rtn;
 }
 
-typedef struct __attribute__ ((__packed__)) swBitMap {
+typedef struct swBitMap {
   uint16_t bitSize;
   uint16_t bitCount;
   uint8_t bytes[];
-} swBitMap;
+} __attribute__((aligned(8), __packed__)) swBitMap;
 
 #define swBitMapMaxBitSize       ((1 << 16) - 16)
 #define swBitMapMaxByteSize      (swBitMaxBitSize/8)
