@@ -54,7 +54,7 @@ void swDictionaryTestDataDelete(swDictionaryTestData *data)
 
 static uint32_t itemsPerBlock = 64;
 
-swDictionaryTestData *swDictionaryTestDataNew(const char *fileName, bool useKeyDelete)
+swDictionaryTestData *swDictionaryTestDataNew(const char *fileName)
 {
   swDictionaryTestData *rtn = NULL;
   if (fileName)
@@ -80,7 +80,7 @@ swDictionaryTestData *swDictionaryTestDataNew(const char *fileName, bool useKeyD
 void dictionaryTestSuiteSetup(swTestSuite *suite)
 {
   swTestLogLine("Creating dictionary test data ...\n");
-  swDictionaryTestData *dictionaryTestData = swDictionaryTestDataNew("/usr/share/dict/ngerman", false);
+  swDictionaryTestData *dictionaryTestData = swDictionaryTestDataNew("/usr/share/dict/ngerman");
   ASSERT_NOT_NULL(dictionaryTestData);
   swTestSuiteDataSet(suite, dictionaryTestData);
 }

@@ -15,16 +15,47 @@ static uint32_t swBitMapLongIntBitCount = 8 * sizeof(swBitMapLongInt);
 #define swBitMapLongIntClear(v, b)  ((void) ((v) &= ~swBitMapLongIntMask(b)))
 #define swBitMapLongIntIsSet(v, b)  (((v) & swBitMapLongIntMask(b)) != 0)
 
-static inline uint32_t swBitMapLongIntGetNextFalse(swBitMapLongInt map, uint32_t startPosition, uint32_t maxPosition)
+static inline bool swBitMapLongIntGetFirstSet(swBitMapLongInt map, uint32_t startPosition, uint32_t maxPosition, uint32_t *returnPosition)
 {
-  uint32_t rtn = startPosition + 1;
-  uint64_t mask = swBitMapLongIntMask(startPosition);
-  while (rtn < maxPosition)
+  bool rtn = false;
+  if ((startPosition < maxPosition) && (maxPosition <= swBitMapLongIntBitCount) && returnPosition)
   {
-    mask <<= 1;
-    if (!(map & mask))
-      break;
-    rtn++;
+    uint32_t position = startPosition;
+    uint64_t maskForPosition = 0x01UL << position;
+    while (position < maxPosition)
+    {
+      if (map & maskForPosition)
+      {
+        *returnPosition = position;
+        rtn = true;
+        break;
+      }
+      position++;
+      maskForPosition <<= 1;
+    }
+  }
+  return rtn;
+}
+
+static inline bool swBitMapLongIntGetFirstClear(swBitMapLongInt map, uint32_t startPosition, uint32_t maxPosition, uint32_t *returnPosition)
+{
+  bool rtn = false;
+  if ((startPosition < maxPosition) && (maxPosition <= swBitMapLongIntBitCount) && returnPosition)
+  {
+    uint32_t position = startPosition;
+    uint64_t maskForPosition = 0x01UL << position;
+
+    while (position < maxPosition)
+    {
+      if (!(map & maskForPosition))
+      {
+        *returnPosition = position;
+        rtn = true;
+        break;
+      }
+      position++;
+      maskForPosition <<= 1;
+    }
   }
   return rtn;
 }

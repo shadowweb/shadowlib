@@ -127,13 +127,13 @@ int swTestMain(int argc, char *argv[])
   swTestFilterFunc testFilterFunc = testAll;
   int ret = EXIT_FAILURE;
 
-  if (argc == 2)
+  if (argc >= 2)
   {
     suiteNameGlobal = argv[1];
     suiteFilterFunc = suiteFilter;
   }
 
-  if (argc == 3)
+  if (argc >= 3)
   {
     testNameGlobal = argv[2];
     testFilterFunc = testFilter;

@@ -86,10 +86,11 @@ void swSparseArrayFree(swSparseArray *array)
   }
 }
 
+#define swSparseArrayGetBitMapMax(x)  (((x) < swBitMapLongIntBitCount)? ((0x01UL << x) - 1) : UINT64_MAX)
+
 static void swSparseArraySetNextFree(swSparseArray *array, swSparseArrayBlockInfo *blockInfo, uint32_t memBlockId, uint32_t blockPosition)
 {
-  blockInfo->firstFree = swBitMapLongIntGetNextFalse(blockInfo->usedMap, blockPosition, array->blockElementsMax);
-  if (blockInfo->firstFree < array->blockElementsMax)
+  if (swBitMapLongIntGetFirstClear(blockInfo->usedMap, blockPosition + 1, array->blockElementsMax, &(blockInfo->firstFree)))
     array->firstFree = memBlockId * array->blockElementsMax + blockInfo->firstFree;
   else
   {
@@ -97,7 +98,7 @@ static void swSparseArraySetNextFree(swSparseArray *array, swSparseArrayBlockInf
     while (memBlockId < array->metaData.count)
     {
       blockInfo++;
-      if (blockInfo->usedMap < ULONG_MAX)
+      if (blockInfo->usedMap < swSparseArrayGetBitMapMax(array->blockElementsMax))
       {
         array->firstFree = memBlockId * array->blockElementsMax + blockInfo->firstFree;
         break;
