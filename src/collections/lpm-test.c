@@ -4,10 +4,13 @@
 
 #include "unittest/unittest.h"
 
+#include <stddef.h>
+
 // static uint64_t ipCount = 4194304;   // 4 * 1024 * 1024
 // static uint64_t ipCount = 1048576;      // 1 * 1024 * 10924
 // static uint64_t ipCount = 2097152;      // 2 * 1024 * 1024
-static uint64_t ipCount = 524288;
+static uint64_t ipCount = 524288;       // 512 * 1024
+// static uint64_t ipCount = 512;
 
 typedef struct swLPMTestData
 {
@@ -32,6 +35,7 @@ swLPMTestData *swLPMTestDataNew(size_t prefixBytes)
   swLPMTestData *rtn = NULL;
   if (prefixBytes)
   {
+    // printf ("sizeof(swLPMPrefix) = %zu, offsetof(swLPMPrefix, prefixBytes) = %zu\n", sizeof(swLPMPrefix), offsetof(swLPMPrefix, prefixBytes));
     FILE *file = fopen("/dev/urandom", "r");
     swLPM *lpm = swLPMNew(1);
     if (lpm)
@@ -77,6 +81,7 @@ swLPMTestData *swLPMTestDataNew(size_t prefixBytes)
                   swLPMPrefix *storedPrefix = NULL;
                   if (!swLPMFind(lpm, prefix, &storedPrefix))
                   {
+                    // swLPMPrefixPrint(prefix);
                     if (!(inserted = swLPMInsert(lpm, prefix, &storedPrefix)))
                     {
                       ASSERT_TRUE(false);
@@ -88,7 +93,6 @@ swLPMTestData *swLPMTestDataNew(size_t prefixBytes)
                     if (!fread((char *)prefix, lpmTestData->prefixSize, 1, file))
                       break;
                   }
-                  // swLPMPrefixPrint(prefix);
                 }
                 else
                   break;
@@ -268,6 +272,7 @@ void setupTestWithInsertWithFactor(swTestSuite *suite, swTest *test, uint8_t fac
   ASSERT_NOT_NULL(lpm);
   swTestDataSet(test, lpm);
   ASSERT_TRUE(insertTestWithFactor(suite, test));
+  ASSERT_TRUE(swLPMValidate(lpm, false));
 }
 
 void setupTestWithInsertFactorOne(swTestSuite *suite, swTest *test)

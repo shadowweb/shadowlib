@@ -32,7 +32,7 @@ typedef struct swLPMNode
   //      this also means that if the node is not 0, then intermidiate prefix should not be set
   // can contain up to "factor" number of prefixes since factor determines the number of bits
   // that each node represents
-  swLPMPrefix ***prefix;      // this is the pointer to the array on prefix arrays; the first array has 2 - elements
+  swLPMPrefix ***prefix;      // this is the pointer to the array of prefix arrays; the first array has 2 - elements
                               // the second has 4, the third has 8, etc., the number of elements in this array is the same
                               // is the number factor value in swLPM
   struct swLPMNode  *nodes[]; // number of nodes is 2 to the power of factor

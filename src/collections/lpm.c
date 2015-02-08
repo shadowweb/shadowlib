@@ -112,7 +112,7 @@ static inline bool swLPMPrefixGetSlice(swLPMPrefix *prefix, uint16_t startPositi
 
 #define SW_LPM_PREFIX_IS_FINAL(x)       (!((uint64_t)(x) & 0x01))
 #define SW_LPM_PREFIX_CLEAR_FLAG(x)     (swLPMPrefix *)((uint64_t)(x) & (~1UL))
-#define SW_LPM_PREFIX_SET_FLAG(x, n)    (swLPMPrefix *)((uint64_t)(x) + (n))
+#define SW_LPM_PREFIX_SET_FLAG(x, n)    (swLPMPrefix *)((uint64_t)(x) | (n))
 
 // TODO: maybe use sparse arrays here for storing prefixes, to save space and to know how many elements are there
 static bool swLPMNodeInsert(swLPM *lpm, swLPMNode *node, swLPMPrefix *prefix, swLPMPrefix **foundPrefix, uint16_t offset)
@@ -224,7 +224,7 @@ bool swLPMFind(swLPM *lpm, swLPMPrefix *prefix, swLPMPrefix **foundPrefix)
       {
         uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
         swLPMPrefix **prefixArray = currentNode->prefix[prefixPosition];
-        if(prefixArray)
+        if (prefixArray)
         {
           storedPrefix = prefixArray[value];
           if (storedPrefix)
@@ -257,7 +257,6 @@ bool swLPMFind(swLPM *lpm, swLPMPrefix *prefix, swLPMPrefix **foundPrefix)
   return rtn;
 }
 
-
 // the assumption here is that we manager the prefix storage separately, so that if we remove from LPM, the memory for the prefix object
 // will be released by something else
 // the easiest thing to do here is to traverse the tree, trying to find exact prefix match and then set the stored pointer to 0
@@ -265,19 +264,21 @@ bool swLPMFind(swLPM *lpm, swLPMPrefix *prefix, swLPMPrefix **foundPrefix)
 bool swLPMRemove(swLPM *lpm, swLPMPrefix *prefix, swLPMPrefix **foundPrefix)
 {
   bool rtn = false;
-  if (lpm && prefix)
+  if (lpm && lpm->count && prefix)
   {
     swLPMPrefix *storedPrefix = NULL;
     swLPMNode *currentNode = &(lpm->rootNode);
+    uint32_t prefixPosition = 0;
+    uint8_t value = 0;
     uint16_t i = 0;
     while ((i < prefix->len) && currentNode)
     {
-      uint8_t value = 0;
+      value = 0;
       bool final = (i + lpm->factor >= prefix->len);
       bool success = false;
       if ((success = swLPMPrefixGetSlice(prefix, i, lpm->factor, &value)))
       {
-        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
+        prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
         swLPMPrefix **prefixArray = currentNode->prefix[prefixPosition];
         if(prefixArray)
         {
@@ -332,12 +333,29 @@ static inline bool swStaticBufferGetBitSlice(swStaticBuffer *buffer, uint16_t st
   return rtn;
 }
 
+static void swLPMPrefixPrintBuffer(swStaticBuffer *value) __attribute__((unused));
+static void swLPMPrefixPrintBuffer(swStaticBuffer *value)
+{
+  if (value)
+  {
+    printf("%p: len = %zu, ", value, value->len);
+    for (uint8_t i = 0; i < value->len; i++)
+    {
+      for (uint8_t j = 0; j < 8; j++)
+        printf("%u", !!((value->data[i] << j) & 0x80));
+      printf(" ");
+    }
+    printf("\n");
+  }
+}
+
 bool swLPMMatch(swLPM *lpm, swStaticBuffer *value, swLPMPrefix **prefix)
 {
   bool rtn = false;
   if (lpm && value && prefix)
   {
     swLPMPrefix *currentPrefix = NULL;
+    swLPMPrefix *storedPrefix = NULL;
     swLPMNode *currentNode = &(lpm->rootNode);
     uint16_t maxBits = value->len * 8;
     uint16_t i = 0;
@@ -347,18 +365,18 @@ bool swLPMMatch(swLPM *lpm, swStaticBuffer *value, swLPMPrefix **prefix)
       bool final = (i + lpm->factor >= maxBits);
       if (swStaticBufferGetBitSlice(value, i, lpm->factor, &valueSlice))
       {
-        swLPMPrefix *storedPrefix = NULL;
         uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - maxBits) - 1);
-        for (uint16_t i = 0; i <= prefixPosition; i++)
+        for (uint16_t j = 0; j <= prefixPosition; j++)
         {
-          swLPMPrefix **prefixArray = currentNode->prefix[i];
+          storedPrefix = NULL;
+          swLPMPrefix **prefixArray = currentNode->prefix[j];
           if (prefixArray)
-            storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(prefixArray[ (valueSlice >> (prefixPosition - i)) ]);
+            storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(prefixArray[ (valueSlice >> (prefixPosition - j)) ]);
+          // I do not think we need to compare the prefixes here because if it found non-final prefix, no child nodes should exist
+          // for this value slice
+          if (storedPrefix)
+            currentPrefix = storedPrefix;
         }
-        // I do not think we need to compare the prefixes here because if it found non-final prefix, no child nodes should exist
-        // for this value slice
-        if (storedPrefix)
-          currentPrefix = storedPrefix;
         if (final)
           break;
       }
@@ -433,7 +451,7 @@ void swLPMPrefixPrint(swLPMPrefix *prefix)
 {
   if (prefix)
   {
-    printf("%p: len = %u, ", prefix, prefix->len);
+    printf("%p: len = %3u, ", prefix, prefix->len);
     uint8_t bytes = swLPMPrefixBytes(prefix);
     for (uint8_t i = 0; i < bytes; i++)
     {
@@ -445,16 +463,22 @@ void swLPMPrefixPrint(swLPMPrefix *prefix)
   }
 }
 
+//                                        0         1         2         3         4         5         6         7         8         9        10        11        12
+//                                        01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
+static char *swLPMValidateOffsetString = "                                                                                                                                ";
+
 // Walk prefix array in pre-order order
 // 0: [0:0]                                       [1:15]
 // 1: [0:1]               [1:8]                   [2:16]                    [3:23]
-// 2: [0:2]     [1:5]     [2:9]        [3:12]     [4:17]      [5:20]        [6:24]         [7:27]
+// 2: [0:2]     [1:5]     [2:9]       [3:12]      [4:17]      [5:20]        [6:24]        [7:27]
 // 3: [0:3][1:4][2:6][3:7][4:10][5:11][6:13][7:14][8:18][9:19][10:21][11:22][12:25][13:26][14:28][15:29]
-static bool swLPMNodeValidate(swLPMNode *node, uint64_t *count, swLPMPrefix **prevPrefix, uint16_t nodeCount, uint8_t factor, bool print)
+static bool swLPMNodeValidate(swLPMNode *node, uint64_t *count, swLPMPrefix **prevPrefix, uint16_t nodeCount, uint8_t factor, uint16_t level, bool print)
 {
   bool rtn = false;
   if (node && count && prevPrefix)
   {
+    if (print)
+      printf("%.*slevel = %3u, node = %p\n", level, swLPMValidateOffsetString, level, (void *)node);
     uint8_t nextPosition[SW_LPM_MAX_FACTOR] = {0};
     swLPMPrefix *currentPrefix = NULL;
     rtn = true;
@@ -474,10 +498,13 @@ static bool swLPMNodeValidate(swLPMNode *node, uint64_t *count, swLPMPrefix **pr
               bool isFinal = SW_LPM_PREFIX_IS_FINAL(currentPrefix);
               currentPrefix = SW_LPM_PREFIX_CLEAR_FLAG(currentPrefix);
               if (print)
+              {
+                printf("%.*slevel = %3u, prefix level = %1u, position = %3u, final = %d: ", level, swLPMValidateOffsetString, level, j, position, isFinal);
                 swLPMPrefixPrint(currentPrefix);
+              }
               if (*prevPrefix)
               {
-                // current prefix should be greate than the previous one
+                // current prefix should be greater than the previous one
                 if (swLPMPrefixCompare(currentPrefix, *prevPrefix) < 1)
                 {
                   rtn = false;
@@ -497,11 +524,8 @@ static bool swLPMNodeValidate(swLPMNode *node, uint64_t *count, swLPMPrefix **pr
           }
         }
       }
-      if (rtn)
-      {
-        if (node->nodes[i])
-          rtn = swLPMNodeValidate(node->nodes[i], count, prevPrefix, nodeCount, factor, print);
-      }
+      if (rtn && node->nodes[i])
+        rtn = swLPMNodeValidate(node->nodes[i], count, prevPrefix, nodeCount, factor, level + 1, print);
     }
   }
   return rtn;
@@ -513,8 +537,10 @@ bool swLPMValidate(swLPM *lpm, bool print)
   if (lpm)
   {
     uint64_t count = 0;
+    if (print)
+      printf ("LPM: nodeCount = %u, factor = %u, count = %lu, \n", lpm->nodeCount, lpm->factor, lpm->count);
     swLPMPrefix *currentPrefix = NULL;
-    if (swLPMNodeValidate(&(lpm->rootNode), &count, &currentPrefix, lpm->nodeCount, lpm->factor, print) && (count == lpm->count))
+    if (swLPMNodeValidate(&(lpm->rootNode), &count, &currentPrefix, lpm->nodeCount, lpm->factor, 0, print) && (count == lpm->count))
       rtn = true;
   }
   return rtn;
