@@ -66,6 +66,7 @@ build $builddir/src/collections/fast-array.o:           cc src/collections/fast-
 build $builddir/src/collections/dynamic-array.o:        cc src/collections/dynamic-array.c
 build $builddir/src/collections/sparse-array.o:         cc src/collections/sparse-array.c
 build $builddir/src/collections/lpm.o:                  cc src/collections/lpm.c
+build $builddir/src/collections/lpm-v2.o:               cc src/collections/lpm-v2.c
 build $builddir/src/collections/collections.a:          ar $builddir/src/collections/bit-map.o $
                                                            $builddir/src/collections/call-tree.o $
                                                            $builddir/src/collections/hash-common.o $
@@ -76,7 +77,8 @@ build $builddir/src/collections/collections.a:          ar $builddir/src/collect
                                                            $builddir/src/collections/fast-array.o $
                                                            $builddir/src/collections/dynamic-array.o $
                                                            $builddir/src/collections/sparse-array.o $
-                                                           $builddir/src/collections/lpm.o
+                                                           $builddir/src/collections/lpm.o $
+                                                           $builddir/src/collections/lpm-v2.o
 
 # collections tests
 build $builddir/src/collections/bit-map-test.o:         cc src/collections/bit-map-test.c
@@ -125,6 +127,14 @@ build $builddir/src/collections/sparse-array-test:      link $builddir/src/colle
 
 build $builddir/src/collections/lpm-test.o:             cc src/collections/lpm-test.c
 build $builddir/src/collections/lpm-test:               link $builddir/src/collections/lpm-test.o $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/utils/utils.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
+
+build $builddir/src/collections/lpm-v2-test.o:          cc src/collections/lpm-v2-test.c
+build $builddir/src/collections/lpm-v2-test:            link $builddir/src/collections/lpm-v2-test.o $
                                                              $builddir/src/collections/collections.a $
                                                              $builddir/src/utils/utils.a $
                                                              $builddir/src/storage/storage.a $
