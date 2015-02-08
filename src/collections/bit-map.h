@@ -83,6 +83,13 @@ static inline bool swBitMapIsSet(swBitMap *map, uint16_t bitPosition)
   return false;
 }
 
+static inline bool swBitMapIsClear(swBitMap *map, uint16_t bitPosition)
+{
+  if (map && bitPosition < map->bitSize)
+    return !(map->bytes[(bitPosition >> 3)] & (1 << (bitPosition & swBitMapBitPositionMask)));
+  return false;
+}
+
 static inline void swBitMapSet(swBitMap *map, uint16_t bitPosition)
 {
   if (map && bitPosition < map->bitSize)
