@@ -4,75 +4,78 @@
 #include <string.h>
 #include <sys/param.h>
 
-swLPMV2PrefixStorage *swLPMV2PrefixStorageNew(uint16_t prefixCount)
-{
-  swLPMV2PrefixStorage *rtn = NULL;
-  if (prefixCount)
-  {
-    uint16_t byteSize = swBitMapByteSize(prefixCount);
-    swLPMV2PrefixStorage *storage = swMemoryCalloc(1, sizeof(swLPMV2PrefixStorage) + byteSize);
-    if (storage)
-    {
-      storage->bitMap.bitSize = prefixCount;
-      if ((storage->prefix = swMemoryCalloc(prefixCount, sizeof(swLPMV2Prefix *))))
-        rtn = storage;
-      else
-        swMemoryFree(storage);
-    }
-  }
-  return rtn;
-}
+#define SW_LPM_PREFIX_STORAGE_POSITION(i, v, c, p)  ((!(i))? (v) : ((c) - (2 << ((p) + 1)) + (v)))
 
-void swLPMV2PrefixStorageDelete(swLPMV2PrefixStorage *storage)
-{
-  if (storage)
-  {
-    if (storage->prefix)
-      swMemoryFree(storage->prefix);
-    swMemoryFree(storage);
-  }
-}
-
-swLPMV2Prefix *swLPMV2PrefixStorageGet(swLPMV2PrefixStorage *storage, uint16_t position)
+// TODO: Create macros for all these bit manupulations, otherwise I will be making mistakes in multiple places
+static inline swLPMV2Prefix *swLPMV2NodeGetPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
 {
   swLPMV2Prefix *rtn = NULL;
-  if (storage && (position < storage->bitMap.bitSize))
-    rtn = storage->prefix[position];
+  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  if (node->prefix[storageIndex])
+  {
+    uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
+    rtn = node->prefix[storageIndex][storagePosition];
+  }
   return rtn;
 }
 
-bool swLPMV2PrefixStorageSet(swLPMV2PrefixStorage *storage, uint16_t position, swLPMV2Prefix *prefix)
+static inline bool swLPMV2NodeSetPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor, swLPMV2Prefix *prefix)
 {
   bool rtn = false;
-  if (storage && (position < storage->bitMap.bitSize) && prefix && !storage->prefix[position])
+  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  if (!node->prefix[storageIndex])
+    node->prefix[storageIndex] = swMemoryCalloc(nodeCount, sizeof(swLPMV2Prefix *));
+  if (node->prefix[storageIndex])
   {
-    storage->prefix[position] = prefix;
-    swBitMapSet(&(storage->bitMap), position);
+    uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
+    node->prefix[storageIndex][storagePosition] = prefix;
+    uint8_t index = storagePosition >> 6;
+    uint8_t bitPosition = storagePosition & ((1 << 6) - 1);
+    uint64_t mask = (uint64_t)1UL << bitPosition;
+    if (!(node->bitMaps[storageIndex][index] & mask))
+    {
+      node->bitMaps[storageIndex][index] |= mask;
+      node->prefixCount[storageIndex]++;
+    }
     rtn = true;
   }
   return rtn;
 }
 
-bool swLPMV2PrefixStorageClear(swLPMV2PrefixStorage *storage, uint16_t position)
+static inline void swLPMV2NodeClearPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
+{
+  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  if (node->prefix[storageIndex])
+  {
+    uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
+    node->prefix[storageIndex][storagePosition] = NULL;
+    uint8_t index = storagePosition >> 6;
+    uint8_t bitPosition = storagePosition & ((1 << 6) - 1);
+    uint64_t mask = (uint64_t)1UL << bitPosition;
+    if ((node->bitMaps[storageIndex][index] & mask))
+    {
+      node->bitMaps[storageIndex][index] &= (~mask);
+      node->prefixCount[storageIndex]--;
+    }
+  }
+}
+
+static inline bool swLPMV2NodePrefixIsClear(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
 {
   bool rtn = false;
-  if (storage && (position < storage->bitMap.bitSize) && storage->prefix[position])
+  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  if (node->prefix[storageIndex])
   {
-    storage->prefix[position] = NULL;
-    swBitMapClear(&(storage->bitMap), position);
-    rtn = true;
+    uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
+    uint8_t index = storagePosition >> 6;
+    uint8_t bitPosition = storagePosition & ((1 << 6) - 1);
+    uint64_t mask = (uint64_t)1UL << bitPosition;
+    if (!(node->bitMaps[storageIndex][index] & mask))
+      rtn = true;
   }
+  else
+    rtn = true;
   return rtn;
-}
-
-static inline bool swLPMV2PrefixStorageIsSet(swLPMV2PrefixStorage *storage, uint16_t position)
-{
-  return (storage && swBitMapIsSet(&(storage->bitMap), position));
-}
-
-static inline bool swLPMV2PrefixStorageIsClear(swLPMV2PrefixStorage *storage, uint16_t position)
-{
-  return (storage && swBitMapIsClear(&(storage->bitMap), position));
 }
 
 swLPMV2Node *swLPMV2NodeNew(uint16_t nodeCount, uint8_t factor)
@@ -82,13 +85,7 @@ swLPMV2Node *swLPMV2NodeNew(uint16_t nodeCount, uint8_t factor)
   {
     swLPMV2Node *node = swMemoryCalloc(1, sizeof(swLPMV2Node) + nodeCount * sizeof(swLPMV2Node *));
     if (node)
-    {
-      if ((node->storage = swMemoryCalloc(factor, sizeof(swLPMV2PrefixStorage *))))
-      // if ((node->prefix = swMemoryCalloc(factor, sizeof(swLPMV2Prefix **))))
-        rtn = node;
-      else
-        swMemoryFree(node);
-    }
+      rtn = node;
   }
   return rtn;
 }
@@ -97,25 +94,10 @@ void swLPMV2NodeDelete(swLPMV2Node *lpmNode, uint16_t nodeCount, uint8_t factor,
 {
   if (lpmNode && nodeCount && factor)
   {
-    /*
-    if (lpmNode->prefix)
+    for (uint8_t j = 0; j < 2; j++)
     {
-      for (uint8_t j = 0; j < factor; j++)
-      {
-        if (lpmNode->prefix[j])
-          swMemoryFree(lpmNode->prefix[j]);
-      }
-      swMemoryFree(lpmNode->prefix);
-    }
-    */
-    if (lpmNode->storage)
-    {
-      for (uint8_t j = 0; j < factor; j++)
-      {
-        if (lpmNode->storage[j])
-          swLPMV2PrefixStorageDelete(lpmNode->storage[j]);
-      }
-      swMemoryFree(lpmNode->storage);
+      if (lpmNode->prefix[j])
+        swMemoryFree(lpmNode->prefix[j]);
     }
     swLPMV2Node **nodes = lpmNode->nodes;
     for (uint16_t i = 0; i < nodeCount; i++)
@@ -137,15 +119,9 @@ swLPMV2 *swLPMV2New(uint8_t factor)
     swLPMV2 *lpm = swMemoryCalloc(1, sizeof(swLPMV2) + nodeCount * sizeof(swLPMV2Node *));
     if (lpm)
     {
-      if ((lpm->rootNode.storage = swMemoryCalloc(factor, sizeof(swLPMV2PrefixStorage *))))
-      // if ((lpm->rootNode.prefix = swMemoryCalloc(factor, sizeof(swLPMV2Prefix **))))
-      {
-        lpm->nodeCount  = nodeCount;
-        lpm->factor     = factor;
-        rtn = lpm;
-      }
-      else
-        swLPMV2NodeDelete(&(lpm->rootNode), nodeCount, factor, false);
+      lpm->nodeCount  = nodeCount;
+      lpm->factor     = factor;
+      rtn = lpm;
     }
   }
   return rtn;
@@ -198,7 +174,6 @@ static inline bool swLPMV2PrefixGetSlice(swLPMV2Prefix *prefix, uint16_t startPo
 #define SW_LPM_PREFIX_CLEAR_FLAG(x)     (swLPMV2Prefix *)((uint64_t)(x) & (~1UL))
 #define SW_LPM_PREFIX_SET_FLAG(x, n)    (swLPMV2Prefix *)((uint64_t)(x) | (n))
 
-// TODO: maybe use sparse arrays here for storing prefixes, to save space and to know how many elements are there
 static bool swLPMV2NodeInsert(swLPMV2 *lpm, swLPMV2Node *node, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPrefix, uint16_t offset)
 {
   bool rtn = false;
@@ -212,81 +187,57 @@ static bool swLPMV2NodeInsert(swLPMV2 *lpm, swLPMV2Node *node, swLPMV2Prefix *pr
     if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
     {
       uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
-      uint32_t elementCount = (2 << prefixPosition);
-      // if (!currentNode->prefix[prefixPosition])
-      //   currentNode->prefix[prefixPosition] = swMemoryCalloc(elementCount, sizeof(swLPMV2Prefix *));
-      // swLPMV2Prefix **prefixArray = currentNode->prefix[prefixPosition];
-      // if ((success = (prefixArray != NULL)))
-      if (!currentNode->storage[prefixPosition])
-        currentNode->storage[prefixPosition] = swLPMV2PrefixStorageNew(elementCount);
-      swLPMV2PrefixStorage *storage = currentNode->storage[prefixPosition];
-      if ((success = (storage != 0)))
+      swLPMV2Prefix *storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
+      if (storedPrefix)
       {
-        // swLPMV2Prefix *storedPrefix = prefixArray[value];
-        swLPMV2Prefix *storedPrefix = swLPMV2PrefixStorageGet(storage, value);
-        if (storedPrefix)
-        {
-          bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
-          storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
+        bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
+        storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
 
-          if (final)
+        if (final)
+        {
+          // fail insertion; the same prefix is already found
+          if (storedPrefixFinal)
           {
-            // fail insertion; the same prefix is already found
-            if (storedPrefixFinal)
-            {
-              if (foundPrefix)
-                *foundPrefix = storedPrefix;
-              break;
-            }
-            // if storedPrefix is not final, then it can only be in the last array, so value can address the nodes
-            if (!currentNode->nodes[value])
-            {
-              if ((currentNode->nodes[value] = swLPMV2NodeNew(lpm->nodeCount, lpm->factor)))
-                currentNode->nodeCount++;
-            }
-            if ((success = swLPMV2NodeInsert(lpm, currentNode->nodes[value], storedPrefix, NULL, i + lpm->factor)))
-            {
-              // prefixArray[value] = SW_LPM_PREFIX_SET_FLAG(prefix, !final);
-              // rtn = true;
-              success = rtn = swLPMV2PrefixStorageClear(storage, value) && swLPMV2PrefixStorageSet(storage, value, SW_LPM_PREFIX_SET_FLAG(prefix, !final));
-            }
+            if (foundPrefix)
+              *foundPrefix = storedPrefix;
+            break;
           }
-          else
+          // if storedPrefix is not final, then it can only be in the last array, so value can address the nodes
+          if (!currentNode->nodes[value])
           {
-            if (!currentNode->nodes[value])
-            {
-              if ((currentNode->nodes[value] = swLPMV2NodeNew(lpm->nodeCount, lpm->factor)))
-                currentNode->nodeCount++;
-            }
-            // keep current prefix
-            if (storedPrefixFinal)
-              currentNode = currentNode->nodes[value];
-            else
-            {
-              if ((success = swLPMV2NodeInsert(lpm, currentNode->nodes[value], storedPrefix, NULL, i + lpm->factor)))
-              {
-                // clear prefix
-                // prefixArray[value] = NULL;
-                success = swLPMV2PrefixStorageClear(storage, value);
-                currentNode->prefixCount--;
-                currentNode = currentNode->nodes[value];
-              }
-            }
+            if ((currentNode->nodes[value] = swLPMV2NodeNew(lpm->nodeCount, lpm->factor)))
+              currentNode->nodeCount++;
           }
+          if ((success = swLPMV2NodeInsert(lpm, currentNode->nodes[value], storedPrefix, NULL, i + lpm->factor)))
+            success = rtn = swLPMV2NodeSetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor, SW_LPM_PREFIX_SET_FLAG(prefix, !final));
         }
         else
         {
-          if (!final && currentNode->nodes[value])
+          if (!currentNode->nodes[value])
+          {
+            if ((currentNode->nodes[value] = swLPMV2NodeNew(lpm->nodeCount, lpm->factor)))
+              currentNode->nodeCount++;
+          }
+          // keep current prefix
+          if (storedPrefixFinal)
             currentNode = currentNode->nodes[value];
           else
           {
-            // store current prefix here
-            // prefixArray[value] = SW_LPM_PREFIX_SET_FLAG(prefix, !final);
-            if ((success = rtn = swLPMV2PrefixStorageSet(storage, value, SW_LPM_PREFIX_SET_FLAG(prefix, !final))))
-              currentNode->prefixCount++;
-            // rtn = true;
+            if ((success = swLPMV2NodeInsert(lpm, currentNode->nodes[value], storedPrefix, NULL, i + lpm->factor)))
+            {
+              // clear prefix
+              swLPMV2NodeClearPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
+              currentNode = currentNode->nodes[value];
+            }
           }
         }
+      }
+      else
+      {
+        if (!final && currentNode->nodes[value])
+          currentNode = currentNode->nodes[value];
+        else
+          success = rtn = swLPMV2NodeSetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor, SW_LPM_PREFIX_SET_FLAG(prefix, !final));
       }
     }
     if (rtn || !success)
@@ -323,29 +274,22 @@ bool swLPMV2Find(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPrefi
       if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
       {
         uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
-        // swLPMV2Prefix **prefixArray = currentNode->prefix[prefixPosition];
-        // if(prefixArray)
-        swLPMV2PrefixStorage *storage = currentNode->storage[prefixPosition];
-        if (storage)
+        storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
+        if (storedPrefix)
         {
-          // storedPrefix = prefixArray[value];
-          storedPrefix = swLPMV2PrefixStorageGet(storage, value);
-          if (storedPrefix)
+          bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
+          storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
+          if (final)
           {
-            bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
-            storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
-            if (final)
-            {
-              if (storedPrefixFinal)
-                rtn = true;
-              else
-                break;
-            }
+            if (storedPrefixFinal)
+              rtn = true;
             else
-            {
-              if (!storedPrefixFinal && swLPMV2PrefixEqual(prefix, storedPrefix))
-                rtn = true;
-            }
+              break;
+          }
+          else
+          {
+            if (!storedPrefixFinal && swLPMV2PrefixEqual(prefix, storedPrefix))
+              rtn = true;
           }
         }
       }
@@ -360,23 +304,22 @@ bool swLPMV2Find(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPrefi
   return rtn;
 }
 
-static swLPMV2Prefix *swLPMV2NodeGetLastPrefix(swLPMV2Node *node, uint8_t factor)
+static inline swLPMV2Prefix *swLPMV2NodeGetLastPrefix(swLPMV2Node *node, uint8_t factor)
 {
   swLPMV2Prefix *rtn = NULL;
-  if (node && (node->prefixCount == 1) && !(node->nodeCount))
+  if (((node->prefixCount[0] + node->prefixCount[1]) == 1) && !(node->nodeCount))
   {
-    for (uint8_t i = 0; i < factor; i++)
+    uint8_t storageIndex = (node->prefixCount[0])? 0: 1;
+    uint32_t storagePosition = 0;
+    for (uint8_t i = 0; i < 4; i++)
     {
-      if (node->storage[i] && (node->storage[i]->bitMap.bitCount == 1))
+      if (swBitMapLongIntFindFirstSet(node->bitMaps[storageIndex][i], &storagePosition))
       {
-        uint16_t position = 0;
-        if (swBitMapFindFirstSet(&(node->storage[i]->bitMap), &position))
-        {
-          rtn = node->storage[i]->prefix[position];
-          swLPMV2PrefixStorageClear(node->storage[i], position);
-          node->prefixCount--;
-          break;
-        }
+        rtn = node->prefix[storageIndex][storagePosition];
+        node->prefix[storageIndex][storagePosition] = NULL;
+        swBitMapLongIntClear(node->bitMaps[storageIndex][i], storagePosition);
+        node->prefixCount[storageIndex]--;
+        break;
       }
     }
   }
@@ -397,10 +340,9 @@ static inline bool swLPMV2NodeCleanupLastPrefix(swLPMV2Node *node, uint16_t node
   if (lastPrefix)
   {
     swLPMV2NodeDeleteChild(node, nodeCount, factor, value);
-    rtn = swLPMV2PrefixStorageSet(node->storage[factor - 1], value, SW_LPM_PREFIX_SET_FLAG(lastPrefix, 1));
-    node->prefixCount++;
-    if (rtn && done)
-      *done = true;
+    rtn = swLPMV2NodeSetPrefix(node, factor - 1, value, nodeCount, factor, SW_LPM_PREFIX_SET_FLAG(lastPrefix, 1));
+    if (done)
+      *done = rtn;
   }
   else
     rtn = true;
@@ -430,7 +372,6 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
     swLPMV2Prefix *storedPrefix = NULL;
     swLPMV2Node *currentNode = &(lpm->rootNode);
     currentNodePairs[currentNodePosition].node = currentNode;
-    swLPMV2PrefixStorage *storage = NULL;
     uint32_t prefixPosition = 0;
     uint8_t value = 0;
     uint16_t i = 0;
@@ -443,43 +384,27 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
       {
         currentNodePairs[currentNodePosition].value = value;
         prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
-        // swLPMV2Prefix **prefixArray = currentNode->prefix[prefixPosition];
-        // if(prefixArray)
-        // {
-        //   storedPrefix = prefixArray[value];
-        storage = currentNode->storage[prefixPosition];
-        if (storage)
+        storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
+        if (storedPrefix)
         {
-          // storedPrefix = prefixArray[value];
-          storedPrefix = swLPMV2PrefixStorageGet(storage, value);
-          if (storedPrefix)
+          bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
+          storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
+          if (final)
           {
-            bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
-            storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
-            if (final)
+            if (storedPrefixFinal)
             {
-              if (storedPrefixFinal)
-              {
-                if ((success = swLPMV2PrefixStorageClear(storage, value)))
-                {
-                  currentNode->prefixCount--;
-                  rtn = true;
-                }
-              }
-              else
-                break;
+              swLPMV2NodeClearPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
+              rtn = true;
             }
             else
+              break;
+          }
+          else
+          {
+            if (!storedPrefixFinal && swLPMV2PrefixEqual(prefix, storedPrefix))
             {
-              if (!storedPrefixFinal && swLPMV2PrefixEqual(prefix, storedPrefix))
-              {
-                // prefixArray[value] = NULL;
-                if ((success = swLPMV2PrefixStorageClear(storage, value)))
-                {
-                  currentNode->prefixCount--;
-                  rtn = true;
-                }
-              }
+              swLPMV2NodeClearPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
+              rtn = true;
             }
           }
         }
@@ -496,28 +421,27 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
 
       if ((prefixPosition == (uint32_t)(lpm->factor - 1)) && (currentNode->nodes[value]))
         rtn = swLPMV2NodeCleanupLastPrefix(currentNode, lpm->nodeCount, lpm->factor, value, NULL);
-      // if (rtn && (currentNode->nodeCount == 0))
-      // {
-        while (rtn && (currentNode->nodeCount == 0) && (currentNode->prefixCount <= 1) && (currentNodePosition > 0))
+      uint32_t prefixCount = currentNode->prefixCount[0] + currentNode->prefixCount[1];
+      while (rtn && (currentNode->nodeCount == 0) && (prefixCount <= 1) && (currentNodePosition > 0))
+      {
+        currentNodePosition--;
+        value = currentNodePairs[currentNodePosition].value;
+        currentNode = currentNodePairs[currentNodePosition].node;
+        if (prefixCount == 1)
         {
-          currentNodePosition--;
-          value = currentNodePairs[currentNodePosition].value;
-          currentNode = currentNodePairs[currentNodePosition].node;
-          if (currentNode->nodes[value]->prefixCount == 1)
+          if (swLPMV2NodePrefixIsClear(currentNode, lpm->factor - 1, value, lpm->nodeCount, lpm->factor))
           {
-            if (swLPMV2PrefixStorageIsClear(currentNode->storage[lpm->factor - 1], value))
-            {
-              bool done = false;
-              rtn = swLPMV2NodeCleanupLastPrefix(currentNode, lpm->nodeCount, lpm->factor, value, &done);
-              if (done)
-                continue;
-            }
-            break;
+            bool done = false;
+            rtn = swLPMV2NodeCleanupLastPrefix(currentNode, lpm->nodeCount, lpm->factor, value, &done);
+            if (done)
+              continue;
           }
-          else
-            swLPMV2NodeDeleteChild(currentNode, lpm->nodeCount, lpm->factor, value);
+          break;
         }
-      // }
+        else
+          swLPMV2NodeDeleteChild(currentNode, lpm->nodeCount, lpm->factor, value);
+        prefixCount = currentNode->prefixCount[0] + currentNode->prefixCount[1];
+      }
       if (rtn && foundPrefix)
         *foundPrefix = storedPrefix;
     }
@@ -568,19 +492,9 @@ bool swLPMV2Match(swLPMV2 *lpm, swStaticBuffer *value, swLPMV2Prefix **prefix)
         uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - maxBits) - 1);
         for (uint16_t j = 0; j <= prefixPosition; j++)
         {
-          storedPrefix = NULL;
-          // swLPMV2Prefix **prefixArray = currentNode->prefix[j];
-          // if (prefixArray)
-          //   storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(prefixArray[ (valueSlice >> (prefixPosition - j)) ]);
-          swLPMV2PrefixStorage *storage = currentNode->storage[j];
-          if (storage)
-          {
-            storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(swLPMV2PrefixStorageGet(storage, (valueSlice >> (prefixPosition - j))));
-            // I do not think we need to compare the prefixes here because if it found non-final prefix, no child nodes should exist
-            // for this value slice
-            if (storedPrefix)
-              currentPrefix = storedPrefix;
-          }
+          storedPrefix = swLPMV2NodeGetPrefix(currentNode, j, (valueSlice >> (prefixPosition - j)), lpm->nodeCount, lpm->factor);
+          if (storedPrefix)
+            currentPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
         }
         if (final)
           break;
@@ -668,8 +582,8 @@ void swLPMV2PrefixPrint(swLPMV2Prefix *prefix)
   }
 }
 
-//                                        0         1         2         3         4         5         6         7         8         9        10        11        12
-//                                        01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
+//                                          0         1         2         3         4         5         6         7         8         9        10        11        12
+//                                          01234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567
 static char *swLPMV2ValidateOffsetString = "                                                                                                                                ";
 
 // Walk prefix array in pre-order order
@@ -683,7 +597,7 @@ static bool swLPMV2NodeValidate(swLPMV2Node *node, uint64_t *count, swLPMV2Prefi
   if (node && count && prevPrefix)
   {
     if (print)
-      printf("%.*slevel = %3u, node = %p: prefixCount = %u, nodeCount = %u\n", level, swLPMV2ValidateOffsetString, level, (void *)node, node->prefixCount, node->nodeCount);
+      printf("%.*slevel = %3u, node = %p: prefixCount = (%u, %u), nodeCount = %u\n", level, swLPMV2ValidateOffsetString, level, (void *)node, node->prefixCount[0], node->prefixCount[1], node->nodeCount);
     uint8_t nextPosition[SW_LPM_MAX_FACTOR] = {0};
     swLPMV2Prefix *currentPrefix = NULL;
     uint16_t currentPrefixCount = 0;
@@ -696,48 +610,43 @@ static bool swLPMV2NodeValidate(swLPMV2Node *node, uint64_t *count, swLPMV2Prefi
         uint16_t position = i >> (factor - j - 1);
         if (nextPosition[j] == position)
         {
-          // if (node->prefix[j])
-          if (node->storage[j])
+          currentPrefix = swLPMV2NodeGetPrefix(node, j, position, nodeCount, factor);
+          if (currentPrefix)
           {
-            // currentPrefix = node->prefix[j][position];
-            currentPrefix = swLPMV2PrefixStorageGet(node->storage[j], position);
-            if (currentPrefix)
+            currentPrefixCount++;
+            (*count)++;
+            bool isFinal = SW_LPM_PREFIX_IS_FINAL(currentPrefix);
+            currentPrefix = SW_LPM_PREFIX_CLEAR_FLAG(currentPrefix);
+            if (print)
             {
-              currentPrefixCount++;
-              (*count)++;
-              bool isFinal = SW_LPM_PREFIX_IS_FINAL(currentPrefix);
-              currentPrefix = SW_LPM_PREFIX_CLEAR_FLAG(currentPrefix);
-              if (print)
-              {
-                printf("%.*slevel = %3u, prefix level = %1u, position = %3u, final = %d: ", level, swLPMV2ValidateOffsetString, level, j, position, isFinal);
-                swLPMV2PrefixPrint(currentPrefix);
-              }
-              if (*prevPrefix)
-              {
-                // current prefix should be greater than the previous one
-                if (swLPMV2PrefixCompare(currentPrefix, *prevPrefix) < 1)
-                {
-                  rtn = false;
-                  break;
-                }
-              }
-              // if the prefix is not final, it can only be in the last row of node prefixArray
-              // and the node pointer in this position of the node array should be NULL
-              if (!isFinal && ((j < (factor - 1)) || node->nodes[i]))
+              printf("%.*slevel = %3u, prefix level = %1u, position = %3u, final = %d: ", level, swLPMV2ValidateOffsetString, level, j, position, isFinal);
+              swLPMV2PrefixPrint(currentPrefix);
+            }
+            if (*prevPrefix)
+            {
+              // current prefix should be greater than the previous one
+              if (swLPMV2PrefixCompare(currentPrefix, *prevPrefix) < 1)
               {
                 rtn = false;
                 break;
               }
-              *prevPrefix = currentPrefix;
             }
-            if (j == (factor - 1) && node->nodes[position] && swLPMV2PrefixStorageIsClear(node->storage[j], position)
-                                  && node->nodes[position]->nodeCount == 0 && node->nodes[position]->prefixCount == 1)
+            // if the prefix is not final, it can only be in the last row of node prefixArray
+            // and the node pointer in this position of the node array should be NULL
+            if (!isFinal && ((j < (factor - 1)) || node->nodes[i]))
             {
               rtn = false;
               break;
             }
-            nextPosition[j]++;
+            *prevPrefix = currentPrefix;
           }
+          if (j == (factor - 1) && node->nodes[position] && swLPMV2NodePrefixIsClear(node, j, position, nodeCount, factor)
+                                && node->nodes[position]->nodeCount == 0 && (node->nodes[position]->prefixCount[0] + node->nodes[position]->prefixCount[1]) == 1)
+          {
+            rtn = false;
+            break;
+          }
+          nextPosition[j]++;
         }
       }
       if (rtn && node->nodes[i])
@@ -746,8 +655,11 @@ static bool swLPMV2NodeValidate(swLPMV2Node *node, uint64_t *count, swLPMV2Prefi
         rtn = swLPMV2NodeValidate(node->nodes[i], count, prevPrefix, nodeCount, factor, level + 1, print);
       }
     }
-    if (rtn && ((currentNodeCount != node->nodeCount) || (currentPrefixCount != node->prefixCount)))
+    if (rtn && ((currentNodeCount != node->nodeCount) || (currentPrefixCount != (node->prefixCount[0] + node->prefixCount[1]))))
+    {
+      printf ("'%s': Problem with the counts\n", __func__);
       rtn = false;
+    }
   }
   return rtn;
 }
@@ -759,7 +671,7 @@ bool swLPMV2Validate(swLPMV2 *lpm, bool print)
   {
     uint64_t count = 0;
     if (print)
-      printf ("LPM: nodeCount = %u, factor = %u, count = %lu, \n", lpm->nodeCount, lpm->factor, lpm->count);
+      printf ("\nLPM: nodeCount = %u, factor = %u, count = %lu, \n", lpm->nodeCount, lpm->factor, lpm->count);
     swLPMV2Prefix *currentPrefix = NULL;
     if (swLPMV2NodeValidate(&(lpm->rootNode), &count, &currentPrefix, lpm->nodeCount, lpm->factor, 0, print) && (count == lpm->count))
       rtn = true;

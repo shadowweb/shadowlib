@@ -15,6 +15,17 @@ static uint32_t swBitMapLongIntBitCount = 8 * sizeof(swBitMapLongInt);
 #define swBitMapLongIntClear(v, b)  ((void) ((v) &= ~swBitMapLongIntMask(b)))
 #define swBitMapLongIntIsSet(v, b)  (((v) & swBitMapLongIntMask(b)) != 0)
 
+static inline bool swBitMapLongIntFindFirstSet(swBitMapLongInt map, uint32_t *returnPosition)
+{
+  bool rtn = false;
+  if (map && returnPosition)
+  {
+    *returnPosition = __builtin_ctzl(map);
+    rtn = true;
+  }
+  return rtn;
+}
+
 static inline bool swBitMapLongIntGetFirstSet(swBitMapLongInt map, uint32_t startPosition, uint32_t maxPosition, uint32_t *returnPosition)
 {
   bool rtn = false;
@@ -66,7 +77,7 @@ typedef struct swBitMap {
   uint8_t bytes[];
 } __attribute__((aligned(8), __packed__)) swBitMap;
 
-#define swBitMapMaxBitSize       ((1 << 16) - 16)
+#define swBitMapMaxBitSize       ((1 << 16) - 32)
 #define swBitMapMaxByteSize      (swBitMaxBitSize/8)
 // bit position in a byte can only use values from 0 to 7, can be extracted from
 // bit map positin by doing & with mask 7

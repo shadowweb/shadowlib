@@ -1,5 +1,5 @@
-#ifndef SW_COLLECTIONS_LPMV2_H
-#define SW_COLLECTIONS_LPMV2_H
+#ifndef SW_COLLECTIONS_LPMV3_H
+#define SW_COLLECTIONS_LPMV3_H
 
 #include "collections/bit-map.h"
 #include "storage/static-buffer.h"
@@ -23,11 +23,7 @@ void swLPMV2PrefixPrint(swLPMV2Prefix *prefix);
 
 #define swLPMV2PrefixBytes(p)   (((p)->len >> 3) + (((p)->len & 7) > 0))
 
-typedef struct swLPMV2PrefixStorage
-{
-  swLPMV2Prefix **prefix;
-  swBitMap      bitMap;
-} swLPMV2PrefixStorage;
+typedef swBitMapLongInt swLPMV2BitMap[4];
 
 typedef struct swLPMV2Node
 {
@@ -39,15 +35,23 @@ typedef struct swLPMV2Node
   //      this also means that if the node is not 0, then intermidiate prefix should not be set
   // can contain up to "factor" number of prefixes since factor determines the number of bits
   // that each node represents
-  uint16_t prefixCount;       // number of prefixes stored in the node
-  uint16_t nodeCount;         // number of node pointers stored in the node
-  // there is a gap here of 32 bits, but it can't be helped
+  union {
+    struct {
+      union {
+        uint16_t prefixCount[2];
+        uint32_t joinedPrefixCount;       // number of prefixes stored in the node
+      };
+      uint16_t nodeCount;         // number of node pointers stored in the node
+    };
+    uint64_t allCounts;
+  };
+  swLPMV2BitMap bitMaps[2];
+  swLPMV2Prefix **prefix[2];
   /*
   swLPMV2Prefix ***prefix;      // this is the pointer to the array of prefix arrays; the first array has 2 - elements
                               // the second has 4, the third has 8, etc., the number of elements in this array is the same
                               // is the number factor value in swLPMV2
   */
-  swLPMV2PrefixStorage **storage;
   struct swLPMV2Node  *nodes[]; // number of nodes is 2 to the power of factor
 } swLPMV2Node;
 
@@ -69,5 +73,5 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
 bool swLPMV2Match(swLPMV2 *lpm, swStaticBuffer *value, swLPMV2Prefix **prefix);
 bool swLPMV2Validate(swLPMV2 *lpm, bool print);
 
-#endif  // SW_COLLECTIONS_LPMV2_H
+#endif  // SW_COLLECTIONS_LPMV3_H
 
