@@ -5,6 +5,8 @@
 #include <sys/param.h>
 
 #define SW_LPM_PREFIX_STORAGE_POSITION(i, v, c, p)  ((!(i))? (v) : ((c) - (2 << ((p) + 1)) + (v)))
+// mask for bit positions in 64 bit word ((1 << 6) - 1)
+#define SW_LPM_BIT_POSITION_MASK                    0x3F
 
 // TODO: Create macros for all these bit manupulations, otherwise I will be making mistakes in multiple places
 static inline swLPMV2Prefix *swLPMV2NodeGetPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
@@ -30,7 +32,7 @@ static inline bool swLPMV2NodeSetPrefix(swLPMV2Node *node, uint32_t prefixPositi
     uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
     node->prefix[storageIndex][storagePosition] = prefix;
     uint8_t index = storagePosition >> 6;
-    uint8_t bitPosition = storagePosition & ((1 << 6) - 1);
+    uint8_t bitPosition = storagePosition & SW_LPM_BIT_POSITION_MASK;
     uint64_t mask = (uint64_t)1UL << bitPosition;
     if (!(node->bitMaps[storageIndex][index] & mask))
     {
@@ -50,7 +52,7 @@ static inline void swLPMV2NodeClearPrefix(swLPMV2Node *node, uint32_t prefixPosi
     uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
     node->prefix[storageIndex][storagePosition] = NULL;
     uint8_t index = storagePosition >> 6;
-    uint8_t bitPosition = storagePosition & ((1 << 6) - 1);
+    uint8_t bitPosition = storagePosition & SW_LPM_BIT_POSITION_MASK;
     uint64_t mask = (uint64_t)1UL << bitPosition;
     if ((node->bitMaps[storageIndex][index] & mask))
     {
@@ -68,7 +70,7 @@ static inline bool swLPMV2NodePrefixIsClear(swLPMV2Node *node, uint32_t prefixPo
   {
     uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
     uint8_t index = storagePosition >> 6;
-    uint8_t bitPosition = storagePosition & ((1 << 6) - 1);
+    uint8_t bitPosition = storagePosition & SW_LPM_BIT_POSITION_MASK;
     uint64_t mask = (uint64_t)1UL << bitPosition;
     if (!(node->bitMaps[storageIndex][index] & mask))
       rtn = true;
@@ -186,7 +188,7 @@ static bool swLPMV2NodeInsert(swLPMV2 *lpm, swLPMV2Node *node, swLPMV2Prefix *pr
     bool success = false;
     if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
     {
-      uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
+      uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
       swLPMV2Prefix *storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
       if (storedPrefix)
       {
@@ -273,7 +275,7 @@ bool swLPMV2Find(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPrefi
       bool success = false;
       if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
       {
-        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
+        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
         storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
         if (storedPrefix)
         {
@@ -383,7 +385,7 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
       if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
       {
         currentNodePairs[currentNodePosition].value = value;
-        prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - prefix->len) - 1);
+        prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
         storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
         if (storedPrefix)
         {
@@ -489,7 +491,7 @@ bool swLPMV2Match(swLPMV2 *lpm, swStaticBuffer *value, swLPMV2Prefix **prefix)
       bool final = (i + lpm->factor >= maxBits);
       if (swStaticBufferGetBitSlice(value, i, lpm->factor, &valueSlice))
       {
-        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (lpm->factor - (i + lpm->factor - maxBits) - 1);
+        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (maxBits - 1 - i);
         for (uint16_t j = 0; j <= prefixPosition; j++)
         {
           storedPrefix = swLPMV2NodeGetPrefix(currentNode, j, (valueSlice >> (prefixPosition - j)), lpm->nodeCount, lpm->factor);

@@ -35,23 +35,28 @@ typedef struct swLPMV2Node
   //      this also means that if the node is not 0, then intermidiate prefix should not be set
   // can contain up to "factor" number of prefixes since factor determines the number of bits
   // that each node represents
-  union {
-    struct {
-      union {
-        uint16_t prefixCount[2];
-        uint32_t joinedPrefixCount;       // number of prefixes stored in the node
-      };
-      uint16_t nodeCount;         // number of node pointers stored in the node
-    };
-    uint64_t allCounts;
-  };
-  swLPMV2BitMap bitMaps[2];
+  uint16_t prefixCount[2];
+  uint16_t nodeCount;         // number of node pointers stored in the node
+  swLPMV2BitMap bitMaps[2];   // bitMap is used to easily find out which element in the prefix array is still set
+                              // it is 256 bit long because the max lenght of the each prefix array is 256, which
+                              // corresponds to 4 64-bit words
+  // prefix requires detailed explanation
+  // for factor == 1 only prefix[0] is used and has 2 elements allocated (same as lpm->nodeCount)
+  // for all other factors both prefix[0] and prefix[1] may exist and will alsways has the same number of elements
+  // as lpm->nodeCount; prefix[0] always contain prefixes that produced value of factor length for the given level
+  // (either final or not final), everything else will be stored in prefix[1] which has enough length to accomodate
+  // the all the other level; all the prefixes stored here will be final
+  // for factor == 2, prefix[1] will contain 4 elements, but only 2 will be used for values of 1 bit long
+  // for factor == 3, prefix[1] will contain 8 elements, but only 6 will be used
+  //      4 - for values 2 bits long
+  //      2 - for values 1 bit long
+  // for factor == 4, prefix[1] will contain 16 elements. but only 14 will be used
+  //      8 - for values 3 bits long
+  //      4 - for values 2 bits long
+  //      2 - for values 1 bit long
+  // etc. till factor 8
+  // prefixes with higher bit length are stored first
   swLPMV2Prefix **prefix[2];
-  /*
-  swLPMV2Prefix ***prefix;      // this is the pointer to the array of prefix arrays; the first array has 2 - elements
-                              // the second has 4, the third has 8, etc., the number of elements in this array is the same
-                              // is the number factor value in swLPMV2
-  */
   struct swLPMV2Node  *nodes[]; // number of nodes is 2 to the power of factor
 } swLPMV2Node;
 
