@@ -5,14 +5,14 @@
 #include <sys/param.h>
 
 #define SW_LPM_PREFIX_STORAGE_POSITION(i, v, c, p)  ((!(i))? (v) : ((c) - (2 << ((p) + 1)) + (v)))
+#define SW_LPM_PREFIX_STORAGE_INDEX(p, f)           (!((p) == (uint32_t)((f) - 1)))
 // mask for bit positions in 64 bit word ((1 << 6) - 1)
 #define SW_LPM_BIT_POSITION_MASK                    0x3F
 
-// TODO: Create macros for all these bit manupulations, otherwise I will be making mistakes in multiple places
 static inline swLPMV2Prefix *swLPMV2NodeGetPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
 {
   swLPMV2Prefix *rtn = NULL;
-  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  uint8_t storageIndex = SW_LPM_PREFIX_STORAGE_INDEX(prefixPosition, factor);
   if (node->prefix[storageIndex])
   {
     uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
@@ -24,7 +24,7 @@ static inline swLPMV2Prefix *swLPMV2NodeGetPrefix(swLPMV2Node *node, uint32_t pr
 static inline bool swLPMV2NodeSetPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor, swLPMV2Prefix *prefix)
 {
   bool rtn = false;
-  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  uint8_t storageIndex = SW_LPM_PREFIX_STORAGE_INDEX(prefixPosition, factor);
   if (!node->prefix[storageIndex])
     node->prefix[storageIndex] = swMemoryCalloc(nodeCount, sizeof(swLPMV2Prefix *));
   if (node->prefix[storageIndex])
@@ -46,7 +46,7 @@ static inline bool swLPMV2NodeSetPrefix(swLPMV2Node *node, uint32_t prefixPositi
 
 static inline void swLPMV2NodeClearPrefix(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
 {
-  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  uint8_t storageIndex = SW_LPM_PREFIX_STORAGE_INDEX(prefixPosition, factor);
   if (node->prefix[storageIndex])
   {
     uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
@@ -65,7 +65,7 @@ static inline void swLPMV2NodeClearPrefix(swLPMV2Node *node, uint32_t prefixPosi
 static inline bool swLPMV2NodePrefixIsClear(swLPMV2Node *node, uint32_t prefixPosition, uint8_t value, uint16_t nodeCount, uint8_t factor)
 {
   bool rtn = false;
-  uint8_t storageIndex = !(prefixPosition == (uint32_t)(factor - 1));
+  uint8_t storageIndex = SW_LPM_PREFIX_STORAGE_INDEX(prefixPosition, factor);
   if (node->prefix[storageIndex])
   {
     uint16_t storagePosition = SW_LPM_PREFIX_STORAGE_POSITION(storageIndex, value, nodeCount, prefixPosition);
