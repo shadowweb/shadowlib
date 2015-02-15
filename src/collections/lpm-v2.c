@@ -181,18 +181,22 @@ static bool swLPMV2NodeInsert(swLPMV2 *lpm, swLPMV2Node *node, swLPMV2Prefix *pr
   bool rtn = false;
   swLPMV2Node *currentNode = node;
   uint16_t i = offset;
+  uint8_t value = 0;
+  bool final = false;
+  bool success = false;
+  uint32_t prefixPosition = 0;
+  swLPMV2Prefix *storedPrefix = NULL;
+  bool storedPrefixFinal = false;
   while ((i < prefix->len) && currentNode)
   {
-    uint8_t value = 0;
-    bool final = (i + lpm->factor >= prefix->len);
-    bool success = false;
+    value = 0;
+    final = (i + lpm->factor >= prefix->len);
     if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
     {
-      uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
-      swLPMV2Prefix *storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
-      if (storedPrefix)
+      prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
+      if ((storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor)))
       {
-        bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
+        storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
         storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
 
         if (final)
@@ -268,18 +272,22 @@ bool swLPMV2Find(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPrefi
     swLPMV2Prefix *storedPrefix = NULL;
     swLPMV2Node *currentNode = &(lpm->rootNode);
     uint16_t i = 0;
+    uint8_t value = 0;
+    bool final = false;
+    bool success = false;
+    uint32_t prefixPosition = 0;
+    bool storedPrefixFinal = false;
     while ((i < prefix->len) && currentNode)
     {
-      uint8_t value = 0;
-      bool final = (i + lpm->factor >= prefix->len);
-      bool success = false;
+      value = 0;
+      final = (i + lpm->factor >= prefix->len);
       if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
       {
-        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
+        prefixPosition = (!final)? (lpm->factor - 1) : (prefix->len - 1 - i);
         storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
         if (storedPrefix)
         {
-          bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
+          storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
           storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
           if (final)
           {
@@ -376,12 +384,14 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
     currentNodePairs[currentNodePosition].node = currentNode;
     uint32_t prefixPosition = 0;
     uint8_t value = 0;
+    bool final = false;
+    bool success = false;
+    bool storedPrefixFinal = false;
     uint16_t i = 0;
     while ((i < prefix->len) && currentNode)
     {
       value = 0;
-      bool final = (i + lpm->factor >= prefix->len);
-      bool success = false;
+      final = (i + lpm->factor >= prefix->len);
       if ((success = swLPMV2PrefixGetSlice(prefix, i, lpm->factor, &value)))
       {
         currentNodePairs[currentNodePosition].value = value;
@@ -389,7 +399,7 @@ bool swLPMV2Remove(swLPMV2 *lpm, swLPMV2Prefix *prefix, swLPMV2Prefix **foundPre
         storedPrefix = swLPMV2NodeGetPrefix(currentNode, prefixPosition, value, lpm->nodeCount, lpm->factor);
         if (storedPrefix)
         {
-          bool storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
+          storedPrefixFinal = SW_LPM_PREFIX_IS_FINAL(storedPrefix);
           storedPrefix = SW_LPM_PREFIX_CLEAR_FLAG(storedPrefix);
           if (final)
           {
@@ -483,15 +493,18 @@ bool swLPMV2Match(swLPMV2 *lpm, swStaticBuffer *value, swLPMV2Prefix **prefix)
     swLPMV2Prefix *currentPrefix = NULL;
     swLPMV2Prefix *storedPrefix = NULL;
     swLPMV2Node *currentNode = &(lpm->rootNode);
+    uint32_t prefixPosition = 0;
     uint16_t maxBits = value->len * 8;
     uint16_t i = 0;
+    uint8_t valueSlice = 0;
+    bool final = false;
     while (currentNode && (i < maxBits))
     {
-      uint8_t valueSlice = 0;
-      bool final = (i + lpm->factor >= maxBits);
+      valueSlice = 0;
+      final = (i + lpm->factor >= maxBits);
       if (swStaticBufferGetBitSlice(value, i, lpm->factor, &valueSlice))
       {
-        uint32_t prefixPosition = (!final)? (lpm->factor - 1) : (maxBits - 1 - i);
+        prefixPosition = (!final)? (lpm->factor - 1) : (maxBits - 1 - i);
         for (uint16_t j = 0; j <= prefixPosition; j++)
         {
           storedPrefix = swLPMV2NodeGetPrefix(currentNode, j, (valueSlice >> (prefixPosition - j)), lpm->nodeCount, lpm->factor);
