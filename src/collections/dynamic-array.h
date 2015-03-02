@@ -36,6 +36,7 @@ bool swDynamicArrayEnsureCapacity(swDynamicArray *array, uint32_t size);
 bool swDynamicArrayAppendStaticArray(swDynamicArray *dynamicArray, const swStaticArray *staticArray);
 bool swDynamicArraySet(swDynamicArray *dynamicArray, uint32_t position, void *element);
 void *swDynamicArrayGet(swDynamicArray *dynamicArray, uint32_t position);
+void *swDynamicArrayGetNext(swDynamicArray *dynamicArray);
 bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element);
 bool swDynamicArrayPop(swDynamicArray *dynamicArray, void *element);
 bool swDynamicArrayPeek(swDynamicArray *dynamicArray, void *element);

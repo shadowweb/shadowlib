@@ -31,6 +31,27 @@ void swDynamicStringDelete(swDynamicString *string)
   }
 }
 
+bool swDynamicStringEnsureSize(swDynamicString *string, size_t size)
+{
+  bool rtn = false;
+  if (string && size)
+  {
+    if (size > string->size)
+    {
+      void *newData = swMemoryRealloc(string->data, size);
+      if (newData)
+      {
+        string->data = newData;
+        string->size = size;
+        rtn = true;
+      }
+    }
+    else
+      rtn = true;
+  }
+  return rtn;
+}
+
 swDynamicString *swDynamicStringNewFromStaticString(const swStaticString *staticStr)
 {
   swDynamicString *rtn = NULL;

@@ -41,6 +41,8 @@ static inline bool swDynamicStringSame(const swDynamicString *s1, const swDynami
 swDynamicString *swDynamicStringNew(size_t size);
 void swDynamicStringDelete(swDynamicString *string);
 
+bool swDynamicStringEnsureSize(swDynamicString *string, size_t size);
+
 swDynamicString *swDynamicStringNewFromStaticString(const swStaticString *staticStr);
 bool swDynamicStringSetFromStaticString(swDynamicString *dynamicStr, const swStaticString *staticStr);
 swDynamicString *swDynamicStringNewFromCString(const char *cStr);

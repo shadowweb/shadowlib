@@ -180,6 +180,21 @@ void *swDynamicArrayGet(swDynamicArray *dynamicArray, uint32_t position)
   return NULL;
 }
 
+void *swDynamicArrayGetNext(swDynamicArray *dynamicArray)
+{
+  void *rtn = NULL;
+  if (dynamicArray)
+  {
+    uint32_t newCount = dynamicArray->count + 1;
+    if ((newCount <= dynamicArray->size) || swDynamicArrayResize(dynamicArray, newCount))
+    {
+      rtn = swDynamicArrayGetNextFreePtr(dynamicArray);
+      dynamicArray->count = newCount;
+    }
+  }
+  return rtn;
+}
+
 
 bool swDynamicArrayPush(swDynamicArray *dynamicArray, void *element)
 {

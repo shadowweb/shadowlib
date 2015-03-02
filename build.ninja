@@ -214,6 +214,7 @@ build $builddir/src/io/tcp-test.o:                      cc src/io/tcp-test.c
 build $builddir/src/io/tcp-test:                        link $builddir/src/io/tcp-test.o $
                                                              $builddir/src/io/io.a $
                                                              $builddir/src/collections/collections.a $
+                                                             $builddir/src/storage/storage.a $
                                                              $builddir/src/core/core.a $
                                                              $builddir/src/unittest/unittest.a
 
@@ -222,6 +223,7 @@ build $builddir/src/io/udp-test.o:                      cc src/io/udp-test.c
 build $builddir/src/io/udp-test:                        link $builddir/src/io/udp-test.o $
                                                              $builddir/src/io/io.a $
                                                              $builddir/src/collections/collections.a $
+                                                             $builddir/src/storage/storage.a $
                                                              $builddir/src/core/core.a $
                                                              $builddir/src/unittest/unittest.a
 
@@ -362,6 +364,20 @@ build $builddir/src/log/async-writer-test.o:            cc src/log/async-writer-
 build $builddir/src/log/async-writer-test:              link $builddir/src/log/async-writer-test.o $
                                                              $builddir/src/log/log.a $
                                                              $builddir/src/thread/thread.a $
+                                                             $builddir/src/io/io.a $
+                                                             $builddir/src/collections/collections.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
+
+# protocol
+build $builddir/src/protocol/ethernet.o:                cc src/protocol/ethernet.c
+build $builddir/src/protocol/protocol.a:                ar $builddir/src/protocol/ethernet.o
+
+# protocol unit tests
+build $builddir/src/protocol/ethernet-test.o:           cc src/protocol/ethernet-test.c
+build $builddir/src/protocol/ethernet-test:             link $builddir/src/protocol/ethernet-test.o $
+                                                             $builddir/src/protocol/protocol.a $
                                                              $builddir/src/io/io.a $
                                                              $builddir/src/collections/collections.a $
                                                              $builddir/src/storage/storage.a $

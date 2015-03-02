@@ -52,3 +52,45 @@ bool swSocketAddressInitInet6(swSocketAddress *address, char *ip6, uint16_t port
   }
   return rtn;
 }
+
+swDynamicString *swSocketAddressToString(swSocketAddress *address)
+{
+  swDynamicString *rtn = NULL;
+  if (address)
+  {
+    switch (address->addr.sa_family)
+    {
+      case AF_INET:
+      {
+        char addressString[INET_ADDRSTRLEN];
+        if (inet_ntop(address->inet.sin_family, &(address->inet.sin_addr), addressString, INET_ADDRSTRLEN))
+          rtn = swDynamicStringNewFromFormat("AF_INET: address %s, port %u", addressString, htons(address->inet.sin_port));
+        break;
+      }
+      case AF_INET6:
+      {
+        char addressString[INET6_ADDRSTRLEN];
+        if (inet_ntop(address->inet6.sin6_family, &(address->inet6.sin6_addr), addressString, INET6_ADDRSTRLEN))
+          rtn = swDynamicStringNewFromFormat("AF_INET6: address %s, port %u", addressString, htons(address->inet6.sin6_port));
+        break;
+      }
+      case AF_UNIX:
+      {
+        rtn = swDynamicStringNewFromFormat("AF_UNIX: address %s", address->unixDomain.sun_path);
+        break;
+      }
+      case AF_PACKET:
+      {
+        rtn = swDynamicStringNewFromFormat("AF_PACKET: address protocol %u, index %d, hatype %u, packet type %u, halen = %u, %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x",
+            address->linkLayer.sll_protocol, address->linkLayer.sll_ifindex, address->linkLayer.sll_hatype,
+            address->linkLayer.sll_pkttype, address->linkLayer.sll_halen,
+            address->linkLayer.sll_addr[0], address->linkLayer.sll_addr[1], address->linkLayer.sll_addr[2], address->linkLayer.sll_addr[3],
+            address->linkLayer.sll_addr[4], address->linkLayer.sll_addr[5], address->linkLayer.sll_addr[6], address->linkLayer.sll_addr[7]);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return rtn;
+}
