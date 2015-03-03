@@ -391,12 +391,14 @@ build $builddir/src/init/init-command-line.o:           cc src/init/init-command
 build $builddir/src/init/init-cpu-timer.o:              cc src/init/init-cpu-timer.c
 build $builddir/src/init/init-log-manager.o:            cc src/init/init-log-manager.c
 build $builddir/src/init/init-thread-manager.o:         cc src/init/init-thread-manager.c
+build $builddir/src/init/init-interface.o:              cc src/init/init-interface.c
 build $builddir/src/init/init.a:                        ar $builddir/src/init/init.o $
                                                            $builddir/src/init/init-io.o $
                                                            $builddir/src/init/init-command-line.o $
                                                            $builddir/src/init/init-cpu-timer.o $
                                                            $builddir/src/init/init-log-manager.o $
-                                                           $builddir/src/init/init-thread-manager.o
+                                                           $builddir/src/init/init-thread-manager.o $
+                                                           $builddir/src/init/init-interface.o
 
 # tools
 
