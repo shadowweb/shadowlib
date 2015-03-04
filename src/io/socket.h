@@ -48,10 +48,12 @@ struct swSocket
 };
 
 swSocket *swSocketNew(int domain, int type);
+swSocket *swSocketNewWithProtocol(int domain, int type, int protocol);
 swSocket *swSocketNewFromAddress(swSocketAddress *address, int type);
 swSocket *swSocketNewFromFD(int fd);
 
 bool swSocketInit(swSocket *sock, int domain, int type);
+bool swSocketInitWithProtocol(swSocket *sock, int domain, int type, int protocol);
 bool swSocketInitFromAddress(swSocket *sock, swSocketAddress *address, int type);
 bool swSocketInitFromFD(swSocket *sock, int fd);
 

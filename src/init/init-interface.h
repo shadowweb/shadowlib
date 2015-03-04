@@ -4,5 +4,6 @@
 #include "init/init.h"
 
 swInitData *swInitInterfaceDataGet();
+swInitData *swInitIPDataGet();
 
 #endif // SW_INIT_INITINTERFACE_H

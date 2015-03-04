@@ -38,6 +38,17 @@ swSocket *swSocketNew(int domain, int type)
   return rtn;
 }
 
+swSocket *swSocketNewWithProtocol(int domain, int type, int protocol)
+{
+  swSocket *rtn = swMemoryMalloc(sizeof(swSocket));
+  if (rtn && !swSocketInitWithProtocol(rtn, domain, type, protocol))
+  {
+    swMemoryFree(rtn);
+    rtn = NULL;
+  }
+  return rtn;
+}
+
 swSocket *swSocketNewFromAddress(swSocketAddress *address, int type)
 {
   swSocket *rtn = swMemoryMalloc(sizeof(swSocket));
@@ -68,6 +79,22 @@ bool swSocketInit(swSocket *sock, int domain, int type)
     memset(sock, 0, sizeof(swSocket));
     sock->fd = -1;
     if ((sock->fd = socket(domain, (type | SOCK_NONBLOCK | SOCK_CLOEXEC), 0)) >= 0)
+    {
+      sock->type = (type | SOCK_NONBLOCK | SOCK_CLOEXEC);
+      rtn = true;
+    }
+  }
+  return rtn;
+}
+
+bool swSocketInitWithProtocol(swSocket *sock, int domain, int type, int protocol)
+{
+  bool rtn = false;
+  if (sock && domain > 0 && type > 0)
+  {
+    memset(sock, 0, sizeof(swSocket));
+    sock->fd = -1;
+    if ((sock->fd = socket(domain, (type | SOCK_NONBLOCK | SOCK_CLOEXEC), protocol)) >= 0)
     {
       sock->type = (type | SOCK_NONBLOCK | SOCK_CLOEXEC);
       rtn = true;
