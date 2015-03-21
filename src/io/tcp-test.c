@@ -26,10 +26,10 @@ void edgeLoopTeardown(swTestSuite *suite)
 #define BUFFER_SIZE   2048
 #define EXPECT_BYTES  204800
 
-static char serverReadBuffer[BUFFER_SIZE] = {0};
-static char serverWriteBuffer[BUFFER_SIZE] = {0};
-static char clientReadBuffer[BUFFER_SIZE] = {0};
-static char clientWriteBuffer[BUFFER_SIZE] = {0};
+static uint8_t serverReadBuffer[BUFFER_SIZE] = {0};
+static uint8_t serverWriteBuffer[BUFFER_SIZE] = {0};
+static uint8_t clientReadBuffer[BUFFER_SIZE] = {0};
+static uint8_t clientWriteBuffer[BUFFER_SIZE] = {0};
 static ssize_t serverBytesRead = 0;
 static ssize_t serverBytesWritten = 0;
 static ssize_t clientBytesRead = 0;

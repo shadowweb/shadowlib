@@ -13,9 +13,9 @@
 
 typedef struct swDynamicBuffer
 {
-  size_t len;
-  char *data;
-  size_t size;
+  size_t   len;
+  uint8_t *data;
+  size_t   size;
 } swDynamicBuffer;
 
 static inline uint32_t swDynamicBufferHash(const swDynamicBuffer *buffer)
@@ -44,14 +44,14 @@ void swDynamicBufferDelete(swDynamicBuffer *buffer);
 
 swDynamicBuffer *swDynamicBufferNewFromStaticBuffer(const swStaticBuffer *staticBuf);
 bool swDynamicBufferSetFromStaticBuffer(swDynamicBuffer *dynamicBuf, const swStaticBuffer *staticBuf);
-swDynamicBuffer *swDynamicBufferNewFromCBuffer(const char *cBuf, size_t size);
-bool swDynamicBufferSetFromCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size);
+swDynamicBuffer *swDynamicBufferNewFromCBuffer(const uint8_t *cBuf, size_t size);
+bool swDynamicBufferSetFromCBuffer(swDynamicBuffer *dynamicBuf, const uint8_t *cBuf, size_t size);
 
 void swDynamicBufferClear(swDynamicBuffer *buffer);
 void swDynamicBufferRelease(swDynamicBuffer *buffer);
 
 bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStaticBuffer *staticBuf);
-bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size);
+bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const uint8_t *cBuf, size_t size);
 
 bool swDynamicBufferEnsureCapacity(swDynamicBuffer *dynamicBuf, size_t size);
 

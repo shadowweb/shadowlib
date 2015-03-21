@@ -1,5 +1,6 @@
 #include "protocol/ethernet.h"
 
+#include <net/ethernet.h>
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <sys/ioctl.h>
@@ -290,6 +291,21 @@ bool swInterfaceInfoGetStats(const swStaticString *name, swInterfaceAddressStats
   return rtn;
 }
 
+bool swInterfaceInfoGetIndex(const swStaticString *name, int *index)
+{
+  bool rtn = false;
+  if (interfaceData.inited && name && index)
+  {
+    swInterfaceInfo *interfaceInfo = NULL;
+    if (swHashMapLinearValueGet(&interfaceData.dataMap, (void *)name, (void **)&interfaceInfo))
+    {
+      *index = interfaceInfo->index;
+      rtn = true;
+    }
+  }
+  return rtn;
+}
+
 bool swInterfaceInfoGetStatsWithRefresh(const swStaticString *name, swInterfaceAddressStats *stats)
 {
   bool rtn = false;
@@ -297,6 +313,36 @@ bool swInterfaceInfoGetStatsWithRefresh(const swStaticString *name, swInterfaceA
     rtn = swInterfaceInfoGetStats(name, stats);
   return rtn;
 }
+
+static uint8_t ethernetMulticastData[] = {0x33, 0x33, 0x00, 0x00, 0x00, 0x02};
+static swStaticBuffer ethernetMulticastBuffer = swStaticBufferDefine(ethernetMulticastData);
+static swSocketAddress ethernetMulticastAddress = {.len = 0};
+
+bool swEthernetInitWellKnownAddresses()
+{
+  return swEthernetSetAddress(&ethernetMulticastAddress, &ethernetMulticastBuffer);
+}
+
+bool swEthernetSetAddress(swSocketAddress *address, const swStaticBuffer *buffer)
+{
+  bool rtn = false;
+  if (address && buffer)
+  {
+    address->len = sizeof(struct sockaddr_ll);
+    address->linkLayer.sll_family = AF_PACKET;
+    address->linkLayer.sll_protocol = htons (ETH_P_IPV6);
+    memcpy(address->linkLayer.sll_addr, buffer->data, buffer->len);
+    address->linkLayer.sll_halen = buffer->len;
+    rtn = true;
+  }
+  return rtn;
+}
+
+swSocketAddress *swEthernetGetMulticastSocketAddress()
+{
+  return &ethernetMulticastAddress;
+}
+
 
 bool swEthernetNameToAddress(const swStaticString *interfaceName, const swEthernetAddress *ethernetAddress, swSocketAddress *address, int domain, int protocol)
 {
@@ -310,6 +356,27 @@ bool swEthernetNameToAddress(const swStaticString *interfaceName, const swEthern
       *((swEthernetAddress *)(address->linkLayer.sll_addr)) = *ethernetAddress;
       address->linkLayer.sll_halen = sizeof(swEthernetAddress);
       address->len = sizeof(address->linkLayer);
+      rtn = true;
+    }
+  }
+  return rtn;
+}
+
+bool swEtherBuildFrame(swProtocolBuilder *builder, swEthernetAddress *to, swEthernetAddress *from, uint16_t protocol)
+{
+  bool rtn = false;
+  if (builder && to && from)
+  {
+    swStaticBuffer *ethernetBuffer = swProtocolBuilderAddFrame(builder, swProtocolEthernet, 0, sizeof(struct ether_header));
+    if (ethernetBuffer)
+    {
+      struct ether_header *ethernetHeader = (struct ether_header *)ethernetBuffer->data;
+      // TODO: not sure how to express it correctly, resorting to memcpy
+      // ethernetHeader->ether_dhost = *((u_int8_t (*)[ETH_ALEN])&to);
+      // ethernetHeader->ether_shost = *((u_int8_t (*)[ETH_ALEN])&from);
+      memcpy(ethernetHeader->ether_dhost, to,   sizeof(ethernetHeader->ether_dhost));
+      memcpy(ethernetHeader->ether_shost, from, sizeof(ethernetHeader->ether_dhost));
+      ethernetHeader->ether_type = htons(protocol);
       rtn = true;
     }
   }

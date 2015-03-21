@@ -3,6 +3,7 @@
 
 #include "init/init.h"
 
+swInitData *swInitEthernetDataGet();
 swInitData *swInitInterfaceDataGet();
 swInitData *swInitIPDataGet();
 

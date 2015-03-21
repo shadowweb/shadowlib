@@ -62,7 +62,7 @@ bool swDynamicBufferSetFromStaticBuffer(swDynamicBuffer *dynamicBuf, const swSta
   bool rtn = false;
   if (dynamicBuf && staticBuf)
   {
-    char *data = dynamicBuf->data;
+    uint8_t *data = dynamicBuf->data;
     if (dynamicBuf->size < staticBuf->len)
     {
       if ((data = swMemoryRealloc(dynamicBuf->data, staticBuf->len)))
@@ -81,7 +81,7 @@ bool swDynamicBufferSetFromStaticBuffer(swDynamicBuffer *dynamicBuf, const swSta
   return rtn;
 }
 
-swDynamicBuffer *swDynamicBufferNewFromCBuffer(const char *cBuf, size_t size)
+swDynamicBuffer *swDynamicBufferNewFromCBuffer(const uint8_t *cBuf, size_t size)
 {
   swDynamicBuffer *rtn = NULL;
   if (cBuf && size)
@@ -95,12 +95,12 @@ swDynamicBuffer *swDynamicBufferNewFromCBuffer(const char *cBuf, size_t size)
   return rtn;
 }
 
-bool swDynamicBufferSetFromCString(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size)
+bool swDynamicBufferSetFromCString(swDynamicBuffer *dynamicBuf, const uint8_t *cBuf, size_t size)
 {
   bool rtn = false;
   if (dynamicBuf && cBuf && size)
   {
-    char *data = dynamicBuf->data;
+    uint8_t *data = dynamicBuf->data;
     if (dynamicBuf->size < size)
     {
       if ((data = swMemoryRealloc(dynamicBuf->data, size)))
@@ -141,7 +141,7 @@ bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStat
   if (dynamicBuf && staticBuf)
   {
     size_t newLen = dynamicBuf->len + staticBuf->len;
-    char *data = dynamicBuf->data;
+    uint8_t *data = dynamicBuf->data;
     if (newLen > dynamicBuf->size)
     {
       if ((data = swMemoryRealloc(data, newLen)))
@@ -160,13 +160,13 @@ bool swDynamicBufferAppendStaticString(swDynamicBuffer *dynamicBuf, const swStat
   return rtn;
 }
 
-bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const char *cBuf, size_t size)
+bool swDynamicBufferAppendCBuffer(swDynamicBuffer *dynamicBuf, const uint8_t *cBuf, size_t size)
 {
   bool rtn = false;
   if (dynamicBuf && cBuf && size)
   {
     size_t newLen = dynamicBuf->len + size;
-    char *data = dynamicBuf->data;
+    uint8_t *data = dynamicBuf->data;
     if (newLen > dynamicBuf->size)
     {
       if ((data = swMemoryRealloc(data, newLen)))
@@ -192,7 +192,7 @@ bool swDynamicBufferEnsureCapacity(swDynamicBuffer *dynamicBuf, size_t size)
   {
     if (dynamicBuf->size < size)
     {
-      char *data = dynamicBuf->data;
+      uint8_t *data = dynamicBuf->data;
       if ((data = swMemoryRealloc(data, size)))
       {
         dynamicBuf->data = data;

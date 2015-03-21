@@ -372,7 +372,19 @@ build $builddir/src/log/async-writer-test:              link $builddir/src/log/a
 
 # protocol
 build $builddir/src/protocol/ethernet.o:                cc src/protocol/ethernet.c
-build $builddir/src/protocol/protocol.a:                ar $builddir/src/protocol/ethernet.o
+build $builddir/src/protocol/checksum.o:                cc src/protocol/checksum.c
+build $builddir/src/protocol/ip-v6.o:                   cc src/protocol/ip-v6.c
+build $builddir/src/protocol/icmp-v6.o:                 cc src/protocol/icmp-v6.c
+build $builddir/src/protocol/protocol-builder.o:        cc src/protocol/protocol-builder.c
+build $builddir/src/protocol/protocol-parser.o:         cc src/protocol/protocol-parser.c
+build $builddir/src/protocol/protocol-common.o:         cc src/protocol/protocol-common.c
+build $builddir/src/protocol/protocol.a:                ar $builddir/src/protocol/ethernet.o $
+                                                           $builddir/src/protocol/checksum.o $
+                                                           $builddir/src/protocol/ip-v6.o $
+                                                           $builddir/src/protocol/icmp-v6.o $
+                                                           $builddir/src/protocol/protocol-builder.o $
+                                                           $builddir/src/protocol/protocol-parser.o $
+                                                           $builddir/src/protocol/protocol-common.o
 
 # protocol unit tests
 build $builddir/src/protocol/ethernet-test.o:           cc src/protocol/ethernet-test.c
@@ -380,6 +392,14 @@ build $builddir/src/protocol/ethernet-test:             link $builddir/src/proto
                                                              $builddir/src/protocol/protocol.a $
                                                              $builddir/src/io/io.a $
                                                              $builddir/src/collections/collections.a $
+                                                             $builddir/src/storage/storage.a $
+                                                             $builddir/src/core/core.a $
+                                                             $builddir/src/unittest/unittest.a
+
+build $builddir/src/protocol/checksum-test.o:           cc src/protocol/checksum-test.c
+build $builddir/src/protocol/checksum-test:             link $builddir/src/protocol/checksum-test.o $
+                                                             $builddir/src/protocol/protocol.a $
+                                                             $builddir/src/utils/utils.a $
                                                              $builddir/src/storage/storage.a $
                                                              $builddir/src/core/core.a $
                                                              $builddir/src/unittest/unittest.a
@@ -458,4 +478,20 @@ build $builddir/src/tools/splicer/splicer:              link $builddir/src/tools
                                                              $builddir/src/storage/storage.a $
                                                              $builddir/src/utils/utils.a $
                                                              $builddir/src/core/core.a
+
+# raw ICMPv6
+build $builddir/src/tools/raw-icmpv6/raw-icmpv6.o:              cc src/tools/raw-icmpv6/raw-icmpv6.c
+build $builddir/src/tools/raw-icmpv6/icmpv6-communicator.o:     cc src/tools/raw-icmpv6/icmpv6-communicator.c
+build $builddir/src/tools/raw-icmpv6/raw-icmpv6:                link $builddir/src/tools/raw-icmpv6/raw-icmpv6.o $
+                                                                     $builddir/src/tools/raw-icmpv6/icmpv6-communicator.o $
+                                                                     $builddir/src/init/init.a $
+                                                                     $builddir/src/protocol/protocol.a $
+                                                                     $builddir/src/log/log.a $
+                                                                     $builddir/src/thread/thread.a $
+                                                                     $builddir/src/command-line/command-line.a $
+                                                                     $builddir/src/io/io.a $
+                                                                     $builddir/src/collections/collections.a $
+                                                                     $builddir/src/storage/storage.a $
+                                                                     $builddir/src/utils/utils.a $
+                                                                     $builddir/src/core/core.a
 

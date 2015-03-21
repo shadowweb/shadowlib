@@ -26,16 +26,17 @@ typedef struct swSocketAddress
 bool swSocketAddressInitUnix(swSocketAddress *address, char *path);
 bool swSocketAddressInitInet(swSocketAddress *address, char *ip, uint16_t port);
 bool swSocketAddressInitInet6(swSocketAddress *address, char *ip6, uint16_t port);
+bool swSocketAddressInitLinkLayer(swSocketAddress *address, uint16_t protocol, int index);
 
 #define swSocketAddressSetUnixDomain(a) *(swSocketAddress[]){{.len = sizeof(struct sockaddr_un),  { .storage = *((struct sockaddr_storage *)&(a)) } }}
 #define swSocketAddressSetInet(a)       *(swSocketAddress[]){{.len = sizeof(struct sockaddr_in),  { .storage = *((struct sockaddr_storage *)&(a)) } }}
 #define swSocketAddressSetInet6(a)      *(swSocketAddress[]){{.len = sizeof(struct sockaddr_in6), { .storage = *((struct sockaddr_storage *)&(a)) } }}
 #define swSocketAddressSetLinkLayer(a)  *(swSocketAddress[]){{.len = sizeof(struct sockaddr_ll),  { .storage = *((struct sockaddr_storage *)&(a)) } }}
 
-#define swSocketAddressIsUnixDomain(a)  ((a) && ((a)->sockaddr.sa_family == AF_UNIX))
-#define swSocketAddressIsInet(a)        ((a) && ((a)->sockaddr.sa_family == AF_INET))
-#define swSocketAddressIsInet6(a)       ((a) && ((a)->sockaddr.sa_family == AF_INET6))
-#define swSocketAddressIsLinkLayer(a)   ((a) && ((a)->sockaddr.sa_family == AF_PACKET))
+#define swSocketAddressIsUnixDomain(a)  ((a) && ((a)->addr.sa_family == AF_UNIX))
+#define swSocketAddressIsInet(a)        ((a) && ((a)->addr.sa_family == AF_INET))
+#define swSocketAddressIsInet6(a)       ((a) && ((a)->addr.sa_family == AF_INET6))
+#define swSocketAddressIsLinkLayer(a)   ((a) && ((a)->addr.sa_family == AF_PACKET))
 
 swDynamicString *swSocketAddressToString(swSocketAddress *address);
 

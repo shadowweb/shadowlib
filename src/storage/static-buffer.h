@@ -8,14 +8,14 @@
 typedef struct swStaticBuffer
 {
   size_t len;
-  char *data;
+  uint8_t *data;
 } swStaticBuffer;
 
 #define swStaticBufferDefineEmpty                     {.len = 0, .data = NULL}
-#define swStaticBufferDefine(buf)                     {.len = sizeof(buf), .data = buf}
-#define swStaticBufferDefineWithLength(str, length)   {.len = length, .data = str}
-#define swStaticBufferSetWithLength(buf, length)      *(swStaticBuffer[]){{.len = length, .data = buf}}
-#define swStaticBufferSet(buf)                        *(swStaticBuffer[]){{.len = sizeof(buf), .data = buf}}
+#define swStaticBufferDefine(buf)                     {.len = sizeof(buf), .data = (uint8_t *)(buf)}
+#define swStaticBufferDefineWithLength(buf, length)   {.len = length, .data = (uint8_t *)(buf)}
+#define swStaticBufferSetWithLength(buf, length)      *(swStaticBuffer[]){{.len = length, .data = (uint8_t *)(buf)}}
+#define swStaticBufferSet(buf)                        *(swStaticBuffer[]){{.len = sizeof(buf), .data = (uint8_t *)(buf)}}
 #define swStaticBufferSetEmpty                        *(swStaticBuffer[]){{.len = 0, .data = NULL}}
 
 uint32_t swStaticBufferHash(const swStaticBuffer *buffer);

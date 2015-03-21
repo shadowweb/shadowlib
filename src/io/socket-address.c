@@ -53,6 +53,20 @@ bool swSocketAddressInitInet6(swSocketAddress *address, char *ip6, uint16_t port
   return rtn;
 }
 
+bool swSocketAddressInitLinkLayer(swSocketAddress *address, uint16_t protocol, int index)
+{
+  bool rtn = false;
+  if (address)
+  {
+    address->linkLayer.sll_family = AF_PACKET;
+    address->linkLayer.sll_protocol = htons(protocol);
+    address->linkLayer.sll_ifindex = index;
+    address->len = sizeof(struct sockaddr_ll);
+    rtn = true;
+  }
+  return rtn;
+}
+
 swDynamicString *swSocketAddressToString(swSocketAddress *address)
 {
   swDynamicString *rtn = NULL;

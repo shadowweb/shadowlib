@@ -186,11 +186,11 @@ int swTestMain(int argc, char *argv[])
             bool result = swTestRunExecute(suite, test);
             numOK += result;
             numFail += !result;
-            numFailedAsserts += failedAssertsGlobal;
-            failedAssertsGlobal = 0;
             if (test->teardownFunc)
               swTestAction(suite, test, "[ TEARDOWN ]", test->teardownFunc);
             printfColor(SW_COLOR_ANSI_BLUE, "%s[ END      ] Test: '%s'\n", testOffset, test->testName);
+            numFailedAsserts += failedAssertsGlobal;
+            failedAssertsGlobal = 0;
           }
           else
           {

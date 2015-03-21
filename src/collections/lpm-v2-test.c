@@ -404,7 +404,7 @@ static inline bool matchTestWithFactor(swTestSuite *suite, swTest *test)
   {
     found = false;
     storedPrefix = NULL;
-    ipValue = swStaticBufferSetWithLength((char *)(buffer + sizeof(swLPMV2Prefix)), dataSize);
+    ipValue = swStaticBufferSetWithLength((buffer + sizeof(swLPMV2Prefix)), dataSize);
     if (swLPMV2Match(lpm, &ipValue, &storedPrefix))
     {
       if (storedPrefix)

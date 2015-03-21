@@ -429,9 +429,9 @@ swSocketReturnType swSocketSend(swSocket *sock, swStaticBuffer *buffer, ssize_t 
 swSocketReturnType swSocketSendTo(swSocket *sock, swStaticBuffer *buffer, swSocketAddress *address, ssize_t *bytesWritten)
 {
   swSocketReturnType rtn = swSocketReturnNone;
-  if (sock && buffer && buffer->len && buffer->data && address && (sock->fd >= 0))
+  if (sock && buffer && buffer->len && buffer->data && (sock->fd >= 0))
   {
-    ssize_t ret = sendto(sock->fd, buffer->data, buffer->len, 0, &(address->addr), address->len);
+    ssize_t ret = sendto(sock->fd, buffer->data, buffer->len, 0, (address? &(address->addr) : NULL), (address? address->len : 0));
     if (ret >= 0)
     {
       rtn = swSocketReturnOK;
@@ -489,7 +489,7 @@ swSocketReturnType swSocketReceiveFrom(swSocket *sock, swStaticBuffer *buffer, s
   swSocketReturnType rtn = swSocketReturnNone;
   if (sock && buffer && buffer->len && buffer->data && (sock->fd >= 0))
   {
-    ssize_t ret = recvfrom(sock->fd, buffer->data, buffer->len, 0, &(address->addr), &(address->len));
+    ssize_t ret = recvfrom(sock->fd, buffer->data, buffer->len, 0, (address? &(address->addr) : NULL), (address? &(address->len) : NULL));
     if (ret > 0)
     {
       rtn = swSocketReturnOK;
