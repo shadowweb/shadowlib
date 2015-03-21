@@ -112,31 +112,6 @@ static bool bindToInterface(swSocket *sock, swStaticString *interface)
   return rtn;
 }
 
-/*
-static void dumpPacket(swStaticBuffer *buff)
-{
-  printf ("Read the following packet\n");
-  uint32_t i = 0;
-  while (i + 15 < buff->len)
-  {
-    printf ("%02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x %02x%02x\n",
-      buff->data[i],      buff->data[i + 1],  buff->data[i + 2],  buff->data[i + 3],
-      buff->data[i + 4],  buff->data[i + 5],  buff->data[i + 6],  buff->data[i + 7],
-      buff->data[i + 8],  buff->data[i + 9],  buff->data[i + 10], buff->data[i + 11],
-      buff->data[i + 12], buff->data[i + 13], buff->data[i + 14], buff->data[i + 15]);
-    i += 16;
-  }
-  while (i + 1 < buff->len)
-  {
-    printf ("%02x%02x ", buff->data[i], buff->data[i + 1]);
-    i += 2;
-  }
-  if (i < buff->len)
-    printf ("%02x ", buff->data[i]);
-  printf ("\n");
-}
-*/
-
 static void swICMPv6CommunicatorReadReady(swSocketIO *socketIO)
 {
   SW_LOG_DEBUG(&communicatorLogger, "Read ready");
@@ -149,15 +124,10 @@ static void swICMPv6CommunicatorReadReady(swSocketIO *socketIO)
     if (ret == swSocketReturnOK)
     {
       readBuffer->len = bytesRead;
-      // dumpPacket((swStaticBuffer *)readBuffer);
-      // TODO: verify that parsing happens correctly, setup timer to send ICMP ND message
       if (swProtocolParserParse(&parser, (swStaticBuffer *)readBuffer))
-      {
-        printf ("buffer parsed successfully\n");
         swProtocolParserPrint(&parser);
-      }
       else
-        printf ("error parsing buffer\n");
+        SW_LOG_ERROR(&communicatorLogger, "error parsing buffer\n");
     }
     else if (ret == swSocketReturnNotReady)
       break;
@@ -170,7 +140,6 @@ static void swICMPv6CommunicatorReadReady(swSocketIO *socketIO)
     if (iterations > 16)
       break;
   }
-
 }
 
 static void swICMPv6CommunicatorWriteReady(swSocketIO *socketIO)

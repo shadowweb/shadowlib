@@ -83,8 +83,6 @@ static bool swParseIPv6FragmentHeader(swProtocolParser *parser, uint32_t frameId
 
 static bool swParseEthernetFrame(swProtocolParser *parser, swProtocolIndentifier *nextProtocol)
 {
-  printf("'%s': parsing ethernet frame, parser->buffer.len = %zu, parser->parsePosition = %zu\n",
-         __func__, parser->buffer.len, parser->parsePosition);
   bool rtn = false;
   if (parser->buffer.len >= (parser->parsePosition + sizeof(struct ether_header)))
   {
@@ -113,7 +111,6 @@ static bool swParseEthernetFrame(swProtocolParser *parser, swProtocolIndentifier
 
 static bool swParseIPv6Frame(swProtocolParser *parser, swProtocolIndentifier *nextProtocol)
 {
-  printf("'%s': parsing IPv6 frame\n", __func__);
   bool rtn = false;
   if (parser->buffer.len >= (parser->parsePosition + sizeof(struct ip6_hdr)))
   {
@@ -134,10 +131,7 @@ static bool swParseIPv6Frame(swProtocolParser *parser, swProtocolIndentifier *ne
         {
           case IPPROTO_HOPOPTS:
             if (!swParseIPv6ExtensionHeader(parser, swProtocolIPv6HopByHopHeader, &flags, &next, true))
-            {
-              printf("'%s': failed to parse hop by hop extension header\n", __func__);
               parser->error = true;
-            }
             break;
           case IPPROTO_DSTOPTS:
             if (!swParseIPv6ExtensionHeader(parser, swProtocolIPv6DestinationHeader, &flags, &next, true) &&
@@ -213,7 +207,6 @@ static void swParseICMPv6DiscoveryMessage(swProtocolParser *parser, void *ptr, s
 
 static bool swParseICMPv6Frame(swProtocolParser *parser, swProtocolIndentifier *nextProtocol)
 {
-  printf("'%s': parsing ICMPv6 frame\n", __func__);
   bool rtn = false;
   if (parser->bytesLeft >= sizeof(struct icmp6_hdr) && parser->buffer.len >= (parser->parsePosition + parser->bytesLeft))
   {
@@ -281,8 +274,6 @@ static bool swParseICMPv6Frame(swProtocolParser *parser, swProtocolIndentifier *
 
 static bool swParseUDPFrame(swProtocolParser *parser, swProtocolIndentifier *nextProtocol)
 {
-  printf("'%s': parsing UDP frame: bytesLeft = %zu, parsePosition = %zu, buffer length = %zu\n",
-         __func__, parser->bytesLeft, parser->parsePosition, parser->buffer.len);
   bool rtn = false;
   if (parser->bytesLeft >= sizeof(struct udphdr) && parser->buffer.len >= (parser->parsePosition + parser->bytesLeft))
   {
@@ -296,15 +287,12 @@ static bool swParseUDPFrame(swProtocolParser *parser, swProtocolIndentifier *nex
         *nextProtocol = swProtocolUnknown;
       rtn = true;
     }
-    else
-      printf ("bytesLeft != UDP header length\n");
   }
   return rtn;
 }
 
 static bool swParseUnknownFrame(swProtocolParser *parser, swProtocolIndentifier *nextProtocol)
 {
-  printf("'%s': parsing Unknown frame\n", __func__);
   bool rtn = false;
   if (parser->buffer.len >= (parser->parsePosition + parser->bytesLeft))
   {
@@ -332,19 +320,6 @@ static swProtocolParseFunction swProtocolMap[swProtocolMax + 1] =
   swParseUnknownFrame,    // swProtocolUnknown
   NULL                    // swProtocolMax
 };
-/*
-{
-  [swProtocolNone]      = NULL,
-  [swProtocolEthernet]  = swParseEthernetFrame,
-  // [swProtocolIPv4]      = swParseIPv4Frame,
-  [swProtocolIPv6]      = swParseIPv6Frame,
-  // [swProtocolICMPv4]    = swParseICMPv4Frame,
-  [swProtocolICMPv6]    = swParseICMPv6Frame,
-  // [swProtocolTCP]       = swParseTCPFrame,
-  // [swProtocolUDP]       = swParseUDPFrame,
-  [swProtocolMax]       = NULL
-};
-*/
 
 bool swProtocolParserParse(swProtocolParser *parser, swStaticBuffer *buffer)
 {
